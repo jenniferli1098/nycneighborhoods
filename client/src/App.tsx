@@ -111,6 +111,11 @@ const MainApp: React.FC = () => {
       const response = await axios.get('/api/visits');
       console.log('📝 App: Received visits data:', response.data);
       console.log('📊 App: Number of visits:', response.data.length);
+      
+      // Log visited neighborhood IDs
+      const visitedIds = response.data.filter(v => v.visited).map(v => v.neighborhoodId);
+      console.log('🎯 App: Visited neighborhood IDs:', visitedIds);
+      
       setVisits(response.data);
       console.log('✅ App: Visits state updated');
     } catch (err) {
@@ -119,7 +124,7 @@ const MainApp: React.FC = () => {
   };
 
   const handleNeighborhoodClick = (neighborhood: string, borough: string) => {
-    console.log('🖱️ App: Neighborhood clicked:', neighborhood, borough);
+    console.log('🖱️ App: Neighborhood clicked (right-click for dialog):', neighborhood, borough);
     console.log('🔍 App: Available neighborhoods count:', neighborhoods.length);
     console.log('🔍 App: Borough mapping size:', boroughIdToName.size);
     
@@ -144,6 +149,35 @@ const MainApp: React.FC = () => {
     }
   };
 
+  const handleQuickVisit = async (neighborhood: string, borough: string) => {
+    console.log('⚡ App: Quick visit (left-click) for:', neighborhood, borough);
+    
+    try {
+      // Create a quick visit with just visited=true and today's date
+      const visitData = {
+        neighborhoodName: neighborhood,
+        boroughName: borough,
+        visited: true,
+        notes: '',
+        visitDate: new Date(),
+        rating: null,
+        walkabilityScore: null
+      };
+      
+      console.log('📤 App: Creating quick visit:', visitData);
+      const response = await axios.post('/api/visits', visitData);
+      console.log('✅ App: Quick visit created successfully:', response.data);
+      
+      // Refresh data without page reload
+      console.log('🔄 App: Refreshing visits data after quick visit...');
+      await fetchVisits();
+      console.log('🔄 App: Data refresh complete');
+      
+    } catch (error) {
+      console.error('❌ App: Failed to create quick visit:', error);
+    }
+  };
+
   const handleCloseDialog = () => {
     console.log('❌ App: Dialog closed');
     setSelectedNeighborhood(null);
@@ -158,12 +192,22 @@ const MainApp: React.FC = () => {
   console.log('🏠 App: Visited neighborhood IDs:', visitedNeighborhoodIds.size, Array.from(visitedNeighborhoodIds));
 
   // Create a set of visited neighborhood names for the map
+  console.log('🔄 App: Creating visited neighborhood names mapping...');
+  console.log('🏠 App: Available neighborhoods for mapping:', neighborhoods.length);
+  console.log('🎯 App: Visited neighborhood IDs to map:', Array.from(visitedNeighborhoodIds));
+  
   const visitedNeighborhoodNames = new Set(
     neighborhoods
-      .filter(n => visitedNeighborhoodIds.has(n._id))
+      .filter(n => {
+        const isVisited = visitedNeighborhoodIds.has(n._id);
+        if (isVisited) {
+          console.log(`✅ App: Mapping visited neighborhood: ${n.name} (ID: ${n._id})`);
+        }
+        return isVisited;
+      })
       .map(n => n.name)
   );
-  console.log('🏠 App: Visited neighborhood names for map:', visitedNeighborhoodNames.size, Array.from(visitedNeighborhoodNames));
+  console.log('🏠 App: Final visited neighborhood names for map:', visitedNeighborhoodNames.size, Array.from(visitedNeighborhoodNames));
 
   const boroughIdToName = new Map<string, string>();
 
@@ -215,6 +259,7 @@ const MainApp: React.FC = () => {
             <NeighborhoodList
               neighborhoods={neighborhoods}
               boroughs={boroughs}
+              visits={visits}
               onNeighborhoodClick={handleNeighborhoodClick}
             />
           </Grid>
@@ -224,6 +269,7 @@ const MainApp: React.FC = () => {
                 neighborhoods={geoJsonNeighborhoods}
                 visitedNeighborhoods={visitedNeighborhoodNames}
                 onNeighborhoodClick={handleNeighborhoodClick}
+                onNeighborhoodQuickVisit={handleQuickVisit}
               />
             </Box>
           </Grid>

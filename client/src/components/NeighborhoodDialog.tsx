@@ -152,10 +152,6 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
       onSave();
       console.log('✅ NeighborhoodDialog: Closing dialog');
       onClose();
-      
-      // Refresh the page to ensure all data is updated
-      console.log('🔄 NeighborhoodDialog: Refreshing page to update all data');
-      window.location.reload();
     } catch (err: any) {
       console.error('❌ NeighborhoodDialog: Save error:', err);
       console.error('❌ NeighborhoodDialog: Error response:', err.response);

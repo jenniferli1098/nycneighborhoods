@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Paper,
   List,
@@ -16,7 +16,6 @@ import {
   MenuItem
 } from '@mui/material';
 import { CheckCircle, RadioButtonUnchecked, Search } from '@mui/icons-material';
-import axios from 'axios';
 
 interface Neighborhood {
   _id: string;
@@ -48,43 +47,20 @@ interface Borough {
 interface NeighborhoodListProps {
   neighborhoods: Neighborhood[];
   boroughs: Borough[];
+  visits: Visit[];
   onNeighborhoodClick: (neighborhood: string, borough: string) => void;
 }
 
-const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boroughs, onNeighborhoodClick }) => {
-  const [visits, setVisits] = useState<Visit[]>([]);
+const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boroughs, visits, onNeighborhoodClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBorough, setSelectedBorough] = useState('');
   const [filterVisited, setFilterVisited] = useState('all');
-
-  useEffect(() => {
-    console.log('🔄 NeighborhoodList: Component mounted, fetching visits');
-    fetchVisits();
-  }, []);
-
-  const fetchVisits = async () => {
-    try {
-      console.log('📡 NeighborhoodList: Fetching visits from API');
-      const response = await axios.get('/api/visits');
-      console.log('📝 NeighborhoodList: Received visits data:', response.data);
-      console.log('📊 NeighborhoodList: Number of visits:', response.data.length);
-      setVisits(response.data);
-      console.log('✅ NeighborhoodList: Visits state updated');
-    } catch (error) {
-      console.error('❌ NeighborhoodList: Failed to fetch visits:', error);
-    }
-  };
 
   const visitedSet = new Set(visits.filter(v => v.visited).map(v => v.neighborhoodId));
   
   // Create a mapping from borough ID to borough name
   const boroughIdToName = new Map(boroughs.map(b => [b._id, b.name]));
   const boroughNameToId = new Map(boroughs.map(b => [b.name, b._id]));
-
-  console.log('🔍 NeighborhoodList: Processing data');
-  console.log('🏠 NeighborhoodList: Total neighborhoods:', neighborhoods.length);
-  console.log('📍 NeighborhoodList: Visited neighborhoods:', visitedSet.size, Array.from(visitedSet));
-  console.log('🏘️ NeighborhoodList: Boroughs:', boroughs.map(b => b.name));
 
   const filteredNeighborhoods = neighborhoods.filter(neighborhood => {
     const name = neighborhood.name;
@@ -101,11 +77,6 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boro
     
     return matchesSearch && matchesBorough && matchesVisited;
   });
-
-  console.log('🔍 NeighborhoodList: Filtered neighborhoods:', filteredNeighborhoods.length);
-  console.log('🔍 NeighborhoodList: Search term:', searchTerm);
-  console.log('🔍 NeighborhoodList: Selected borough:', selectedBorough);
-  console.log('🔍 NeighborhoodList: Filter visited:', filterVisited);
 
   const visitedCount = visitedSet.size;
   const totalCount = neighborhoods.length;

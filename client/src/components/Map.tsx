@@ -18,10 +18,12 @@ interface MapProps {
   neighborhoods: Neighborhood[];
   visitedNeighborhoods: Set<string>;
   onNeighborhoodClick: (neighborhood: string, borough: string) => void;
+  onNeighborhoodQuickVisit?: (neighborhood: string, borough: string) => void;
 }
 
-const NYCMap: React.FC<MapProps> = ({ neighborhoods, visitedNeighborhoods, onNeighborhoodClick }) => {
+const NYCMap: React.FC<MapProps> = ({ neighborhoods, visitedNeighborhoods, onNeighborhoodClick, onNeighborhoodQuickVisit }) => {
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
+  const [geoJsonKey, setGeoJsonKey] = useState(0);
 
   useEffect(() => {
     if (neighborhoods.length > 0) {
@@ -31,6 +33,12 @@ const NYCMap: React.FC<MapProps> = ({ neighborhoods, visitedNeighborhoods, onNei
       });
     }
   }, [neighborhoods]);
+
+  useEffect(() => {
+    console.log('🎨 Map: Visited neighborhoods changed, triggering map update:', visitedNeighborhoods.size);
+    // Force GeoJSON component to re-render by changing its key
+    setGeoJsonKey(prev => prev + 1);
+  }, [visitedNeighborhoods]);
 
   const getColor = (neighborhood: string) => {
     return visitedNeighborhoods.has(neighborhood) ? '#4CAF50' : '#2196F3';
@@ -58,7 +66,17 @@ const NYCMap: React.FC<MapProps> = ({ neighborhoods, visitedNeighborhoods, onNei
     `);
 
     layer.on({
-      click: () => {
+      click: (e: any) => {
+        // Left click - mark as visited quickly
+        if (e.originalEvent.button === 0 && onNeighborhoodQuickVisit) {
+          console.log('🖱️ Left click: Quick visit for', neighborhood, borough);
+          onNeighborhoodQuickVisit(neighborhood, borough);
+        }
+      },
+      contextmenu: (e: any) => {
+        // Right click - open detailed dialog
+        e.originalEvent.preventDefault(); // Prevent browser context menu
+        console.log('🖱️ Right click: Opening dialog for', neighborhood, borough);
         onNeighborhoodClick(neighborhood, borough);
       },
       mouseover: (e: any) => {
@@ -90,6 +108,7 @@ const NYCMap: React.FC<MapProps> = ({ neighborhoods, visitedNeighborhoods, onNei
         />
         {geoJsonData && (
           <GeoJSON
+            key={geoJsonKey}
             data={geoJsonData}
             style={style}
             onEachFeature={onEachFeature}
