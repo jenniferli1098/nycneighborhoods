@@ -6,8 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  FormControlLabel,
-  Switch,
   Rating,
   Typography,
   Box,
@@ -53,9 +51,9 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     neighborhood,
     borough,
     neighborhoodId,
-    visited: false,
+    visited: true,
     notes: '',
-    visitDate: null,
+    visitDate: new Date(),
     rating: null,
     walkabilityScore: null
   });
@@ -97,9 +95,9 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           neighborhood,
           borough,
           neighborhoodId,
-          visited: false,
+          visited: true,
           notes: '',
-          visitDate: null,
+          visitDate: new Date(),
           rating: null,
           walkabilityScore: null
         };
@@ -123,7 +121,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
       if (visit._id) {
         // PUT request - only send visit fields (no lookup fields needed)
         const updateData = {
-          visited: visit.visited,
+          visited: true,
           notes: visit.notes,
           visitDate: visit.visitDate,
           rating: visit.rating,
@@ -137,7 +135,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         const createData = {
           neighborhoodName: neighborhood,
           boroughName: borough,
-          visited: visit.visited,
+          visited: true,
           notes: visit.notes,
           visitDate: visit.visitDate,
           rating: visit.rating,
@@ -193,90 +191,67 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           )}
           
           <Box className="space-y-4">
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={visit.visited}
-                  onChange={(e) => {
-                    const isVisited = e.target.checked;
-                    setVisit({ 
-                      ...visit, 
-                      visited: isVisited,
-                      // Set visit date to today when marking as visited
-                      visitDate: isVisited && !visit.visitDate ? new Date() : visit.visitDate
-                    });
-                  }}
-                />
-              }
-              label="I've visited this neighborhood"
+            <DatePicker
+              label="Visit Date"
+              value={visit.visitDate}
+              onChange={(date) => setVisit({ ...visit, visitDate: date })}
+              slotProps={{
+                textField: {
+                  fullWidth: true
+                }
+              }}
             />
-            
-            {visit.visited && (
-              <>
-                <DatePicker
-                  label="Visit Date"
-                  value={visit.visitDate}
-                  onChange={(date) => setVisit({ ...visit, visitDate: date })}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true
-                    }
-                  }}
-                />
-                
-                <Box>
-                  <Typography component="legend">Rating</Typography>
-                  <Rating
-                    value={visit.rating}
-                    onChange={(_, newValue) => setVisit({ ...visit, rating: newValue })}
-                  />
-                </Box>
-            
             
             <Box>
-              <Typography component="legend" gutterBottom>
-                Walkability Score: {visit.walkabilityScore || 0}/100
-              </Typography>
-              <Slider
-                value={visit.walkabilityScore || 0}
-                onChange={(_, newValue) => setVisit({ ...visit, walkabilityScore: newValue as number })}
-                min={0}
-                max={100}
-                step={5}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 25, label: '25' },
-                  { value: 50, label: '50' },
-                  { value: 75, label: '75' },
-                  { value: 100, label: '100' }
-                ]}
-                valueLabelDisplay="auto"
-                sx={{ mt: 1, mb: 2 }}
+              <Typography component="legend">Rating</Typography>
+              <Rating
+                value={visit.rating}
+                onChange={(_, newValue) => setVisit({ ...visit, rating: newValue })}
               />
-              <Typography variant="body2" color="text.secondary">
-                Rate how walkable this neighborhood is (0 = not walkable, 100 = very walkable)
-              </Typography>
             </Box>
-            
-            <TextField
-              fullWidth
-              label="Notes"
-              multiline
-              rows={4}
-              value={visit.notes}
-              onChange={(e) => setVisit({ ...visit, notes: e.target.value })}
-              placeholder="What did you do? What did you like? Any recommendations?"
-            />
-
-</>
-            )}
+        
+        
+        <Box>
+          <Typography component="legend" gutterBottom>
+            Walkability Score: {visit.walkabilityScore || 0}/100
+          </Typography>
+          <Slider
+            value={visit.walkabilityScore || 0}
+            onChange={(_, newValue) => setVisit({ ...visit, walkabilityScore: newValue as number })}
+            min={0}
+            max={100}
+            step={5}
+            marks={[
+              { value: 0, label: '0' },
+              { value: 25, label: '25' },
+              { value: 50, label: '50' },
+              { value: 75, label: '75' },
+              { value: 100, label: '100' }
+            ]}
+            valueLabelDisplay="auto"
+            sx={{ mt: 1, mb: 2 }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            Rate how walkable this neighborhood is (0 = not walkable, 100 = very walkable)
+          </Typography>
+        </Box>
+        
+        <TextField
+          fullWidth
+          label="Notes"
+          multiline
+          rows={4}
+          value={visit.notes}
+          onChange={(e) => setVisit({ ...visit, notes: e.target.value })}
+          placeholder="What did you do? What did you like? Any recommendations?"
+        />
           </Box>
         </DialogContent>
         
         <DialogActions>
           {visit._id && (
             <Button onClick={handleDelete} color="error" disabled={loading}>
-              Delete
+              Unvisit
             </Button>
           )}
           <Button onClick={onClose} disabled={loading}>

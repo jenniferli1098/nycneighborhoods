@@ -7,7 +7,6 @@ import {
   Typography, 
   Button, 
   Box, 
-  Grid, 
   CircularProgress,
   Alert
 } from '@mui/material';
@@ -113,7 +112,7 @@ const MainApp: React.FC = () => {
       console.log('📊 App: Number of visits:', response.data.length);
       
       // Log visited neighborhood IDs
-      const visitedIds = response.data.filter(v => v.visited).map(v => v.neighborhoodId);
+      const visitedIds = response.data.filter((v: any) => v.visited).map((v: any) => v.neighborhoodId);
       console.log('🎯 App: Visited neighborhood IDs:', visitedIds);
       
       setVisits(response.data);
@@ -198,14 +197,14 @@ const MainApp: React.FC = () => {
   
   const visitedNeighborhoodNames = new Set(
     neighborhoods
-      .filter(n => {
+      .filter((n: Neighborhood) => {
         const isVisited = visitedNeighborhoodIds.has(n._id);
         if (isVisited) {
           console.log(`✅ App: Mapping visited neighborhood: ${n.name} (ID: ${n._id})`);
         }
         return isVisited;
       })
-      .map(n => n.name)
+      .map((n: Neighborhood) => n.name)
   );
   console.log('🏠 App: Final visited neighborhood names for map:', visitedNeighborhoodNames.size, Array.from(visitedNeighborhoodNames));
 
@@ -235,10 +234,10 @@ const MainApp: React.FC = () => {
 
   return (
     <Box className="h-screen flex flex-col">
-      <AppBar position="static">
+      <AppBar position="static" sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)' }}>
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            NYC Neighborhood Bucket List
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+            NYC Bucket List
           </Typography>
           {user && (
             <Box className="flex items-center gap-4">
@@ -253,27 +252,26 @@ const MainApp: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box className="flex-1 p-4">
-        <Grid container spacing={2} className="h-full">
-          <Grid size={{ xs: 12, md: 4 }} className="h-full">
-            <NeighborhoodList
-              neighborhoods={neighborhoods}
-              boroughs={boroughs}
-              visits={visits}
-              onNeighborhoodClick={handleNeighborhoodClick}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 8 }} className="h-full">
-            <Box className="h-full">
-              <NYCMap
-                neighborhoods={geoJsonNeighborhoods}
-                visitedNeighborhoods={visitedNeighborhoodNames}
-                onNeighborhoodClick={handleNeighborhoodClick}
-                onNeighborhoodQuickVisit={handleQuickVisit}
-              />
-            </Box>
-          </Grid>
-        </Grid>
+      <Box className="flex-1 flex">
+        {/* Left Sidebar - Compact Neighborhood List */}
+        <Box className="w-80 border-r bg-white">
+          <NeighborhoodList
+            neighborhoods={neighborhoods}
+            boroughs={boroughs}
+            visits={visits}
+            onNeighborhoodClick={handleNeighborhoodClick}
+          />
+        </Box>
+        
+        {/* Map takes remaining space */}
+        <Box className="flex-1">
+          <NYCMap
+            neighborhoods={geoJsonNeighborhoods}
+            visitedNeighborhoods={visitedNeighborhoodNames}
+            onNeighborhoodClick={handleNeighborhoodClick}
+            onNeighborhoodQuickVisit={handleQuickVisit}
+          />
+        </Box>
       </Box>
 
       {selectedNeighborhood && (
