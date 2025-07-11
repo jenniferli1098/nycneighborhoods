@@ -152,7 +152,31 @@ const MainApp: React.FC = () => {
     console.log('⚡ App: Quick visit (left-click) for:', neighborhood, borough);
     
     try {
-      // Create a quick visit with just visited=true and today's date
+      // Find the neighborhood ID first
+      const borough_obj = boroughs.find(b => b.name === borough);
+      if (!borough_obj) {
+        console.error('❌ App: Borough not found:', borough);
+        return;
+      }
+
+      const neighborhood_obj = neighborhoods.find(n => 
+        n.name === neighborhood && n.boroughId === borough_obj._id
+      );
+      if (!neighborhood_obj) {
+        console.error('❌ App: Neighborhood not found:', neighborhood);
+        return;
+      }
+
+      // Check if visit already exists
+      const existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj._id);
+      
+      if (existingVisit) {
+        console.log('⚡ App: Visit already exists, skipping to prevent data loss:', existingVisit);
+        // Don't overwrite existing visit data - just return
+        return;
+      }
+
+      // Only create new visit if none exists
       const visitData = {
         neighborhoodName: neighborhood,
         boroughName: borough,
@@ -160,6 +184,7 @@ const MainApp: React.FC = () => {
         notes: '',
         visitDate: new Date(),
         rating: null,
+        category: null,
         walkabilityScore: null
       };
       
@@ -282,6 +307,9 @@ const MainApp: React.FC = () => {
           neighborhood={selectedNeighborhood.name}
           borough={selectedNeighborhood.borough}
           onSave={handleSaveVisit}
+          existingVisits={visits}
+          neighborhoods={neighborhoods}
+          boroughs={boroughs}
         />
       )}
     </Box>

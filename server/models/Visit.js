@@ -24,8 +24,12 @@ const visitSchema = new mongoose.Schema({
   },
   rating: {
     type: Number,
-    min: 1,
-    max: 5
+    min: 0,
+    max: 10
+  },
+  category: {
+    type: String,
+    enum: ['Bad', 'Mid', 'Good']
   },
   walkabilityScore: {
     type: Number,

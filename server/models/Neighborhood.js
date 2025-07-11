@@ -22,8 +22,8 @@ const neighborhoodSchema = new mongoose.Schema({
   },
   averageVisitRating: {
     type: Number,
-    min: 1,
-    max: 5,
+    min: 0,
+    max: 10,
     default: null
   },
   totalVisits: {

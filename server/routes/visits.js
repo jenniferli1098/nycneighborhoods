@@ -22,10 +22,10 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { neighborhoodName, boroughName, visited, notes, visitDate, rating, walkabilityScore } = req.body;
+    const { neighborhoodName, boroughName, visited, notes, visitDate, rating, category, walkabilityScore } = req.body;
 
     console.log('🆕 POST /visits: Creating visit for user:', req.user._id.toString());
-    console.log('📍 POST /visits: Request data:', { neighborhoodName, boroughName, visited, notes, visitDate, rating, walkabilityScore });
+    console.log('📍 POST /visits: Request data:', { neighborhoodName, boroughName, visited, notes, visitDate, rating, category, walkabilityScore });
 
     // Find the borough first, then the neighborhood
     console.log('🔍 POST /visits: Looking up borough:', boroughName);
@@ -60,6 +60,7 @@ router.post('/', auth, async (req, res) => {
       existingVisit.notes = notes;
       existingVisit.visitDate = visitDate;
       existingVisit.rating = rating;
+      existingVisit.category = category;
       existingVisit.walkabilityScore = walkabilityScore;
       await existingVisit.save();
       console.log('✅ POST /visits: Updated existing visit successfully');
@@ -75,6 +76,7 @@ router.post('/', auth, async (req, res) => {
       notes,
       visitDate,
       rating,
+      category,
       walkabilityScore
     });
 
@@ -92,10 +94,10 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { visited, notes, visitDate, rating, walkabilityScore } = req.body;
+    const { visited, notes, visitDate, rating, category, walkabilityScore } = req.body;
     
     console.log('🔄 PUT /visits: Updating visit ID:', req.params.id, 'for user:', req.user._id.toString());
-    console.log('📝 PUT /visits: Update data:', { visited, notes, visitDate, rating, walkabilityScore });
+    console.log('📝 PUT /visits: Update data:', { visited, notes, visitDate, rating, category, walkabilityScore });
     
     const visit = await Visit.findOne({ 
       _id: req.params.id, 
@@ -113,6 +115,7 @@ router.put('/:id', auth, async (req, res) => {
     visit.notes = notes;
     visit.visitDate = visitDate;
     visit.rating = rating;
+    visit.category = category;
     visit.walkabilityScore = walkabilityScore;
     
     console.log('💾 PUT /visits: Saving updated visit');

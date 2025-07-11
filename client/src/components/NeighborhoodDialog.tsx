@@ -6,7 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  Rating,
   Typography,
   Box,
   Alert,
@@ -16,6 +15,8 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
+import RankingDialog from './RankingDialog';
+
 
 interface NeighborhoodDialogProps {
   open: boolean;
@@ -24,6 +25,9 @@ interface NeighborhoodDialogProps {
   neighborhood: string;
   borough: string;
   onSave: () => void;
+  existingVisits?: any[];
+  neighborhoods?: any[];
+  boroughs?: any[];
 }
 
 interface Visit {
@@ -36,6 +40,7 @@ interface Visit {
   notes: string;
   visitDate: Date | null;
   rating: number | null;
+  category?: 'Bad' | 'Mid' | 'Good' | null;
   walkabilityScore: number | null;
 }
 
@@ -45,7 +50,10 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   neighborhoodId,
   neighborhood,
   borough,
-  onSave
+  onSave,
+  existingVisits = [],
+  neighborhoods = [],
+  boroughs = []
 }) => {
   const [visit, setVisit] = useState<Visit>({
     neighborhood,
@@ -55,10 +63,12 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     notes: '',
     visitDate: new Date(),
     rating: null,
+    category: null,
     walkabilityScore: null
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showRanking, setShowRanking] = useState(false);
 
   useEffect(() => {
     if (open && neighborhoodId && neighborhood && borough) {
@@ -99,6 +109,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           notes: '',
           visitDate: new Date(),
           rating: null,
+          category: null,
           walkabilityScore: null
         };
         console.log('🆕 NeighborhoodDialog: Setting new visit:', newVisit);
@@ -125,6 +136,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate,
           rating: visit.rating,
+          category: visit.category,
           walkabilityScore: visit.walkabilityScore
         };
         console.log('📤 NeighborhoodDialog: Sending update data:', updateData);
@@ -139,6 +151,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate,
           rating: visit.rating,
+          category: visit.category,
           walkabilityScore: visit.walkabilityScore
         };
         console.log('📤 NeighborhoodDialog: Sending create data:', createData);
@@ -176,6 +189,10 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     }
   };
 
+  const handleRankingComplete = (category: 'Bad' | 'Mid' | 'Good', rating: number) => {
+    setVisit({ ...visit, category, rating });
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -202,13 +219,26 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
               }}
             />
             
-            <Box>
-              <Typography component="legend">Rating</Typography>
-              <Rating
-                value={visit.rating}
-                onChange={(_, newValue) => setVisit({ ...visit, rating: newValue })}
-              />
+            <Box className="flex gap-2 mb-4">
+              <Button
+                variant="contained"
+                onClick={() => setShowRanking(true)}
+                fullWidth
+              >
+                Rank
+              </Button>
             </Box>
+
+            {visit.category && visit.rating && (
+              <Box>
+                <Typography variant="body1" className="mb-2">
+                  <strong>Category:</strong> {visit.category} • <strong>Score:</strong> {visit.rating.toFixed(1)}/10.0
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Use the "Rank" button above to change this rating
+                </Typography>
+              </Box>
+            )}
         
         
         <Box>
@@ -262,6 +292,16 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <RankingDialog
+        open={showRanking}
+        onClose={() => setShowRanking(false)}
+        neighborhood={{ name: neighborhood, borough }}
+        existingVisits={existingVisits}
+        neighborhoods={neighborhoods}
+        boroughs={boroughs}
+        onRankingComplete={handleRankingComplete}
+      />
     </LocalizationProvider>
   );
 };
