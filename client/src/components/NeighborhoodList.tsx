@@ -75,12 +75,15 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boro
     return matchesSearch && matchesBorough && matchesVisited;
   });
 
+  console.log('🏘️ NeighborhoodList: Total neighborhoods:', neighborhoods.length);
+  console.log('🔍 NeighborhoodList: Filtered neighborhoods:', filteredNeighborhoods.length);
+
   return (
     <Box sx={{ 
-      height: '100vh', 
+      height: '100%', 
       display: 'flex', 
       flexDirection: 'column',
-      maxHeight: 'calc(100vh - 64px)' // Account for AppBar height
+      maxHeight: '100%'
     }}>
       <Box sx={{ 
         padding: 2, 
@@ -141,11 +144,26 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boro
       <Box sx={{ 
         flex: 1, 
         overflowY: 'auto', 
+        overflowX: 'hidden',
         minHeight: 0,
-        backgroundColor: 'white'
+        maxHeight: 'calc(100vh - 300px)', // Reserve space for AppBar and StatsCard
+        backgroundColor: 'white',
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: '#f1f1f1',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: '#c1c1c1',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          backgroundColor: '#a8a8a8',
+        },
       }}>
         <List dense>
-          {filteredNeighborhoods.slice(0, 50).map((neighborhood) => {
+          {filteredNeighborhoods.map((neighborhood) => {
             const name = neighborhood.name;
             const boroughName = boroughIdToName.get(neighborhood.boroughId) || '';
             const isVisited = visitedSet.has(neighborhood._id);

@@ -16,6 +16,7 @@ import RegisterForm from './components/Auth/RegisterForm';
 import NYCMap from './components/Map';
 import NeighborhoodList from './components/NeighborhoodList';
 import NeighborhoodDialog from './components/NeighborhoodDialog';
+import StatsCard from './components/StatsCard';
 import axios from 'axios';
 
 const theme = createTheme({
@@ -258,7 +259,7 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <Box className="h-screen flex flex-col">
+    <Box className="h-screen flex flex-col" sx={{ overflow: 'hidden' }}>
       <AppBar position="static" sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)' }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
@@ -278,14 +279,23 @@ const MainApp: React.FC = () => {
       </AppBar>
 
       <Box className="flex-1 flex">
-        {/* Left Sidebar - Compact Neighborhood List */}
-        <Box className="w-80 border-r bg-white" sx={{ height: '100%' }}>
-          <NeighborhoodList
-            neighborhoods={neighborhoods}
-            boroughs={boroughs}
-            visits={visits}
-            onNeighborhoodClick={handleNeighborhoodClick}
-          />
+        {/* Left Sidebar - Stats and Neighborhood List */}
+        <Box className="w-80 border-r bg-white" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, flexShrink: 0 }}>
+            <StatsCard 
+              visits={visits}
+              neighborhoods={neighborhoods}
+              boroughs={boroughs}
+            />
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <NeighborhoodList
+              neighborhoods={neighborhoods}
+              boroughs={boroughs}
+              visits={visits}
+              onNeighborhoodClick={handleNeighborhoodClick}
+            />
+          </Box>
         </Box>
         
         {/* Map takes remaining space */}
