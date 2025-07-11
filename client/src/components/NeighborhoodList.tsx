@@ -76,56 +76,74 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boro
   });
 
   return (
-    <Box className="h-full flex flex-col">
-      <Box className="p-4 border-b space-y-3">
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search neighborhoods..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            )
-          }}
-        />
-        
-        <Box className="flex gap-2">
-          <FormControl size="small" className="flex-1">
-            <InputLabel>Borough</InputLabel>
-            <Select
-              value={selectedBorough}
-              onChange={(e) => setSelectedBorough(e.target.value)}
-              label="Borough"
-            >
-              <MenuItem value="">All</MenuItem>
-              {boroughs.map(borough => (
-                <MenuItem key={borough._id} value={borough.name}>
-                  {borough.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+    <Box sx={{ 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      maxHeight: 'calc(100vh - 64px)' // Account for AppBar height
+    }}>
+      <Box sx={{ 
+        padding: 2, 
+        borderBottom: 1, 
+        borderColor: 'divider',
+        flexShrink: 0,
+        backgroundColor: 'white'
+      }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search neighborhoods..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              )
+            }}
+          />
           
-          <FormControl size="small" className="flex-1">
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={filterVisited}
-              onChange={(e) => setFilterVisited(e.target.value)}
-              label="Status"
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="visited">Visited</MenuItem>
-              <MenuItem value="not-visited">Not Visited</MenuItem>
-            </Select>
-          </FormControl>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <FormControl size="small" sx={{ flex: 1 }}>
+              <InputLabel>Borough</InputLabel>
+              <Select
+                value={selectedBorough}
+                onChange={(e) => setSelectedBorough(e.target.value)}
+                label="Borough"
+              >
+                <MenuItem value="">All</MenuItem>
+                {boroughs.map(borough => (
+                  <MenuItem key={borough._id} value={borough.name}>
+                    {borough.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <FormControl size="small" sx={{ flex: 1 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={filterVisited}
+                onChange={(e) => setFilterVisited(e.target.value)}
+                label="Status"
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="visited">Visited</MenuItem>
+                <MenuItem value="not-visited">Not Visited</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
         </Box>
       </Box>
       
-      <Box className="flex-1 overflow-auto">
+      <Box sx={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        minHeight: 0,
+        backgroundColor: 'white'
+      }}>
         <List dense>
           {filteredNeighborhoods.slice(0, 50).map((neighborhood) => {
             const name = neighborhood.name;

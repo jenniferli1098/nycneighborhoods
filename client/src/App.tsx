@@ -279,7 +279,7 @@ const MainApp: React.FC = () => {
 
       <Box className="flex-1 flex">
         {/* Left Sidebar - Compact Neighborhood List */}
-        <Box className="w-80 border-r bg-white">
+        <Box className="w-80 border-r bg-white" sx={{ height: '100%' }}>
           <NeighborhoodList
             neighborhoods={neighborhoods}
             boroughs={boroughs}
