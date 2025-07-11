@@ -80,7 +80,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
   };
 
 
-  const handleCategorySelect = (category: 'Bad' | 'Mid' | 'Good') => {
+  const handleCategorySelect = async (category: 'Bad' | 'Mid' | 'Good') => {
     setSelectedCategory(category);
     const comparisons = getComparisonsInCategory(category);
     setSortedComparisons(comparisons.sort((a, b) => a.rating - b.rating)); // Sort ascending for comparison
@@ -97,34 +97,96 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     }
   };
 
-  const redistributeRatings = (allNeighborhoods: any[], newRating: number, insertIndex: number) => {
-    if (!selectedCategory) return newRating;
-    
-    // Create array with new neighborhood inserted at correct position
-    const withNewNeighborhood = [...allNeighborhoods];
-    withNewNeighborhood.splice(insertIndex, 0, { rating: newRating });
+  const redistributeRatings = async (allNeighborhoods: any[], newRating: number, insertIndex: number) => {
+    if (!selectedCategory) return { newRating, updates: [] };
     
     const categoryRange = getCategoryRange(selectedCategory);
-    const total = withNewNeighborhood.length;
+    const updates = [];
     
-    // Redistribute ratings evenly across the category range
-    const redistributed = withNewNeighborhood.map((_, index) => {
-      const ratio = total === 1 ? 0.5 : index / (total - 1);
-      return categoryRange.min + (ratio * (categoryRange.max - categoryRange.min));
-    });
+    // Calculate the new rating for the neighborhood being inserted
+    let calculatedNewRating = newRating;
     
-    return redistributed[insertIndex];
+    if (allNeighborhoods.length === 0) {
+      // First neighborhood in category, place at midpoint
+      calculatedNewRating = getCategoryMidpoint(selectedCategory);
+    } else if (insertIndex === 0) {
+      // Better than all existing, place above the current best
+      const bestRating = allNeighborhoods[0].rating;
+      calculatedNewRating = Math.min(categoryRange.max, bestRating + 0.5);
+    } else if (insertIndex === allNeighborhoods.length) {
+      // Worse than all existing, place below the current worst
+      const worstRating = allNeighborhoods[allNeighborhoods.length - 1].rating;
+      calculatedNewRating = Math.max(categoryRange.min, worstRating - 0.5);
+    } else {
+      // Between two neighborhoods - place in the middle
+      const upperRating = allNeighborhoods[insertIndex - 1].rating;
+      const lowerRating = allNeighborhoods[insertIndex].rating;
+      calculatedNewRating = (upperRating + lowerRating) / 2;
+    }
+    
+    // Adjust adjacent neighbors using averaging logic
+    // Only update the immediate neighbors (one above, one below)
+    
+    // Update neighbor above (if exists and there's a non-adjacent neighbor above it)
+    if (insertIndex > 0 && insertIndex > 1) {
+      const adjacentAbove = allNeighborhoods[insertIndex - 1]; // B in example
+      const nonAdjacentAbove = allNeighborhoods[insertIndex - 2]; // A in example
+      
+      const newRatingForAdjacent = (nonAdjacentAbove.rating + calculatedNewRating) / 2;
+      
+      if (Math.abs(adjacentAbove.rating - newRatingForAdjacent) > 0.1) {
+        const visit = existingVisits.find(v => v.neighborhoodId === adjacentAbove._id);
+        if (visit) {
+          updates.push({
+            visitId: visit._id,
+            neighborhoodId: adjacentAbove._id,
+            oldRating: visit.rating,
+            newRating: newRatingForAdjacent,
+            category: selectedCategory
+          });
+        }
+      }
+    }
+    
+    // Update neighbor below (if exists and there's a non-adjacent neighbor below it)
+    if (insertIndex < allNeighborhoods.length && insertIndex < allNeighborhoods.length - 1) {
+      const adjacentBelow = allNeighborhoods[insertIndex]; // C in example
+      const nonAdjacentBelow = allNeighborhoods[insertIndex + 1]; // D in example
+      
+      const newRatingForAdjacent = (calculatedNewRating + nonAdjacentBelow.rating) / 2;
+      
+      if (Math.abs(adjacentBelow.rating - newRatingForAdjacent) > 0.1) {
+        const visit = existingVisits.find(v => v.neighborhoodId === adjacentBelow._id);
+        if (visit) {
+          updates.push({
+            visitId: visit._id,
+            neighborhoodId: adjacentBelow._id,
+            oldRating: visit.rating,
+            newRating: newRatingForAdjacent,
+            category: selectedCategory
+          });
+        }
+      }
+    }
+    
+    return {
+      newRating: calculatedNewRating,
+      updates: updates
+    };
   };
 
-  const handlePairwiseComparison = (better: boolean) => {
+  const handlePairwiseComparison = async (better: boolean) => {
     if (!selectedCategory) return;
+    
+    let result;
     
     if (better) {
       // New neighborhood is better than current comparison
       if (comparisonIndex === sortedComparisons.length - 1) {
         // Better than all - calculate redistributed rating
-        const newRating = redistributeRatings(sortedComparisons, 10, sortedComparisons.length);
-        setSelectedRating(newRating);
+        result = await redistributeRatings(sortedComparisons, 10, sortedComparisons.length);
+        setSelectedRating(result.newRating);
+        await applyRatingUpdates(result.updates);
         setStep(2);
       } else {
         // Continue to next comparison
@@ -134,14 +196,38 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
       // New neighborhood is worse than current comparison
       if (comparisonIndex === 0) {
         // Worse than all - calculate redistributed rating
-        const newRating = redistributeRatings(sortedComparisons, 0, 0);
-        setSelectedRating(newRating);
+        result = await redistributeRatings(sortedComparisons, 0, 0);
+        setSelectedRating(result.newRating);
+        await applyRatingUpdates(result.updates);
         setStep(2);
       } else {
         // Place between previous and current - calculate redistributed rating
-        const newRating = redistributeRatings(sortedComparisons, 5, comparisonIndex);
-        setSelectedRating(newRating);
+        result = await redistributeRatings(sortedComparisons, 5, comparisonIndex);
+        setSelectedRating(result.newRating);
+        await applyRatingUpdates(result.updates);
         setStep(2);
+      }
+    }
+  };
+
+  const applyRatingUpdates = async (updates: any[]) => {
+    console.log('🔄 RankingDialog: Applying rating updates:', updates);
+    
+    for (const update of updates) {
+      try {
+        await fetch(`/api/visits/${update.visitId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            rating: update.newRating,
+            category: update.category
+          }),
+        });
+        console.log(`✅ Updated visit ${update.visitId}: ${update.oldRating} → ${update.newRating}`);
+      } catch (error) {
+        console.error(`❌ Failed to update visit ${update.visitId}:`, error);
       }
     }
   };
