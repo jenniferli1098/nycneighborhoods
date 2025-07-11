@@ -39,6 +39,11 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [comparisonIndex, setComparisonIndex] = useState(0);
   const [sortedComparisons, setSortedComparisons] = useState<any[]>([]);
+  const [binarySearchState, setBinarySearchState] = useState<{
+    left: number;
+    right: number;
+    currentMid: number;
+  } | null>(null);
 
   const steps = ['Choose Category', 'Pairwise Comparison', 'Final Ranking'];
 
@@ -76,6 +81,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
           notes: v.notes
         };
       })
+      .filter(comp => comp.name !== neighborhood.name || comp.borough !== neighborhood.borough) // Remove current neighborhood if it exists
       .sort((a, b) => b.rating - a.rating);
   };
 
@@ -83,7 +89,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
   const handleCategorySelect = async (category: 'Bad' | 'Mid' | 'Good') => {
     setSelectedCategory(category);
     const comparisons = getComparisonsInCategory(category);
-    setSortedComparisons(comparisons.sort((a, b) => a.rating - b.rating)); // Sort ascending for comparison
+    setSortedComparisons(comparisons.sort((a, b) => b.rating - a.rating)); // Sort descending (best first) for comparison
     
     if (comparisons.length === 0) {
       // No existing neighborhoods in this category, go directly to final step
@@ -91,10 +97,19 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
       setSelectedRating(midpoint);
       setStep(2);
     } else {
-      // Start pairwise comparisons
-      setComparisonIndex(0);
+      // Start binary search
+      initializeBinarySearch(comparisons.length);
       setStep(1);
     }
+  };
+
+  const initializeBinarySearch = (totalNeighborhoods: number) => {
+    setBinarySearchState({
+      left: 0,
+      right: totalNeighborhoods,
+      currentMid: Math.floor(totalNeighborhoods / 2)
+    });
+    setComparisonIndex(Math.floor(totalNeighborhoods / 2));
   };
 
   const redistributeRatings = async (allNeighborhoods: any[], newRating: number, insertIndex: number) => {
@@ -110,13 +125,57 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
       // First neighborhood in category, place at midpoint
       calculatedNewRating = getCategoryMidpoint(selectedCategory);
     } else if (insertIndex === 0) {
-      // Better than all existing, place above the current best
-      const bestRating = allNeighborhoods[0].rating;
-      calculatedNewRating = Math.min(categoryRange.max, bestRating + 0.5);
+      // Better than all existing, place at top of category
+      calculatedNewRating = categoryRange.max;
+      
+      // Redistribute ALL existing neighborhoods to make room
+      const totalNeighborhoods = allNeighborhoods.length + 1; // +1 for the new one
+      const span = categoryRange.max - categoryRange.min;
+      const step = span / totalNeighborhoods;
+      
+      // Update all existing neighborhoods with new evenly distributed ratings
+      allNeighborhoods.forEach((neighborhood, index) => {
+        const newRatingForExisting = categoryRange.max - (step * (index + 1));
+        
+        if (Math.abs(neighborhood.rating - newRatingForExisting) > 0.1) {
+          const visit = existingVisits.find(v => v.neighborhoodId === neighborhood._id);
+          if (visit) {
+            updates.push({
+              visitId: visit._id,
+              neighborhoodId: neighborhood._id,
+              oldRating: visit.rating,
+              newRating: newRatingForExisting,
+              category: selectedCategory
+            });
+          }
+        }
+      });
     } else if (insertIndex === allNeighborhoods.length) {
-      // Worse than all existing, place below the current worst
-      const worstRating = allNeighborhoods[allNeighborhoods.length - 1].rating;
-      calculatedNewRating = Math.max(categoryRange.min, worstRating - 0.5);
+      // Worse than all existing, place at bottom of category
+      calculatedNewRating = categoryRange.min;
+      
+      // Redistribute ALL existing neighborhoods to make room
+      const totalNeighborhoods = allNeighborhoods.length + 1; // +1 for the new one
+      const span = categoryRange.max - categoryRange.min;
+      const step = span / totalNeighborhoods;
+      
+      // Update all existing neighborhoods with new evenly distributed ratings
+      allNeighborhoods.forEach((neighborhood, index) => {
+        const newRatingForExisting = categoryRange.min + (step * (index + 1));
+        
+        if (Math.abs(neighborhood.rating - newRatingForExisting) > 0.1) {
+          const visit = existingVisits.find(v => v.neighborhoodId === neighborhood._id);
+          if (visit) {
+            updates.push({
+              visitId: visit._id,
+              neighborhoodId: neighborhood._id,
+              oldRating: visit.rating,
+              newRating: newRatingForExisting,
+              category: selectedCategory
+            });
+          }
+        }
+      });
     } else {
       // Between two neighborhoods - place in the middle
       const upperRating = allNeighborhoods[insertIndex - 1].rating;
@@ -176,38 +235,44 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
   };
 
   const handlePairwiseComparison = async (better: boolean) => {
-    if (!selectedCategory) return;
+    if (!selectedCategory || !binarySearchState) return;
     
-    let result;
+    const { left, right, currentMid } = binarySearchState;
+    
+    let newLeft = left;
+    let newRight = right;
     
     if (better) {
       // New neighborhood is better than current comparison
-      if (comparisonIndex === sortedComparisons.length - 1) {
-        // Better than all - calculate redistributed rating
-        result = await redistributeRatings(sortedComparisons, 10, sortedComparisons.length);
-        setSelectedRating(result.newRating);
-        await applyRatingUpdates(result.updates);
-        setStep(2);
-      } else {
-        // Continue to next comparison
-        setComparisonIndex(comparisonIndex + 1);
-      }
+      // Search in the left half (since array is sorted descending - best first)
+      newRight = currentMid;
     } else {
       // New neighborhood is worse than current comparison
-      if (comparisonIndex === 0) {
-        // Worse than all - calculate redistributed rating
-        result = await redistributeRatings(sortedComparisons, 0, 0);
-        setSelectedRating(result.newRating);
-        await applyRatingUpdates(result.updates);
-        setStep(2);
-      } else {
-        // Place between previous and current - calculate redistributed rating
-        result = await redistributeRatings(sortedComparisons, 5, comparisonIndex);
-        setSelectedRating(result.newRating);
-        await applyRatingUpdates(result.updates);
-        setStep(2);
-      }
+      // Search in the right half (since array is sorted descending - worst last)
+      newLeft = currentMid + 1;
     }
+    
+    // Check if binary search is complete
+    if (newLeft >= newRight) {
+      // Found the insertion point
+      await finalizeRanking(newLeft);
+    } else {
+      // Continue binary search
+      const newMid = Math.floor((newLeft + newRight) / 2);
+      setBinarySearchState({
+        left: newLeft,
+        right: newRight,
+        currentMid: newMid
+      });
+      setComparisonIndex(newMid);
+    }
+  };
+
+  const finalizeRanking = async (insertIndex: number) => {
+    const result = await redistributeRatings(sortedComparisons, 0, insertIndex);
+    setSelectedRating(result.newRating);
+    await applyRatingUpdates(result.updates);
+    setStep(2);
   };
 
   const applyRatingUpdates = async (updates: any[]) => {
@@ -245,6 +310,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     setSelectedRating(null);
     setComparisonIndex(0);
     setSortedComparisons([]);
+    setBinarySearchState(null);
     onClose();
   };
 
@@ -422,7 +488,10 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
             </Box>
 
             <Typography variant="caption" color="text.secondary" className="mt-4 text-center block">
-              Step {comparisonIndex + 1} of {sortedComparisons.length}
+              {binarySearchState ? 
+                `Binary Search: ${Math.ceil(Math.log2(sortedComparisons.length + 1))} max steps (current: ${Math.ceil(Math.log2(sortedComparisons.length + 1)) - Math.ceil(Math.log2(binarySearchState.right - binarySearchState.left + 1)) + 1})` :
+                `Step ${comparisonIndex + 1} of ${sortedComparisons.length}`
+              }
             </Typography>
           </Box>
         )}
