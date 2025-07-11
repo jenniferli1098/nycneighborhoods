@@ -40,12 +40,27 @@ const NYCMap: React.FC<MapProps> = ({ neighborhoods, visitedNeighborhoods, onNei
     setGeoJsonKey(prev => prev + 1);
   }, [visitedNeighborhoods]);
 
-  const getColor = (neighborhood: string) => {
-    return visitedNeighborhoods.has(neighborhood) ? '#4CAF50' : '#2196F3';
+  const getBoroughColor = (borough: string) => {
+    const boroughColors: { [key: string]: string } = {
+      'Manhattan': '#FF6B6B',      // Red
+      'Brooklyn': '#4ECDC4',       // Teal
+      'Queens': '#45B7D1',         // Blue
+      'The Bronx': '#96CEB4',      // Green
+      'Bronx': '#96CEB4',          // Green (alternative name)
+      'Staten Island': '#FECA57'   // Yellow
+    };
+    return boroughColors[borough] || '#9B59B6'; // Purple fallback
+  };
+
+  const getColor = (neighborhood: string, borough: string) => {
+    if (visitedNeighborhoods.has(neighborhood)) {
+      return getBoroughColor(borough);
+    }
+    return '#E8E8E8'; // Light gray for unvisited
   };
 
   const style = (feature: any) => ({
-    fillColor: getColor(feature.properties.neighborhood),
+    fillColor: getColor(feature.properties.neighborhood, feature.properties.borough),
     weight: 2,
     opacity: 1,
     color: 'white',
