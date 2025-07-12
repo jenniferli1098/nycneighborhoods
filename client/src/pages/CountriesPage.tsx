@@ -9,14 +9,9 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Grid,
   Card,
   CardContent,
-  CardActions,
-  Button,
-  Chip,
-  Tabs,
-  Tab
+  Chip
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { countriesApi, type Country } from '../services/countriesApi';
@@ -35,7 +30,6 @@ const CountriesPage: React.FC = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContinent, setSelectedContinent] = useState('');
-  const [currentView, setCurrentView] = useState<'map' | 'grid'>('map');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
 
   useEffect(() => {
@@ -244,17 +238,6 @@ const CountriesPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* View Toggle */}
-        <Box sx={{ mb: 3 }}>
-          <Tabs 
-            value={currentView} 
-            onChange={(_, newValue) => setCurrentView(newValue)}
-            variant="fullWidth"
-          >
-            <Tab label="Map View" value="map" />
-            <Tab label="Grid View" value="grid" />
-          </Tabs>
-        </Box>
 
         {/* Filters */}
         <Box sx={{ mb: 3 }}>
@@ -285,83 +268,19 @@ const CountriesPage: React.FC = () => {
         </Box>
 
         <Typography variant="body2" color="text.secondary">
-          {currentView === 'grid' 
-            ? `Showing ${filteredCountries.length} countries`
-            : `${stats.totalVisited} countries visited on map`
-          }
+          {stats.totalVisited} countries visited on map
         </Typography>
       </Box>
       
       {/* Main Content Area */}
       <Box className="flex-1" sx={{ overflow: 'hidden' }}>
-        {currentView === 'map' ? (
-          /* World Map */
-          <WorldMap
-            countries={geoJsonCountries}
-            visitedCountries={visitedCountryIds}
-            onCountryClick={handleCountryClick}
-            onCountryQuickVisit={handleCountryQuickVisit}
-            availableCountries={countries}
-          />
-        ) : (
-          /* Countries Grid */
-          <Box className="p-4" sx={{ overflow: 'auto', height: '100%' }}>
-            <Grid container spacing={2}>
-              {filteredCountries.map((country) => {
-                const isVisited = visitedCountryIds.has(country._id);
-                
-                return (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={country._id}>
-                    <Card 
-                      sx={{ 
-                        height: '100%',
-                        border: isVisited ? '2px solid #4caf50' : '1px solid #e0e0e0',
-                        backgroundColor: isVisited ? '#f1f8e9' : 'white'
-                      }}
-                    >
-                      <CardContent>
-                        <Typography variant="h6" component="div" gutterBottom>
-                          {country.name}
-                        </Typography>
-                        <Chip 
-                          label={country.continent}
-                          size="small"
-                          sx={{ mb: 1 }}
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          Code: {country.code}
-                        </Typography>
-                        {isVisited && (
-                          <Chip 
-                            label="Visited"
-                            color="success"
-                            size="small"
-                            sx={{ mt: 1 }}
-                          />
-                        )}
-                      </CardContent>
-                      <CardActions>
-                        {!isVisited ? (
-                          <Button 
-                            size="small" 
-                            variant="contained"
-                            onClick={() => handleQuickVisit(country)}
-                          >
-                            Mark as Visited
-                          </Button>
-                        ) : (
-                          <Button size="small" variant="outlined" disabled>
-                            Already Visited
-                          </Button>
-                        )}
-                      </CardActions>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          </Box>
-        )}
+        <WorldMap
+          countries={geoJsonCountries}
+          visitedCountries={visitedCountryIds}
+          onCountryClick={handleCountryClick}
+          onCountryQuickVisit={handleCountryQuickVisit}
+          availableCountries={countries}
+        />
       </Box>
 
       {selectedCountry && (
