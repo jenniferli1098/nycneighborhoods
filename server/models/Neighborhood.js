@@ -15,11 +15,6 @@ const neighborhoodSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  walkabilityScore: {
-    type: Number,
-    min: 0,
-    max: 100
-  },
   averageVisitRating: {
     type: Number,
     min: 0,

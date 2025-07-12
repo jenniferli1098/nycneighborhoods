@@ -18,7 +18,6 @@ interface Visit {
   visitDate: string;
   rating: number;
   category: 'Bad' | 'Mid' | 'Good';
-  walkabilityScore: number;
 }
 
 interface Borough {
@@ -32,7 +31,6 @@ interface Neighborhood {
   name: string;
   boroughId: string;
   description?: string;
-  walkabilityScore?: number;
   averageVisitRating?: number;
   totalVisits?: number;
 }

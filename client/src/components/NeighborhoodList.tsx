@@ -20,7 +20,6 @@ interface Neighborhood {
   name: string;
   boroughId: string;
   description?: string;
-  walkabilityScore?: number;
   averageVisitRating?: number;
   totalVisits?: number;
 }
@@ -33,7 +32,6 @@ interface Visit {
   notes: string;
   visitDate: string;
   rating: number;
-  walkabilityScore: number;
 }
 
 interface Borough {

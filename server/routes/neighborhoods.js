@@ -45,7 +45,7 @@ router.get('/:id', async (req, res) => {
 // Create neighborhood (admin only - for future use)
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, boroughName, description, walkabilityScore } = req.body;
+    const { name, boroughName, description } = req.body;
     
     // Find the borough
     const borough = await Borough.findOne({ name: boroughName });
@@ -56,8 +56,7 @@ router.post('/', auth, async (req, res) => {
     const neighborhood = new Neighborhood({
       name,
       boroughId: borough._id.toString(),
-      description,
-      walkabilityScore
+      description
     });
     
     await neighborhood.save();

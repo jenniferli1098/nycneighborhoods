@@ -54,7 +54,6 @@ async function populateNeighborhoods() {
         name: name,
         boroughId: boroughMap[boroughName]._id.toString(),
         description: `${name} is a neighborhood in ${boroughName}, New York City.`,
-        walkabilityScore: Math.floor(Math.random() * 101), // Random walkability score for demo
         averageVisitRating: null,
         totalVisits: 0
       });

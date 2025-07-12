@@ -31,11 +31,6 @@ const visitSchema = new mongoose.Schema({
     type: String,
     enum: ['Bad', 'Mid', 'Good']
   },
-  walkabilityScore: {
-    type: Number,
-    min: 0,
-    max: 100
-  },
 }, {
   timestamps: true
 });

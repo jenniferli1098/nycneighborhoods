@@ -8,8 +8,7 @@ import {
   TextField,
   Typography,
   Box,
-  Alert,
-  Slider
+  Alert
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -41,7 +40,6 @@ interface Visit {
   visitDate: Date | null;
   rating: number | null;
   category?: 'Bad' | 'Mid' | 'Good' | null;
-  walkabilityScore: number | null;
 }
 
 const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
@@ -64,7 +62,6 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     visitDate: new Date(),
     rating: null,
     category: null,
-    walkabilityScore: null
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -110,8 +107,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           visitDate: new Date(),
           rating: null,
           category: null,
-          walkabilityScore: null
-        };
+              };
         console.log('🆕 NeighborhoodDialog: Setting new visit:', newVisit);
         setVisit(newVisit);
       }
@@ -137,7 +133,6 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           visitDate: visit.visitDate,
           rating: visit.rating,
           category: visit.category,
-          walkabilityScore: visit.walkabilityScore
         };
         console.log('📤 NeighborhoodDialog: Sending update data:', updateData);
         console.log('🔄 NeighborhoodDialog: Updating existing visit with ID:', visit._id);
@@ -152,7 +147,6 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           visitDate: visit.visitDate,
           rating: visit.rating,
           category: visit.category,
-          walkabilityScore: visit.walkabilityScore
         };
         console.log('📤 NeighborhoodDialog: Sending create data:', createData);
         console.log('🆕 NeighborhoodDialog: Creating new visit');
@@ -200,21 +194,22 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           {neighborhood}, {borough}
         </DialogTitle>
         
-        <DialogContent>
+        <DialogContent sx={{ p: 3 }}>
           {error && (
             <Alert severity="error" className="mb-4">
               {error}
             </Alert>
           )}
           
-          <Box className="space-y-4">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <DatePicker
               label="Visit Date"
               value={visit.visitDate}
               onChange={(date) => setVisit({ ...visit, visitDate: date })}
               slotProps={{
                 textField: {
-                  fullWidth: true
+                  fullWidth: true,
+                  sx: { mt: 2 }
                 }
               }}
             />
@@ -229,7 +224,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
               </Button>
             </Box>
 
-            {visit.category && visit.rating && (
+            {visit.category && visit.rating !== null && visit.rating !== undefined && (
               <Box>
                 <Typography variant="body1" className="mb-2">
                   <strong>Category:</strong> {visit.category} • <strong>Score:</strong> {visit.rating.toFixed(1)}/10.0
@@ -239,32 +234,6 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
                 </Typography>
               </Box>
             )}
-        
-        
-        <Box>
-          <Typography component="legend" gutterBottom>
-            Walkability Score: {visit.walkabilityScore || 0}/100
-          </Typography>
-          <Slider
-            value={visit.walkabilityScore || 0}
-            onChange={(_, newValue) => setVisit({ ...visit, walkabilityScore: newValue as number })}
-            min={0}
-            max={100}
-            step={5}
-            marks={[
-              { value: 0, label: '0' },
-              { value: 25, label: '25' },
-              { value: 50, label: '50' },
-              { value: 75, label: '75' },
-              { value: 100, label: '100' }
-            ]}
-            valueLabelDisplay="auto"
-            sx={{ mt: 1, mb: 2 }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            Rate how walkable this neighborhood is (0 = not walkable, 100 = very walkable)
-          </Typography>
-        </Box>
         
         <TextField
           fullWidth
@@ -278,7 +247,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           </Box>
         </DialogContent>
         
-        <DialogActions>
+        <DialogActions sx={{ p: 3, pt: 2 }}>
           {visit._id && (
             <Button onClick={handleDelete} color="error" disabled={loading}>
               Unvisit
