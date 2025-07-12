@@ -17,6 +17,7 @@ import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import NeighborhoodsPage from './pages/NeighborhoodsPage';
 import CountriesPage from './pages/CountriesPage';
+import UserDashboard from './pages/UserDashboard';
 
 const theme = createTheme({
   palette: {
@@ -57,7 +58,8 @@ const Navigation: React.FC = () => {
                 '& .MuiTabs-indicator': { backgroundColor: 'white' }
               }}
             >
-              <Tab label="NYC Neighborhoods" value="/" />
+              <Tab label="Dashboard" value="/" />
+              <Tab label="NYC Neighborhoods" value="/neighborhoods" />
               <Tab label="Countries" value="/countries" />
             </Tabs>
             <Box className="flex items-center gap-4">
@@ -80,7 +82,8 @@ const MainApp: React.FC = () => {
     <Box className="h-screen flex flex-col" sx={{ overflow: 'hidden' }}>
       <Navigation />
       <Routes>
-        <Route path="/" element={<NeighborhoodsPage />} />
+        <Route path="/" element={<UserDashboard />} />
+        <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
         <Route path="/countries" element={<CountriesPage />} />
       </Routes>
     </Box>
