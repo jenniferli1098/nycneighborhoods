@@ -17,6 +17,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/visits', require('./routes/visits'));
 app.use('/api/neighborhoods', require('./routes/neighborhoods'));
 app.use('/api/boroughs', require('./routes/boroughs'));
+app.use('/api/countries', require('./routes/countries'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'NYC Neighborhoods API is running' });

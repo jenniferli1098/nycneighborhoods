@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Visit = require('../models/Visit');
 const Neighborhood = require('../models/Neighborhood');
+const Country = require('../models/Country');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -22,37 +23,86 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { neighborhoodName, boroughName, visited, notes, visitDate, rating, category } = req.body;
+    const { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, rating, category } = req.body;
 
     console.log('🆕 POST /visits: Creating visit for user:', req.user._id.toString());
-    console.log('📍 POST /visits: Request data:', { neighborhoodName, boroughName, visited, notes, visitDate, rating, category });
+    console.log('📍 POST /visits: Request data:', { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, rating, category });
 
-    // Find the borough first, then the neighborhood
-    console.log('🔍 POST /visits: Looking up borough:', boroughName);
-    const borough = await mongoose.model('Borough').findOne({ name: boroughName });
-    if (!borough) {
-      console.error('❌ POST /visits: Borough not found:', boroughName);
-      return res.status(404).json({ error: 'Borough not found' });
+    if (!visitType || !['neighborhood', 'country'].includes(visitType)) {
+      return res.status(400).json({ error: 'visitType must be either "neighborhood" or "country"' });
     }
-    console.log('✅ POST /visits: Found borough:', { id: borough._id, name: borough.name });
 
-    console.log('🔍 POST /visits: Looking up neighborhood:', neighborhoodName, 'in borough:', borough._id);
-    const neighborhood = await Neighborhood.findOne({ 
-      name: neighborhoodName,
-      boroughId: borough._id.toString()
-    });
+    let locationId, existingVisit, visitData;
 
-    if (!neighborhood) {
-      console.error('❌ POST /visits: Neighborhood not found:', neighborhoodName, 'in borough:', boroughName);
-      return res.status(404).json({ error: 'Neighborhood not found' });
+    if (visitType === 'neighborhood') {
+      // Find the borough first, then the neighborhood
+      console.log('🔍 POST /visits: Looking up borough:', boroughName);
+      const borough = await mongoose.model('Borough').findOne({ name: boroughName });
+      if (!borough) {
+        console.error('❌ POST /visits: Borough not found:', boroughName);
+        return res.status(404).json({ error: 'Borough not found' });
+      }
+      console.log('✅ POST /visits: Found borough:', { id: borough._id, name: borough.name });
+
+      console.log('🔍 POST /visits: Looking up neighborhood:', neighborhoodName, 'in borough:', borough._id);
+      const neighborhood = await Neighborhood.findOne({ 
+        name: neighborhoodName,
+        boroughId: borough._id.toString()
+      });
+
+      if (!neighborhood) {
+        console.error('❌ POST /visits: Neighborhood not found:', neighborhoodName, 'in borough:', boroughName);
+        return res.status(404).json({ error: 'Neighborhood not found' });
+      }
+      console.log('✅ POST /visits: Found neighborhood:', { id: neighborhood._id, name: neighborhood.name, boroughId: neighborhood.boroughId });
+      
+      locationId = neighborhood._id.toString();
+      existingVisit = await Visit.findOne({ 
+        userId: req.user._id.toString(), 
+        neighborhoodId: locationId,
+        visitType: 'neighborhood'
+      });
+      
+      visitData = {
+        userId: req.user._id.toString(),
+        neighborhoodId: locationId,
+        visitType: 'neighborhood',
+        visited,
+        notes,
+        visitDate,
+        rating,
+        category
+      };
+    } else if (visitType === 'country') {
+      // Find the country
+      console.log('🔍 POST /visits: Looking up country:', countryName);
+      const country = await Country.findOne({ name: countryName });
+      if (!country) {
+        console.error('❌ POST /visits: Country not found:', countryName);
+        return res.status(404).json({ error: 'Country not found' });
+      }
+      console.log('✅ POST /visits: Found country:', { id: country._id, name: country.name, continent: country.continent });
+      
+      locationId = country._id.toString();
+      existingVisit = await Visit.findOne({ 
+        userId: req.user._id.toString(), 
+        countryId: locationId,
+        visitType: 'country'
+      });
+      
+      visitData = {
+        userId: req.user._id.toString(),
+        countryId: locationId,
+        visitType: 'country',
+        visited,
+        notes,
+        visitDate,
+        rating,
+        category
+      };
     }
-    console.log('✅ POST /visits: Found neighborhood:', { id: neighborhood._id, name: neighborhood.name, boroughId: neighborhood.boroughId });
 
-    console.log('🔍 POST /visits: Checking for existing visit for user:', req.user._id.toString(), 'neighborhood:', neighborhood._id.toString());
-    const existingVisit = await Visit.findOne({ 
-      userId: req.user._id.toString(), 
-      neighborhoodId: neighborhood._id.toString()
-    });
+    console.log('🔍 POST /visits: Checking for existing visit for user:', req.user._id.toString(), 'location:', locationId);
 
     if (existingVisit) {
       console.log('🔄 POST /visits: Updating existing visit:', existingVisit._id);
@@ -68,17 +118,9 @@ router.post('/', auth, async (req, res) => {
     }
 
     console.log('🆕 POST /visits: Creating new visit');
-    const visit = new Visit({
-      userId: req.user._id.toString(),
-      neighborhoodId: neighborhood._id.toString(),
-      visited,
-      notes,
-      visitDate,
-      rating,
-      category,
-    });
+    const visit = new Visit(visitData);
 
-    console.log('💾 POST /visits: Saving new visit:', { userId: visit.userId, neighborhoodId: visit.neighborhoodId, visited: visit.visited });
+    console.log('💾 POST /visits: Saving new visit:', { userId: visit.userId, visitType: visit.visitType, visited: visit.visited });
 
     await visit.save();
     console.log('✅ POST /visits: Created new visit successfully:', visit._id);
@@ -148,6 +190,29 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// Get visits by type
+router.get('/type/:visitType', auth, async (req, res) => {
+  try {
+    const { visitType } = req.params;
+    
+    if (!['neighborhood', 'country'].includes(visitType)) {
+      return res.status(400).json({ error: 'visitType must be either "neighborhood" or "country"' });
+    }
+    
+    console.log(`📡 GET /visits/type/${visitType}: Fetching ${visitType} visits for user:`, req.user._id.toString());
+    const visits = await Visit.find({ 
+      userId: req.user._id.toString(),
+      visitType: visitType
+    }).sort({ updatedAt: -1 });
+    
+    console.log(`📝 GET /visits/type/${visitType}: Found`, visits.length, 'visits');
+    res.json(visits);
+  } catch (error) {
+    console.error(`❌ GET /visits/type: Error fetching ${req.params.visitType} visits:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get user's visit statistics
 router.get('/stats', auth, async (req, res) => {
   try {
@@ -157,6 +222,34 @@ router.get('/stats', auth, async (req, res) => {
     res.json(stats);
   } catch (error) {
     console.error('❌ GET /visits/stats: Stats error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get neighborhood popularity
+router.get('/popularity/neighborhoods', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    console.log('📊 GET /visits/popularity/neighborhoods: Fetching top', limit, 'neighborhoods');
+    const popularity = await Visit.getNeighborhoodPopularity(limit);
+    console.log('📈 GET /visits/popularity/neighborhoods: Generated popularity:', popularity);
+    res.json(popularity);
+  } catch (error) {
+    console.error('❌ GET /visits/popularity/neighborhoods: Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get country popularity
+router.get('/popularity/countries', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    console.log('📊 GET /visits/popularity/countries: Fetching top', limit, 'countries');
+    const popularity = await Visit.getCountryPopularity(limit);
+    console.log('📈 GET /visits/popularity/countries: Generated popularity:', popularity);
+    res.json(popularity);
+  } catch (error) {
+    console.error('❌ GET /visits/popularity/countries: Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
