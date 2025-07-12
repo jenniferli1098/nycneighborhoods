@@ -60,9 +60,8 @@ visitSchema.pre('validate', function() {
   }
 });
 
-// Compound indexes for unique visits
-visitSchema.index({ userId: 1, neighborhoodId: 1 }, { unique: true, sparse: true });
-visitSchema.index({ userId: 1, countryId: 1 }, { unique: true, sparse: true });
+// Compound index for unique visits (either neighborhoodId or countryId will be non-null)
+visitSchema.index({ userId: 1, neighborhoodId: 1, countryId: 1 }, { unique: true, sparse: true });
 visitSchema.index({ neighborhoodId: 1 });
 visitSchema.index({ countryId: 1 });
 visitSchema.index({ userId: 1 });

@@ -151,6 +151,7 @@ router.put('/:id', auth, async (req, res) => {
 
     console.log('✅ PUT /visits: Found visit to update:', { id: visit._id, neighborhoodId: visit.neighborhoodId, currentVisited: visit.visited });
 
+    console.log(visit)
     visit.visited = visited;
     visit.notes = notes;
     visit.visitDate = visitDate;

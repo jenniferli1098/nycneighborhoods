@@ -40,7 +40,7 @@ const Navigation: React.FC = () => {
   };
 
   return (
-    <AppBar position="static" sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)' }}>
+    <AppBar position="sticky" sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)', top: 0, zIndex: 1100 }}>
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
           Travel Bucket List

@@ -1,20 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Typography,
-  Box,
-  Alert
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import axios from 'axios';
-import RankingDialog from './RankingDialog';
+import { visitsApi } from '../services/visitsApi';
+import BaseVisitDialog from './shared/BaseVisitDialog';
+import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
+import RankingDialog, { type RankableEntity } from './RankingDialog';
 
 
 interface NeighborhoodDialogProps {
@@ -29,17 +17,12 @@ interface NeighborhoodDialogProps {
   boroughs?: any[];
 }
 
-interface Visit {
+interface Visit extends BaseVisit {
   _id?: string;
   userId?: string;
   neighborhoodId?: string;
   neighborhood?: string; // For form display only
   borough?: string; // For form display only
-  visited: boolean;
-  notes: string;
-  visitDate: Date | null;
-  rating: number | null;
-  category?: 'Bad' | 'Mid' | 'Good' | null;
 }
 
 const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
@@ -76,10 +59,10 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   const fetchVisit = async () => {
     try {
       console.log('🔍 NeighborhoodDialog: Fetching visits for', neighborhood, borough, 'with ID:', neighborhoodId);
-      const response = await axios.get('/api/visits');
-      console.log('📝 NeighborhoodDialog: Received visits data:', response.data);
+      const visits = await visitsApi.getAllVisits();
+      console.log('📝 NeighborhoodDialog: Received visits data:', visits);
       
-      const existingVisit = response.data.find(
+      const existingVisit = visits.find(
         (v: any) => {
           console.log('🔍 NeighborhoodDialog: Comparing visit neighborhoodId:', v.neighborhoodId, 'with:', neighborhoodId);
           return v.neighborhoodId === neighborhoodId;
@@ -130,13 +113,13 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         const updateData = {
           visited: true,
           notes: visit.notes,
-          visitDate: visit.visitDate,
+          visitDate: visit.visitDate ? visit.visitDate.toISOString() : undefined,
           rating: visit.rating,
           category: visit.category,
         };
         console.log('📤 NeighborhoodDialog: Sending update data:', updateData);
         console.log('🔄 NeighborhoodDialog: Updating existing visit with ID:', visit._id);
-        await axios.put(`/api/visits/${visit._id}`, updateData);
+        await visitsApi.updateVisit(visit._id, updateData);
       } else {
         // POST request - send lookup fields to find/create neighborhood
         const createData = {
@@ -144,13 +127,13 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           boroughName: borough,
           visited: true,
           notes: visit.notes,
-          visitDate: visit.visitDate,
+          visitDate: visit.visitDate || undefined,
           rating: visit.rating,
           category: visit.category,
         };
         console.log('📤 NeighborhoodDialog: Sending create data:', createData);
         console.log('🆕 NeighborhoodDialog: Creating new visit');
-        await axios.post('/api/visits', createData);
+        await visitsApi.createNeighborhoodVisit(createData);
       }
       
       console.log('✅ NeighborhoodDialog: Save successful, calling onSave callback');
@@ -173,7 +156,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     setError('');
 
     try {
-      await axios.delete(`/api/visits/${visit._id}`);
+      await visitsApi.deleteVisit(visit._id);
       onSave();
       onClose();
     } catch (err: any) {
@@ -187,91 +170,48 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     setVisit({ ...visit, category, rating });
   };
 
-  return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {neighborhood}, {borough}
-        </DialogTitle>
-        
-        <DialogContent sx={{ p: 3 }}>
-          {error && (
-            <Alert severity="error" className="mb-4">
-              {error}
-            </Alert>
-          )}
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <DatePicker
-              label="Visit Date"
-              value={visit.visitDate}
-              onChange={(date) => setVisit({ ...visit, visitDate: date })}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  sx: { mt: 2 }
-                }
-              }}
-            />
-            
-            <Box className="flex gap-2 mb-4">
-              <Button
-                variant="contained"
-                onClick={() => setShowRanking(true)}
-                fullWidth
-              >
-                Rank
-              </Button>
-            </Box>
+  const handleVisitChange = (updates: Partial<BaseVisit>) => {
+    setVisit({ ...visit, ...updates });
+  };
 
-            {visit.category && visit.rating !== null && visit.rating !== undefined && (
-              <Box>
-                <Typography variant="body1" className="mb-2">
-                  <strong>Category:</strong> {visit.category} • <strong>Score:</strong> {visit.rating.toFixed(1)}/10.0
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Use the "Rank" button above to change this rating
-                </Typography>
-              </Box>
-            )}
-        
-        <TextField
-          fullWidth
-          label="Notes"
-          multiline
-          rows={4}
-          value={visit.notes}
-          onChange={(e) => setVisit({ ...visit, notes: e.target.value })}
-          placeholder="What did you do? What did you like? Any recommendations?"
+  const entity: RankableEntity = {
+    name: neighborhood,
+    location: borough
+  };
+
+  return (
+    <>
+      <BaseVisitDialog
+        open={open}
+        onClose={onClose}
+        title={`${neighborhood}, ${borough}`}
+        loading={loading}
+        error={error}
+        onSave={handleSave}
+        onDelete={visit._id ? handleDelete : undefined}
+        saveButtonText="Save"
+        deleteButtonText="Unvisit"
+        showDeleteButton={!!visit._id}
+      >
+        <VisitFormFields
+          visit={visit}
+          onVisitChange={handleVisitChange}
+          showRankingButton={true}
+          onRankingClick={() => setShowRanking(true)}
+          ratingButtonText="Rank"
         />
-          </Box>
-        </DialogContent>
-        
-        <DialogActions sx={{ p: 3, pt: 2 }}>
-          {visit._id && (
-            <Button onClick={handleDelete} color="error" disabled={loading}>
-              Unvisit
-            </Button>
-          )}
-          <Button onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} variant="contained" disabled={loading}>
-            {loading ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </BaseVisitDialog>
 
       <RankingDialog
         open={showRanking}
         onClose={() => setShowRanking(false)}
-        neighborhood={{ name: neighborhood, borough }}
+        entity={entity}
         existingVisits={existingVisits}
         neighborhoods={neighborhoods}
         boroughs={boroughs}
         onRankingComplete={handleRankingComplete}
       />
-    </LocalizationProvider>
+    </>
   );
 };
 

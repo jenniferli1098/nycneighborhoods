@@ -15,23 +15,32 @@ import {
   StepLabel
 } from '@mui/material';
 
+export interface RankableEntity {
+  name: string;
+  location: string;
+}
+
 interface RankingDialogProps {
   open: boolean;
   onClose: () => void;
-  neighborhood: { name: string; borough: string };
+  entity: RankableEntity;
   existingVisits: any[];
-  neighborhoods: any[];
-  boroughs: any[];
+  neighborhoods?: any[];
+  boroughs?: any[];
+  countries?: any[];
+  continents?: any[];
   onRankingComplete: (category: 'Bad' | 'Mid' | 'Good', rating: number) => void;
 }
 
 const RankingDialog: React.FC<RankingDialogProps> = ({
   open,
   onClose,
-  neighborhood,
+  entity,
   existingVisits,
-  neighborhoods,
-  boroughs,
+  neighborhoods = [],
+  boroughs = [],
+  countries = [],
+  continents = [],
   onRankingComplete
 }) => {
   const [step, setStep] = useState(0);
@@ -61,27 +70,55 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
   };
 
   const getComparisonsInCategory = (category: 'Bad' | 'Mid' | 'Good') => {
-    // Create lookup maps for neighborhoods and boroughs
+    // Create lookup maps for both neighborhoods/boroughs and countries/continents
     const neighborhoodMap = new Map(neighborhoods.map(n => [n._id, n]));
     const boroughMap = new Map(boroughs.map(b => [b._id, b]));
+    const countryMap = new Map(countries.map(c => [c._id, c]));
+    const continentMap = new Map(continents.map(c => [c._id, c]));
     
     return existingVisits
       .filter(v => v.visited && v.category === category && v.rating != null)
       .map(v => {
-        // Look up neighborhood and borough info
-        const neighborhoodData = neighborhoodMap.get(v.neighborhoodId);
-        const boroughData = neighborhoodData ? boroughMap.get(neighborhoodData.boroughId) : null;
-        
-        return {
-          _id: v.neighborhoodId || v._id,
-          name: neighborhoodData?.name || 'Unknown',
-          borough: boroughData?.name || 'Unknown',
-          rating: v.rating,
-          category: v.category,
-          notes: v.notes
-        };
+        // Check if this is a neighborhood or country visit
+        if (v.neighborhoodId) {
+          // Neighborhood visit
+          const neighborhoodData = neighborhoodMap.get(v.neighborhoodId);
+          const boroughData = neighborhoodData ? boroughMap.get(neighborhoodData.boroughId) : null;
+          
+          return {
+            _id: v.neighborhoodId,
+            name: neighborhoodData?.name || 'Unknown',
+            location: boroughData?.name || 'Unknown',
+            rating: v.rating,
+            category: v.category,
+            notes: v.notes
+          };
+        } else if (v.countryId) {
+          // Country visit
+          const countryData = countryMap.get(v.countryId);
+          const continentData = countryData ? continentMap.get(countryData.continentId) : null;
+          
+          return {
+            _id: v.countryId,
+            name: countryData?.name || 'Unknown',
+            location: continentData?.name || countryData?.continent || 'Unknown',
+            rating: v.rating,
+            category: v.category,
+            notes: v.notes
+          };
+        } else {
+          // Fallback for any other visit type
+          return {
+            _id: v._id,
+            name: 'Unknown',
+            location: 'Unknown',
+            rating: v.rating,
+            category: v.category,
+            notes: v.notes
+          };
+        }
       })
-      .filter(comp => comp.name !== neighborhood.name || comp.borough !== neighborhood.borough) // Remove current neighborhood if it exists
+      .filter(comp => comp.name !== entity.name || comp.location !== entity.location) // Remove current entity if it exists
       .sort((a, b) => b.rating - a.rating);
   };
 
@@ -92,7 +129,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     setSortedComparisons(comparisons.sort((a, b) => b.rating - a.rating)); // Sort descending (best first) for comparison
     
     if (comparisons.length === 0) {
-      // No existing neighborhoods in this category, go directly to final step
+      // No existing items in this category, go directly to final step
       const midpoint = getCategoryMidpoint(category);
       setSelectedRating(midpoint);
       setStep(2);
@@ -103,46 +140,46 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     }
   };
 
-  const initializeBinarySearch = (totalNeighborhoods: number) => {
+  const initializeBinarySearch = (totalItems: number) => {
     setBinarySearchState({
       left: 0,
-      right: totalNeighborhoods,
-      currentMid: Math.floor(totalNeighborhoods / 2)
+      right: totalItems,
+      currentMid: Math.floor(totalItems / 2)
     });
-    setComparisonIndex(Math.floor(totalNeighborhoods / 2));
+    setComparisonIndex(Math.floor(totalItems / 2));
   };
 
-  const redistributeRatings = async (allNeighborhoods: any[], newRating: number, insertIndex: number) => {
+  const redistributeRatings = async (allItems: any[], newRating: number, insertIndex: number) => {
     if (!selectedCategory) return { newRating, updates: [] };
     
     const categoryRange = getCategoryRange(selectedCategory);
     const updates = [];
     
-    // Calculate the new rating for the neighborhood being inserted
+    // Calculate the new rating for the item being inserted
     let calculatedNewRating = newRating;
     
-    if (allNeighborhoods.length === 0) {
-      // First neighborhood in category, place at midpoint
+    if (allItems.length === 0) {
+      // First item in category, place at midpoint
       calculatedNewRating = getCategoryMidpoint(selectedCategory);
     } else if (insertIndex === 0) {
       // Better than all existing, place at top of category
       calculatedNewRating = categoryRange.max;
       
-      // Redistribute ALL existing neighborhoods to make room
-      const totalNeighborhoods = allNeighborhoods.length + 1; // +1 for the new one
+      // Redistribute ALL existing items to make room
+      const totalItems = allItems.length + 1; // +1 for the new one
       const span = categoryRange.max - categoryRange.min;
-      const step = span / totalNeighborhoods;
+      const step = span / totalItems;
       
-      // Update all existing neighborhoods with new evenly distributed ratings
-      allNeighborhoods.forEach((neighborhood, index) => {
+      // Update all existing items with new evenly distributed ratings
+      allItems.forEach((item, index) => {
         const newRatingForExisting = categoryRange.max - (step * (index + 1));
         
-        if (Math.abs(neighborhood.rating - newRatingForExisting) > 0.1) {
-          const visit = existingVisits.find(v => v.neighborhoodId === neighborhood._id);
+        if (Math.abs(item.rating - newRatingForExisting) > 0.1) {
+          const visit = existingVisits.find(v => v.neighborhoodId === item._id || v.countryId === item._id);
           if (visit) {
             updates.push({
               visitId: visit._id,
-              neighborhoodId: neighborhood._id,
+              entityId: item._id,
               oldRating: visit.rating,
               newRating: newRatingForExisting,
               category: selectedCategory
@@ -150,25 +187,25 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
           }
         }
       });
-    } else if (insertIndex === allNeighborhoods.length) {
+    } else if (insertIndex === allItems.length) {
       // Worse than all existing, place at bottom of category
       calculatedNewRating = categoryRange.min;
       
-      // Redistribute ALL existing neighborhoods to make room
-      const totalNeighborhoods = allNeighborhoods.length + 1; // +1 for the new one
+      // Redistribute ALL existing items to make room
+      const totalItems = allItems.length + 1; // +1 for the new one
       const span = categoryRange.max - categoryRange.min;
-      const step = span / totalNeighborhoods;
+      const step = span / totalItems;
       
-      // Update all existing neighborhoods with new evenly distributed ratings
-      allNeighborhoods.forEach((neighborhood, index) => {
+      // Update all existing items with new evenly distributed ratings
+      allItems.forEach((item, index) => {
         const newRatingForExisting = categoryRange.min + (step * (index + 1));
         
-        if (Math.abs(neighborhood.rating - newRatingForExisting) > 0.1) {
-          const visit = existingVisits.find(v => v.neighborhoodId === neighborhood._id);
+        if (Math.abs(item.rating - newRatingForExisting) > 0.1) {
+          const visit = existingVisits.find(v => v.neighborhoodId === item._id || v.countryId === item._id);
           if (visit) {
             updates.push({
               visitId: visit._id,
-              neighborhoodId: neighborhood._id,
+              entityId: item._id,
               oldRating: visit.rating,
               newRating: newRatingForExisting,
               category: selectedCategory
@@ -177,9 +214,9 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
         }
       });
     } else {
-      // Between two neighborhoods - place in the middle
-      const upperRating = allNeighborhoods[insertIndex - 1].rating;
-      const lowerRating = allNeighborhoods[insertIndex].rating;
+      // Between two items - place in the middle
+      const upperRating = allItems[insertIndex - 1].rating;
+      const lowerRating = allItems[insertIndex].rating;
       calculatedNewRating = (upperRating + lowerRating) / 2;
     }
     
@@ -188,17 +225,17 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     
     // Update neighbor above (if exists and there's a non-adjacent neighbor above it)
     if (insertIndex > 0 && insertIndex > 1) {
-      const adjacentAbove = allNeighborhoods[insertIndex - 1]; // B in example
-      const nonAdjacentAbove = allNeighborhoods[insertIndex - 2]; // A in example
+      const adjacentAbove = allItems[insertIndex - 1]; // B in example
+      const nonAdjacentAbove = allItems[insertIndex - 2]; // A in example
       
       const newRatingForAdjacent = (nonAdjacentAbove.rating + calculatedNewRating) / 2;
       
       if (Math.abs(adjacentAbove.rating - newRatingForAdjacent) > 0.1) {
-        const visit = existingVisits.find(v => v.neighborhoodId === adjacentAbove._id);
+        const visit = existingVisits.find(v => v.neighborhoodId === adjacentAbove._id || v.countryId === adjacentAbove._id);
         if (visit) {
           updates.push({
             visitId: visit._id,
-            neighborhoodId: adjacentAbove._id,
+            entityId: adjacentAbove._id,
             oldRating: visit.rating,
             newRating: newRatingForAdjacent,
             category: selectedCategory
@@ -208,18 +245,18 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     }
     
     // Update neighbor below (if exists and there's a non-adjacent neighbor below it)
-    if (insertIndex < allNeighborhoods.length && insertIndex < allNeighborhoods.length - 1) {
-      const adjacentBelow = allNeighborhoods[insertIndex]; // C in example
-      const nonAdjacentBelow = allNeighborhoods[insertIndex + 1]; // D in example
+    if (insertIndex < allItems.length && insertIndex < allItems.length - 1) {
+      const adjacentBelow = allItems[insertIndex]; // C in example
+      const nonAdjacentBelow = allItems[insertIndex + 1]; // D in example
       
       const newRatingForAdjacent = (calculatedNewRating + nonAdjacentBelow.rating) / 2;
       
       if (Math.abs(adjacentBelow.rating - newRatingForAdjacent) > 0.1) {
-        const visit = existingVisits.find(v => v.neighborhoodId === adjacentBelow._id);
+        const visit = existingVisits.find(v => v.neighborhoodId === adjacentBelow._id || v.countryId === adjacentBelow._id);
         if (visit) {
           updates.push({
             visitId: visit._id,
-            neighborhoodId: adjacentBelow._id,
+            entityId: adjacentBelow._id,
             oldRating: visit.rating,
             newRating: newRatingForAdjacent,
             category: selectedCategory
@@ -243,11 +280,11 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     let newRight = right;
     
     if (better) {
-      // New neighborhood is better than current comparison
+      // New item is better than current comparison
       // Search in the left half (since array is sorted descending - best first)
       newRight = currentMid;
     } else {
-      // New neighborhood is worse than current comparison
+      // New item is worse than current comparison
       // Search in the right half (since array is sorted descending - worst last)
       newLeft = currentMid + 1;
     }
@@ -320,7 +357,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
       <DialogTitle>
         <Box>
           <Typography variant="h6">
-            Rank {neighborhood.name}, {neighborhood.borough}
+            Rank {entity.name}, {entity.location}
           </Typography>
           <Box className="mt-2">
             <Stepper activeStep={step} alternativeLabel>
@@ -338,7 +375,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
         {step === 0 && (
           <Box>
             <Typography variant="h6" className="mb-4">
-              How would you categorize this neighborhood?
+              How would you categorize this?
             </Typography>
             
             <Box className="space-y-3">
@@ -353,7 +390,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                         Bad (0.0 - 3.0)
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Neighborhoods you didn't enjoy or wouldn't recommend
+                        Places you didn't enjoy or wouldn't recommend
                       </Typography>
                     </Box>
                     <Chip label="0.0 - 3.0" color="error" variant="outlined" />
@@ -372,7 +409,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                         Mid (3.1 - 7.0)
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Decent neighborhoods - nothing special but not bad
+                        Decent places - nothing special but not bad
                       </Typography>
                     </Box>
                     <Chip label="3.1 - 7.0" color="warning" variant="outlined" />
@@ -391,7 +428,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                         Good (7.1 - 10.0)
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Neighborhoods you loved and would highly recommend
+                        Places you loved and would highly recommend
                       </Typography>
                     </Box>
                     <Chip label="7.1 - 10.0" color="success" variant="outlined" />
@@ -405,11 +442,11 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
         {step === 1 && selectedCategory && sortedComparisons.length > 0 && (
           <Box>
             <Typography variant="h6" className="mb-4">
-              How does {neighborhood.name} compare?
+              How does {entity.name} compare?
             </Typography>
             
             <Typography variant="body1" className="mb-6 text-center">
-              Comparing with {sortedComparisons[comparisonIndex]?.name}, {sortedComparisons[comparisonIndex]?.borough}
+              Comparing with {sortedComparisons[comparisonIndex]?.name}, {sortedComparisons[comparisonIndex]?.location}
             </Typography>
 
             <Typography variant="body1" className="mb-4 text-center">
@@ -434,14 +471,14 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
               >
                 <CardContent className="text-center">
                   <Typography variant="h6" className="mb-2">
-                    {neighborhood.name}
+                    {entity.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" className="mb-2">
-                    {neighborhood.borough}
+                    {entity.location}
                   </Typography>
                   <Chip label="?" color="secondary" variant="outlined" />
                   <Typography variant="caption" color="text.secondary" className="mt-2 block">
-                    New neighborhood to rank
+                    New item to rank
                   </Typography>
                 </CardContent>
               </Card>
@@ -472,7 +509,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                     {sortedComparisons[comparisonIndex]?.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" className="mb-2">
-                    {sortedComparisons[comparisonIndex]?.borough}
+                    {sortedComparisons[comparisonIndex]?.location}
                   </Typography>
                   <Chip 
                     label={sortedComparisons[comparisonIndex]?.rating.toFixed(1)} 
@@ -507,7 +544,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                 {selectedRating.toFixed(1)}
               </Typography>
               <Typography variant="body1" className="mb-2">
-                {neighborhood.name}, {neighborhood.borough}
+                {entity.name}, {entity.location}
               </Typography>
               <Chip label={selectedCategory} color="primary" />
             </Box>
@@ -515,10 +552,10 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
             {sortedComparisons.length > 0 && (
               <Box>
                 <Typography variant="subtitle1" className="mb-3">
-                  Your {selectedCategory} neighborhoods ranking:
+                  Your {selectedCategory} ranking:
                 </Typography>
                 <Box className="space-y-2 max-h-60 overflow-y-auto">
-                  {[...sortedComparisons, { name: neighborhood.name, borough: neighborhood.borough, rating: selectedRating, _id: 'new' }]
+                  {[...sortedComparisons, { name: entity.name, location: entity.location, rating: selectedRating, _id: 'new' }]
                     .sort((a, b) => b.rating - a.rating)
                     .map((comp, index) => (
                       <Card 
@@ -533,7 +570,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                                 #{index + 1}
                               </Typography>
                               <Typography variant="body2" className={comp._id === 'new' ? 'font-bold' : ''}>
-                                {comp.name}, {comp.borough}
+                                {comp.name}, {comp.location}
                                 {comp._id === 'new' && ' (New)'}
                               </Typography>
                             </Box>

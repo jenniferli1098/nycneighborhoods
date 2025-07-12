@@ -22,7 +22,6 @@ import CountryDialog from '../components/CountryDialog';
 const CountriesPage: React.FC = () => {
   const { user } = useAuth();
   const [countries, setCountries] = useState<Country[]>([]);
-  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
   const [geoJsonCountries, setGeoJsonCountries] = useState<any[]>([]);
   const [continents, setContinents] = useState<string[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -43,10 +42,6 @@ const CountriesPage: React.FC = () => {
       fetchCountryVisits();
     }
   }, [user]);
-
-  useEffect(() => {
-    filterCountries();
-  }, [countries, searchQuery, selectedContinent]);
 
   const loadCountries = async () => {
     try {
@@ -96,7 +91,7 @@ const CountriesPage: React.FC = () => {
     }
   };
 
-  const filterCountries = () => {
+  const getFilteredCountries = () => {
     let filtered = [...countries];
 
     // Filter by search query
@@ -112,12 +107,12 @@ const CountriesPage: React.FC = () => {
       filtered = filtered.filter(country => country.continent === selectedContinent);
     }
 
-    setFilteredCountries(filtered);
+    return filtered;
   };
 
 
   const getVisitedCountryIds = () => {
-    return new Set(visits.filter(v => v.visited && v.countryId).map(v => v.countryId));
+    return new Set(visits.filter(v => v.visited && v.countryId).map(v => v.countryId!));
   };
 
   const getCountryStats = () => {
@@ -158,7 +153,7 @@ const CountriesPage: React.FC = () => {
 
       // Only create new visit if none exists
       const visitData = {
-        countryId: country._id,
+        countryName: country.name,
         visited: true,
         notes: '',
         visitDate: new Date(),
@@ -279,7 +274,7 @@ const CountriesPage: React.FC = () => {
           visitedCountries={visitedCountryIds}
           onCountryClick={handleCountryClick}
           onCountryQuickVisit={handleCountryQuickVisit}
-          availableCountries={countries}
+          availableCountries={getFilteredCountries()}
         />
       </Box>
 
@@ -290,6 +285,8 @@ const CountriesPage: React.FC = () => {
           country={selectedCountry}
           onSave={handleSaveVisit}
           existingVisits={visits}
+          countries={countries}
+          continents={continents}
         />
       )}
     </Box>

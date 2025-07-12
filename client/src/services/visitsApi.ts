@@ -26,7 +26,7 @@ export interface CreateNeighborhoodVisitData {
 }
 
 export interface CreateCountryVisitData {
-  countryId: string;
+  countryName: string;
   visited: boolean;
   notes?: string;
   visitDate?: Date;
