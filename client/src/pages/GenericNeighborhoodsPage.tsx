@@ -51,7 +51,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       
       if (mapConfig.hasDbNeighborhoods) {
         // Load from cache for maps that have neighborhood data
-        neighborhoods = await neighborhoodCache.getNeighborhoods(mapConfig.apiFilters?.city);
+        const cityFilter = mapConfig.apiFilters?.city;
+        neighborhoods = await neighborhoodCache.getNeighborhoods(cityFilter);
       } else {
         // For GeoJSON-only maps, we'll create empty array and handle in-memory
         console.log(`📝 ${mapConfig.name}: Using GeoJSON-only mode, no database neighborhoods`);
@@ -85,10 +86,17 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       
       if (mapConfig.categoryType === 'borough') {
         // Load boroughs from cache
-        boroughs = await neighborhoodCache.getBoroughs(mapConfig.apiFilters?.city);
+        const cityFilter = mapConfig.apiFilters?.city;
+        boroughs = await neighborhoodCache.getBoroughs(cityFilter);
       } else if (mapConfig.categoryType === 'city') {
-        // For city-based maps, we'll create virtual boroughs from GeoJSON data
-        console.log(`📝 ${mapConfig.name}: Using city-based categorization, will create virtual ${mapConfig.categoryType}s`);
+        // For city-based maps, load cities but put them in boroughs array for compatibility
+        console.log(`📝 ${mapConfig.name}: Loading cities for city-based categorization`);
+        const cities = await neighborhoodCache.getCities('Massachusetts');
+        boroughs = cities.map(city => ({
+          id: city.id,
+          name: city.name,
+          city: city.name // Required field for CachedBorough
+        }));
       }
       
       console.log(`📝 ${mapConfig.name}: Received ${mapConfig.categoryType}s data:`, boroughs.length, `${mapConfig.categoryType}s`);
@@ -142,7 +150,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       console.log(`🔍 ${mapConfig.name}: ${mapConfig.categoryType} mapping size:`, categoryIdToName.size);
       
       const neighborhoodData = neighborhoods.find(n => {
-        const mappedCategory = categoryIdToName.get(n.boroughId || '');
+        const categoryId = mapConfig.categoryType === 'borough' ? n.boroughId : n.cityId;
+        const mappedCategory = categoryIdToName.get(categoryId || '');
         console.log(`🔍 ${mapConfig.name}: Comparing "${n.name}" === "${neighborhood}" && "${mappedCategory}" === "${category}"`);
         return n.name === neighborhood && mappedCategory === category;
       });
@@ -156,7 +165,10 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         });
       } else {
         console.error(`❌ ${mapConfig.name}: Could not find neighborhood ID for:`, neighborhood, category);
-        console.log(`📋 ${mapConfig.name}: Available neighborhoods sample:`, neighborhoods.slice(0, 5).map(n => `${n.name} - ${categoryIdToName.get(n.boroughId || '')}`));
+        console.log(`📋 ${mapConfig.name}: Available neighborhoods sample:`, neighborhoods.slice(0, 5).map(n => {
+          const categoryId = mapConfig.categoryType === 'borough' ? n.boroughId : n.cityId;
+          return `${n.name} - ${categoryIdToName.get(categoryId || '')}`;
+        }));
         console.log(`📋 ${mapConfig.name}: Available ${mapConfig.categoryType}s:`, Array.from(categoryIdToName.values()));
       }
     } else {
@@ -206,9 +218,13 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           return;
         }
 
-        const neighborhood_obj = neighborhoods.find(n => 
-          n.name === neighborhood && n.boroughId === category_obj.id
-        );
+        const neighborhood_obj = neighborhoods.find(n => {
+          if (mapConfig.categoryType === 'borough') {
+            return n.name === neighborhood && n.boroughId === category_obj.id;
+          } else {
+            return n.name === neighborhood && n.cityId === category_obj.id;
+          }
+        });
         if (!neighborhood_obj) {
           console.error(`❌ ${mapConfig.name}: Neighborhood not found:`, neighborhood);
           return;

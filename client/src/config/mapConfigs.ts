@@ -51,12 +51,10 @@ export const mapConfigs: { [key: string]: MapConfig } = {
     center: [42.3601, -71.0589],
     zoom: 12,
     categoryType: 'city',
-    apiFilters: {
-      city: 'Boston' // This could be expanded to include multiple cities
-    },
+    // No apiFilters - load all neighborhoods for Greater Boston Area
     getCategoryFromFeature: (feature) => feature.properties.city,
     getNeighborhoodFromFeature: (feature) => feature.properties.name,
-    hasDbNeighborhoods: false, // Boston neighborhoods are GeoJSON-only for now
+    hasDbNeighborhoods: true, // Boston neighborhoods exist in database
     categoryColors: {
       'Boston': '#FF6B6B',         // Red
       'Cambridge': '#4ECDC4',      // Teal
