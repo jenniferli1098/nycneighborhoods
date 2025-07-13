@@ -8,16 +8,14 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
-  Card,
-  CardContent,
-  Chip
+  InputLabel
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { countriesApi, type Country } from '../services/countriesApi';
 import { visitsApi, type Visit } from '../services/visitsApi';
 import WorldMap from '../components/WorldMap';
 import CountryDialog from '../components/CountryDialog';
+import CountryStatsCard from '../components/CountryStatsCard';
 
 const CountriesPage: React.FC = () => {
   const { user } = useAuth();
@@ -207,64 +205,49 @@ const CountriesPage: React.FC = () => {
   return (
     <Box className="flex-1 flex">
       {/* Left Sidebar - Stats and Filters */}
-      <Box className="w-80 border-r bg-white p-4" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Stats Card */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Countries Progress
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {stats.totalVisited} of {stats.totalCountries} countries visited
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                By Continent:
-              </Typography>
-              {Object.entries(stats.visitedByContinent).map(([continent, count]) => (
-                <Chip
-                  key={continent}
-                  label={`${continent}: ${count}`}
-                  size="small"
-                  sx={{ mr: 1, mb: 1 }}
-                />
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-
-
-        {/* Filters */}
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            fullWidth
-            label="Search Countries"
-            variant="outlined"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ mb: 2 }}
+      <Box className="w-80 border-r bg-white" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ p: 2, flexShrink: 0 }}>
+          <CountryStatsCard 
+            visits={visits}
+            countries={countries}
+            continents={continents}
           />
-          
-          <FormControl fullWidth>
-            <InputLabel>Filter by Continent</InputLabel>
-            <Select
-              value={selectedContinent}
-              label="Filter by Continent"
-              onChange={(e) => setSelectedContinent(e.target.value)}
-            >
-              <MenuItem value="">All Continents</MenuItem>
-              {continents.map(continent => (
-                <MenuItem key={continent} value={continent}>
-                  {continent}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
         </Box>
 
-        <Typography variant="body2" color="text.secondary">
-          {stats.totalVisited} countries visited on map
-        </Typography>
+
+        <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', p: 2 }}>
+          {/* Filters */}
+          <Box sx={{ mb: 3 }}>
+            <TextField
+              fullWidth
+              label="Search Countries"
+              variant="outlined"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            
+            <FormControl fullWidth>
+              <InputLabel>Filter by Continent</InputLabel>
+              <Select
+                value={selectedContinent}
+                label="Filter by Continent"
+                onChange={(e) => setSelectedContinent(e.target.value)}
+              >
+                <MenuItem value="">All Continents</MenuItem>
+                {continents.map(continent => (
+                  <MenuItem key={continent} value={continent}>
+                    {continent}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          <Typography variant="body2" color="text.secondary">
+            {stats.totalVisited} countries visited on map
+          </Typography>
+        </Box>
       </Box>
       
       {/* Main Content Area */}

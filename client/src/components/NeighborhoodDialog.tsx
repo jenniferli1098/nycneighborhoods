@@ -113,7 +113,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
       if (visit._id) {
         // PUT request - only send visit fields (no lookup fields needed)
         const updateData = {
-          visited: true,
+          visited: visit.visited,
           notes: visit.notes,
           visitDate: visit.visitDate ? visit.visitDate.toISOString() : undefined,
           rating: visit.rating,
@@ -127,7 +127,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         const createData = {
           neighborhoodName: neighborhood,
           boroughName: borough,
-          visited: true,
+          visited: visit.visited,
           notes: visit.notes,
           visitDate: visit.visitDate || undefined,
           rating: visit.rating,
