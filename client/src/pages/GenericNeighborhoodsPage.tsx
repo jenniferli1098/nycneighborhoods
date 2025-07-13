@@ -5,32 +5,16 @@ import {
   Alert
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
-import NYCMap from '../components/Map';
-import BostonMap from '../components/BostonMap';
+import GenericMap from '../components/GenericMap';
 import NeighborhoodList from '../components/NeighborhoodList';
 import NeighborhoodDialog from '../components/NeighborhoodDialog';
 import StatsCard from '../components/StatsCard';
-import { neighborhoodsApi, type Neighborhood } from '../services/neighborhoodsApi';
-import { boroughsApi, type Borough } from '../services/boroughsApi';
-import { visitsApi, type Visit } from '../services/visitsApi';
+import { visitsApi } from '../services/visitsApi';
+import type { Visit } from '../services/visitsApi';
 import { neighborhoodCache, type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
+import type { MapConfig } from '../config/mapConfigs';
 
 export type CategoryType = 'borough' | 'city';
-
-export interface MapConfig {
-  name: string;
-  geoJsonEndpoint: () => Promise<any>;
-  mapComponent: 'NYC' | 'Boston';
-  center?: [number, number];
-  zoom?: number;
-  categoryType: CategoryType;
-  apiFilters?: {
-    city?: string;
-  };
-  getCategoryFromFeature: (feature: any) => string;
-  getNeighborhoodFromFeature: (feature: any) => string;
-  hasDbNeighborhoods: boolean;
-}
 
 interface GenericNeighborhoodsPageProps {
   mapConfig: MapConfig;
@@ -158,7 +142,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       console.log(`🔍 ${mapConfig.name}: ${mapConfig.categoryType} mapping size:`, categoryIdToName.size);
       
       const neighborhoodData = neighborhoods.find(n => {
-        const mappedCategory = categoryIdToName.get(n.boroughId);
+        const mappedCategory = categoryIdToName.get(n.boroughId || '');
         console.log(`🔍 ${mapConfig.name}: Comparing "${n.name}" === "${neighborhood}" && "${mappedCategory}" === "${category}"`);
         return n.name === neighborhood && mappedCategory === category;
       });
@@ -172,7 +156,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         });
       } else {
         console.error(`❌ ${mapConfig.name}: Could not find neighborhood ID for:`, neighborhood, category);
-        console.log(`📋 ${mapConfig.name}: Available neighborhoods sample:`, neighborhoods.slice(0, 5).map(n => `${n.name} - ${categoryIdToName.get(n.boroughId)}`));
+        console.log(`📋 ${mapConfig.name}: Available neighborhoods sample:`, neighborhoods.slice(0, 5).map(n => `${n.name} - ${categoryIdToName.get(n.boroughId || '')}`));
         console.log(`📋 ${mapConfig.name}: Available ${mapConfig.categoryType}s:`, Array.from(categoryIdToName.values()));
       }
     } else {
@@ -192,8 +176,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       if (!mapConfig.hasDbNeighborhoods) {
         // For GeoJSON-only maps, create visits directly
         const existingVisit = visits.find(v => 
-          v.neighborhoodName === neighborhood || 
-          (v.neighborhoodId && neighborhoods.find(n => n._id === v.neighborhoodId && n.name === neighborhood))
+          v.neighborhoodId === neighborhood || 
+          (v.neighborhoodId && neighborhoods.find(n => n.id === v.neighborhoodId && n.name === neighborhood))
         );
         
         if (existingVisit) {
@@ -203,7 +187,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
         const visitData = {
           neighborhoodName: neighborhood,
-          boroughName: category, // Use category as borough for API compatibility
+          boroughName: category,
           visited: true,
           notes: '',
           visitDate: new Date(),
@@ -272,7 +256,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     fetchVisits();
   };
 
-  const visitedNeighborhoodIds = new Set(visits.filter(v => v.visited && v.neighborhoodId).map(v => v.neighborhoodId));
+  const visitedNeighborhoodIds = new Set(visits.filter(v => v.visited && v.neighborhoodId).map(v => v.neighborhoodId!));
   console.log(`🏠 ${mapConfig.name}: Visited neighborhood IDs:`, visitedNeighborhoodIds.size, Array.from(visitedNeighborhoodIds));
 
   // Create a set of visited neighborhood names for the map using cache for fast lookups
@@ -316,7 +300,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     );
   }
 
-  const MapComponent = mapConfig.mapComponent === 'Boston' ? BostonMap : NYCMap;
+  // Use GenericMap with configuration from mapConfig
 
   return (
     <Box className="flex-1 flex">
@@ -324,16 +308,16 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       <Box className="w-80 border-r bg-white" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ p: 2, flexShrink: 0 }}>
           <StatsCard 
-            visits={visits}
-            neighborhoods={neighborhoods}
-            boroughs={boroughs}
+            visits={visits as any}
+            neighborhoods={neighborhoods as any}
+            boroughs={boroughs as any}
           />
         </Box>
         <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <NeighborhoodList
-            neighborhoods={neighborhoods}
-            boroughs={boroughs}
-            visits={visits}
+            neighborhoods={neighborhoods as any}
+            boroughs={boroughs as any}
+            visits={visits as any}
             onNeighborhoodClick={handleNeighborhoodClick}
           />
         </Box>
@@ -341,19 +325,19 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       
       {/* Map takes remaining space */}
       <Box className="flex-1">
-        <MapComponent
+        <GenericMap
           neighborhoods={geoJsonNeighborhoods}
           visitedNeighborhoods={visitedNeighborhoodNames}
-          onNeighborhoodClick={(neighborhood: string, category: string) => {
-            // Use configurable data extraction
-            handleNeighborhoodClick(neighborhood, category);
+          onNeighborhoodClick={handleNeighborhoodClick}
+          onNeighborhoodQuickVisit={handleQuickVisit}
+          mapConfig={{
+            center: mapConfig.center || [40.8, -73.9],
+            zoom: mapConfig.zoom || 11,
+            getCategoryFromFeature: mapConfig.getCategoryFromFeature,
+            getNeighborhoodFromFeature: mapConfig.getNeighborhoodFromFeature,
+            categoryColors: mapConfig.categoryColors || {},
+            defaultColor: mapConfig.defaultColor
           }}
-          onNeighborhoodQuickVisit={(neighborhood: string, category: string) => {
-            // Use configurable data extraction
-            handleQuickVisit(neighborhood, category);
-          }}
-          center={mapConfig.center}
-          zoom={mapConfig.zoom}
         />
       </Box>
 
@@ -366,8 +350,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           borough={selectedNeighborhood.borough}
           onSave={handleSaveVisit}
           existingVisits={visits}
-          neighborhoods={neighborhoods}
-          boroughs={boroughs}
+          neighborhoods={neighborhoods as any}
+          boroughs={boroughs as any}
           cities={cities}
         />
       )}

@@ -1,5 +1,4 @@
 import { neighborhoodsApi } from '../services/neighborhoodsApi';
-import type { MapConfig } from '../pages/GenericNeighborhoodsPage';
 
 export type CategoryType = 'borough' | 'city';
 
@@ -7,8 +6,8 @@ export interface MapConfig {
   name: string;
   geoJsonEndpoint: () => Promise<any>;
   mapComponent: 'NYC' | 'Boston';
-  center?: [number, number];
-  zoom?: number;
+  center: [number, number];
+  zoom: number;
   categoryType: CategoryType; // 'borough' or 'city'
   apiFilters?: {
     city?: string;
@@ -19,6 +18,9 @@ export interface MapConfig {
   getNeighborhoodFromFeature: (feature: any) => string;
   // Whether neighborhoods exist in database or are GeoJSON-only
   hasDbNeighborhoods: boolean;
+  // Map visualization config
+  categoryColors: { [key: string]: string };
+  defaultColor?: string;
 }
 
 export const mapConfigs: { [key: string]: MapConfig } = {
@@ -32,6 +34,15 @@ export const mapConfigs: { [key: string]: MapConfig } = {
     getCategoryFromFeature: (feature) => feature.properties.borough,
     getNeighborhoodFromFeature: (feature) => feature.properties.neighborhood,
     hasDbNeighborhoods: true, // NYC neighborhoods exist in database
+    categoryColors: {
+      'Manhattan': '#FF6B6B',      // Red
+      'Brooklyn': '#4ECDC4',       // Teal
+      'Queens': '#45B7D1',         // Blue
+      'The Bronx': '#96CEB4',      // Green
+      'Bronx': '#96CEB4',          // Green (alternative name)
+      'Staten Island': '#FECA57'   // Yellow
+    },
+    defaultColor: '#E8E8E8'
   },
   'Boston Greater Area': {
     name: 'Boston Greater Area',
@@ -46,6 +57,12 @@ export const mapConfigs: { [key: string]: MapConfig } = {
     getCategoryFromFeature: (feature) => feature.properties.city,
     getNeighborhoodFromFeature: (feature) => feature.properties.name,
     hasDbNeighborhoods: false, // Boston neighborhoods are GeoJSON-only for now
+    categoryColors: {
+      'Boston': '#FF6B6B',         // Red
+      'Cambridge': '#4ECDC4',      // Teal
+      'Somerville': '#45B7D1'      // Blue
+    },
+    defaultColor: '#E8E8E8'
   }
 };
 
