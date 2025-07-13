@@ -13,6 +13,7 @@ import StatsCard from '../components/StatsCard';
 import { neighborhoodsApi, type Neighborhood } from '../services/neighborhoodsApi';
 import { boroughsApi, type Borough } from '../services/boroughsApi';
 import { visitsApi, type Visit } from '../services/visitsApi';
+import { neighborhoodCache, type CachedNeighborhood, type CachedBorough } from '../services/neighborhoodCache';
 
 export type CategoryType = 'borough' | 'city';
 
@@ -37,9 +38,9 @@ interface GenericNeighborhoodsPageProps {
 
 const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ mapConfig }) => {
   const { user } = useAuth();
-  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<CachedNeighborhood[]>([]);
   const [geoJsonNeighborhoods, setGeoJsonNeighborhoods] = useState<any[]>([]);
-  const [boroughs, setBoroughs] = useState<Borough[]>([]);
+  const [boroughs, setBoroughs] = useState<CachedBorough[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<{ id: string; name: string; borough: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,23 +60,18 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   const loadNeighborhoods = async () => {
     try {
-      console.log(`📡 ${mapConfig.name}: Loading neighborhoods from API`);
-      let neighborhoods: Neighborhood[] = [];
+      console.log(`📡 ${mapConfig.name}: Loading neighborhoods from cache`);
+      let neighborhoods: CachedNeighborhood[] = [];
       
       if (mapConfig.hasDbNeighborhoods) {
-        // Load from database for maps that have neighborhood data
-        if (mapConfig.apiFilters?.city) {
-          const response = await fetch(`/api/neighborhoods?city=${mapConfig.apiFilters.city}`);
-          neighborhoods = await response.json();
-        } else {
-          neighborhoods = await neighborhoodsApi.getAllNeighborhoods();
-        }
+        // Load from cache for maps that have neighborhood data
+        neighborhoods = await neighborhoodCache.getNeighborhoods(mapConfig.apiFilters?.city);
       } else {
         // For GeoJSON-only maps, we'll create empty array and handle in-memory
         console.log(`📝 ${mapConfig.name}: Using GeoJSON-only mode, no database neighborhoods`);
       }
       
-      console.log(`📝 ${mapConfig.name}: Received neighborhoods data:`, neighborhoods);
+      console.log(`📝 ${mapConfig.name}: Received neighborhoods data:`, neighborhoods.length, 'neighborhoods');
       setNeighborhoods(neighborhoods);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to load neighborhoods:`, err);
@@ -98,23 +94,18 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   const loadBoroughs = async () => {
     try {
-      console.log(`📡 ${mapConfig.name}: Loading ${mapConfig.categoryType}s from API`);
-      let boroughs: Borough[] = [];
+      console.log(`📡 ${mapConfig.name}: Loading ${mapConfig.categoryType}s from cache`);
+      let boroughs: CachedBorough[] = [];
       
       if (mapConfig.categoryType === 'borough') {
-        // Load boroughs for NYC
-        if (mapConfig.apiFilters?.city) {
-          const response = await fetch(`/api/boroughs?city=${mapConfig.apiFilters.city}`);
-          boroughs = await response.json();
-        } else {
-          boroughs = await boroughsApi.getAllBoroughs();
-        }
+        // Load boroughs from cache
+        boroughs = await neighborhoodCache.getBoroughs(mapConfig.apiFilters?.city);
       } else if (mapConfig.categoryType === 'city') {
         // For city-based maps, we'll create virtual boroughs from GeoJSON data
         console.log(`📝 ${mapConfig.name}: Using city-based categorization, will create virtual ${mapConfig.categoryType}s`);
       }
       
-      console.log(`📝 ${mapConfig.name}: Received ${mapConfig.categoryType}s data:`, boroughs);
+      console.log(`📝 ${mapConfig.name}: Received ${mapConfig.categoryType}s data:`, boroughs.length, `${mapConfig.categoryType}s`);
       setBoroughs(boroughs);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to load ${mapConfig.categoryType}s:`, err);
@@ -148,7 +139,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       console.log(`🔍 ${mapConfig.name}: ${mapConfig.categoryType} mapping size:`, categoryIdToName.size);
       
       const neighborhoodData = neighborhoods.find(n => {
-        const mappedCategory = categoryIdToName.get(n.boroughId); // Note: still using boroughId for compatibility
+        const mappedCategory = categoryIdToName.get(n.boroughId);
         console.log(`🔍 ${mapConfig.name}: Comparing "${n.name}" === "${neighborhood}" && "${mappedCategory}" === "${category}"`);
         return n.name === neighborhood && mappedCategory === category;
       });
@@ -156,7 +147,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       if (neighborhoodData) {
         console.log(`✅ ${mapConfig.name}: Found neighborhood:`, neighborhoodData);
         setSelectedNeighborhood({ 
-          id: neighborhoodData._id, 
+          id: neighborhoodData.id, 
           name: neighborhood, 
           borough: category 
         });
@@ -213,14 +204,14 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         }
 
         const neighborhood_obj = neighborhoods.find(n => 
-          n.name === neighborhood && n.boroughId === category_obj._id
+          n.name === neighborhood && n.boroughId === category_obj.id
         );
         if (!neighborhood_obj) {
           console.error(`❌ ${mapConfig.name}: Neighborhood not found:`, neighborhood);
           return;
         }
 
-        const existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj._id);
+        const existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj.id);
         
         if (existingVisit) {
           console.log(`⚡ ${mapConfig.name}: Visit already exists, skipping to prevent data loss:`, existingVisit);
@@ -265,28 +256,36 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const visitedNeighborhoodIds = new Set(visits.filter(v => v.visited && v.neighborhoodId).map(v => v.neighborhoodId));
   console.log(`🏠 ${mapConfig.name}: Visited neighborhood IDs:`, visitedNeighborhoodIds.size, Array.from(visitedNeighborhoodIds));
 
-  // Create a set of visited neighborhood names for the map
-  console.log(`🔄 ${mapConfig.name}: Creating visited neighborhood names mapping...`);
-  console.log(`🏠 ${mapConfig.name}: Available neighborhoods for mapping:`, neighborhoods.length);
-  console.log(`🎯 ${mapConfig.name}: Visited neighborhood IDs to map:`, Array.from(visitedNeighborhoodIds));
+  // Create a set of visited neighborhood names for the map using cache for fast lookups
+  console.log(`🔄 ${mapConfig.name}: Creating visited neighborhood names mapping using cache...`);
   
-  const visitedNeighborhoodNames = new Set(
-    neighborhoods
-      .filter((n: Neighborhood) => {
-        const isVisited = visitedNeighborhoodIds.has(n._id);
-        if (isVisited) {
-          console.log(`✅ ${mapConfig.name}: Mapping visited neighborhood: ${n.name} (ID: ${n._id})`);
-        }
-        return isVisited;
-      })
-      .map((n: Neighborhood) => n.name)
-  );
+  const visitedNeighborhoodNames = new Set<string>();
+  
+  // For visits with neighborhoodId, use cache lookup
+  for (const visitId of visitedNeighborhoodIds) {
+    const cachedNeighborhood = neighborhoodCache.getNeighborhoodById(visitId);
+    if (cachedNeighborhood) {
+      visitedNeighborhoodNames.add(cachedNeighborhood.name);
+      console.log(`✅ ${mapConfig.name}: Cached lookup: ${cachedNeighborhood.name} (ID: ${visitId})`);
+    }
+  }
+  
+  // For visits with only neighborhoodName (GeoJSON-only), add them directly
+  visits
+    .filter(v => v.visited && v.neighborhoodName && !v.neighborhoodId)
+    .forEach(v => {
+      if (v.neighborhoodName) {
+        visitedNeighborhoodNames.add(v.neighborhoodName);
+        console.log(`✅ ${mapConfig.name}: Direct name lookup: ${v.neighborhoodName}`);
+      }
+    });
+  
   console.log(`🏠 ${mapConfig.name}: Final visited neighborhood names for map:`, visitedNeighborhoodNames.size, Array.from(visitedNeighborhoodNames));
 
   const categoryIdToName = new Map<string, string>();
 
   for (const borough of boroughs) {
-    categoryIdToName.set(borough._id, borough.name);
+    categoryIdToName.set(borough.id, borough.name);
   }
   
   console.log(`🏘️ ${mapConfig.name}: ${mapConfig.categoryType} mapping complete:`, categoryIdToName.size, `${mapConfig.categoryType}s loaded`);

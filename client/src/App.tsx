@@ -13,6 +13,7 @@ import {
   Tab
 } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CacheProvider } from './contexts/CacheContext';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import NeighborhoodsPage from './pages/NeighborhoodsPage';
@@ -114,9 +115,11 @@ const App: React.FC = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <CacheProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </CacheProvider>
       </AuthProvider>
     </ThemeProvider>
   );
