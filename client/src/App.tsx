@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import NeighborhoodsPage from './pages/NeighborhoodsPage';
+import BostonNeighborhoodsPage from './pages/BostonNeighborhoodsPage';
 import CountriesPage from './pages/CountriesPage';
 import UserDashboard from './pages/UserDashboard';
 
@@ -60,6 +61,7 @@ const Navigation: React.FC = () => {
             >
               <Tab label="Dashboard" value="/" />
               <Tab label="NYC Neighborhoods" value="/neighborhoods" />
+              <Tab label="Boston Neighborhoods" value="/boston" />
               <Tab label="Countries" value="/countries" />
             </Tabs>
             <Box className="flex items-center gap-4">
@@ -84,6 +86,7 @@ const MainApp: React.FC = () => {
       <Routes>
         <Route path="/" element={<UserDashboard />} />
         <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
+        <Route path="/boston" element={<BostonNeighborhoodsPage />} />
         <Route path="/countries" element={<CountriesPage />} />
       </Routes>
     </Box>

@@ -20,5 +20,11 @@ export const neighborhoodsApi = {
   getGeoJsonNeighborhoods: async () => {
     const response = await fetch('/data/nyc_neighborhoods_clean.geojson');
     return response.json();
+  },
+
+  // Get Boston/Cambridge GeoJSON neighborhoods for map
+  getBostonGeoJsonNeighborhoods: async () => {
+    const response = await fetch('/data/boston_cambridge_neighborhoods.geojson');
+    return response.json();
   }
 };
