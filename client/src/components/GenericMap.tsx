@@ -130,7 +130,8 @@ const GenericMap: React.FC<GenericMapProps> = ({
     
     layer.bindTooltip(tooltipContent, {
       permanent: false,
-      direction: 'center',
+      direction: 'top', // Position above the feature
+      offset: [0, -10], // Move 10 pixels up from the default position
       opacity: 0.9,
       className: 'neighborhood-tooltip'
     });

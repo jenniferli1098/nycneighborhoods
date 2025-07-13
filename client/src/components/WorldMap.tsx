@@ -95,25 +95,26 @@ const WorldMap: React.FC<WorldMapProps> = ({
       const countryName = feature.properties?.name || 'Unknown Country';
       const isVisited = isCountryVisited(feature);
 
-      // Create popup content
-      const popupContent = `
-        <div style="text-align: center; padding: 8px;">
+      // Create tooltip content (appears on hover)
+      const tooltipContent = `
+        <div style="text-align: center; font-size: 12px;">
           <strong>${countryName}</strong><br/>
-          ${apiCountry ? `Code: ${apiCountry.code}<br/>` : ''}
-          ${apiCountry ? `Continent: ${apiCountry.continent}<br/>` : ''}
-          <div style="margin-top: 8px;">
-            ${isVisited 
-              ? '<span style="color: #4caf50; font-weight: bold;">✓ Visited</span>' 
-              : '<span style="color: #666;">Not visited</span>'
-            }
-          </div>
-          <div style="margin-top: 8px; font-size: 12px; color: #666;">
-            Left-click: Quick visit • Right-click: Details
-          </div>
+          ${apiCountry ? `${apiCountry.continent}<br/>` : ''}
+          <span style="color: ${isVisited ? '#4caf50' : '#dc3545'}; font-weight: bold;">
+            ${isVisited ? '✓ Visited' : '✗ Not Visited'}
+          </span><br/>
+          <small style="color: #888;">Left: Quick visit | Right: Details</small>
         </div>
       `;
 
-      layer.bindPopup(popupContent);
+      // Bind tooltip that appears on hover, positioned above the mouse
+      layer.bindTooltip(tooltipContent, {
+        permanent: false,
+        direction: 'top', // Position above the feature
+        offset: [0, -10], // Move 10 pixels up from the default position
+        opacity: 0.9,
+        className: 'country-tooltip'
+      });
 
       // Add click handlers (mirroring NYC neighborhoods behavior)
       layer.on({
