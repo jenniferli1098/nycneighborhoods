@@ -71,8 +71,8 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
 
   const getComparisonsInCategory = (category: 'Bad' | 'Mid' | 'Good') => {
     // Create lookup maps for both neighborhoods/boroughs and countries/continents
-    const neighborhoodMap = new Map(neighborhoods.map(n => [n._id, n]));
-    const boroughMap = new Map(boroughs.map(b => [b._id, b]));
+    const neighborhoodMap = new Map(neighborhoods.map(n => [n.id, n]));
+    const boroughMap = new Map(boroughs.map(b => [b.id, b]));
     const countryMap = new Map(countries.map(c => [c._id, c]));
     const continentMap = new Map(continents.map(c => [c._id, c]));
     
