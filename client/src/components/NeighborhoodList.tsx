@@ -14,63 +14,43 @@ import {
   MenuItem
 } from '@mui/material';
 import { CheckCircle, RadioButtonUnchecked, Search } from '@mui/icons-material';
-
-interface Neighborhood {
-  _id: string;
-  name: string;
-  boroughId: string;
-  description?: string;
-  averageVisitRating?: number;
-  totalVisits?: number;
-}
-
-interface Visit {
-  _id: string;
-  userId: string;
-  neighborhoodId: string;
-  visited: boolean;
-  notes: string;
-  visitDate: string;
-  rating: number;
-}
-
-interface Borough {
-  _id: string;
-  name: string;
-  description?: string;
-}
+import type { Visit } from '../services/visitsApi';
+import type { CachedNeighborhood, CachedBorough, CachedCity } from '../services/neighborhoodCache';
+import type { CategoryType } from '../config/mapConfigs';
 
 interface NeighborhoodListProps {
-  neighborhoods: Neighborhood[];
-  boroughs: Borough[];
+  neighborhoods: CachedNeighborhood[];
+  categories: (CachedBorough | CachedCity)[];
+  categoryType: CategoryType;
   visits: Visit[];
-  onNeighborhoodClick: (neighborhood: string, borough: string) => void;
+  onNeighborhoodClick: (neighborhood: string, category: string) => void;
 }
 
-const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boroughs, visits, onNeighborhoodClick }) => {
+const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, categories, categoryType, visits, onNeighborhoodClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBorough, setSelectedBorough] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [filterVisited, setFilterVisited] = useState('all');
 
-  const visitedSet = new Set(visits.filter(v => v.visited).map(v => v.neighborhoodId));
+  const visitedSet = new Set(visits.filter(v => v.visited && v.neighborhoodId).map(v => v.neighborhoodId!));
   
-  // Create a mapping from borough ID to borough name
-  const boroughIdToName = new Map(boroughs.map(b => [b._id, b.name]));
+  // Create a mapping from category ID to category name (works for both boroughs and cities)
+  const categoryIdToName = new Map(categories.map(c => [c.id, c.name]));
 
   const filteredNeighborhoods = neighborhoods.filter(neighborhood => {
     const name = neighborhood.name;
-    const boroughName = boroughIdToName.get(neighborhood.boroughId) || '';
+    const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
+    const categoryName = categoryId ? categoryIdToName.get(categoryId) || '' : '';
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesBorough = selectedBorough === '' || boroughName === selectedBorough;
+    const matchesCategory = selectedCategory === '' || categoryName === selectedCategory;
     
     let matchesVisited = true;
     if (filterVisited === 'visited') {
-      matchesVisited = visitedSet.has(neighborhood._id);
+      matchesVisited = visitedSet.has(neighborhood.id);
     } else if (filterVisited === 'not-visited') {
-      matchesVisited = !visitedSet.has(neighborhood._id);
+      matchesVisited = !visitedSet.has(neighborhood.id);
     }
     
-    return matchesSearch && matchesBorough && matchesVisited;
+    return matchesSearch && matchesCategory && matchesVisited;
   });
 
   console.log('🏘️ NeighborhoodList: Total neighborhoods:', neighborhoods.length);
@@ -108,16 +88,16 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boro
           
           <Box sx={{ display: 'flex', gap: 1 }}>
             <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Borough</InputLabel>
+              <InputLabel>{categoryType === 'borough' ? 'Borough' : 'City'}</InputLabel>
               <Select
-                value={selectedBorough}
-                onChange={(e) => setSelectedBorough(e.target.value)}
-                label="Borough"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                label={categoryType === 'borough' ? 'Borough' : 'City'}
               >
                 <MenuItem value="">All</MenuItem>
-                {boroughs.map(borough => (
-                  <MenuItem key={borough._id} value={borough.name}>
-                    {borough.name}
+                {categories.map(category => (
+                  <MenuItem key={category.id} value={category.name}>
+                    {category.name}
                   </MenuItem>
                 ))}
               </Select>
@@ -163,13 +143,14 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boro
         <List dense>
           {filteredNeighborhoods.map((neighborhood) => {
             const name = neighborhood.name;
-            const boroughName = boroughIdToName.get(neighborhood.boroughId) || '';
-            const isVisited = visitedSet.has(neighborhood._id);
+            const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
+            const categoryName = categoryId ? categoryIdToName.get(categoryId) || '' : '';
+            const isVisited = visitedSet.has(neighborhood.id);
             
             return (
               <ListItem
-                key={neighborhood._id}
-                onClick={() => onNeighborhoodClick(name, boroughName)}
+                key={neighborhood.id}
+                onClick={() => onNeighborhoodClick(name, categoryName)}
                 className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer py-2"
               >
                 <ListItemIcon className="min-w-0 mr-2">
@@ -188,7 +169,7 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, boro
                   }
                   secondary={
                     <Typography variant="caption" color="text.secondary">
-                      {boroughName}
+                      {categoryName}
                     </Typography>
                   }
                 />

@@ -8,89 +8,72 @@ import {
   LinearProgress
 } from '@mui/material';
 import { TrendingUp, LocationOn, Star } from '@mui/icons-material';
+import type { Visit } from '../services/visitsApi';
+import type { CachedNeighborhood, CachedBorough, CachedCity } from '../services/neighborhoodCache';
+import type { CategoryType } from '../config/mapConfigs';
 
-interface Visit {
-  _id: string;
-  userId: string;
-  neighborhoodId: string;
-  visited: boolean;
-  notes: string;
-  visitDate: string;
-  rating: number;
-  category: 'Bad' | 'Mid' | 'Good';
-}
-
-interface Borough {
-  _id: string;
-  name: string;
-  description?: string;
-}
-
-interface Neighborhood {
-  _id: string;
-  name: string;
-  boroughId: string;
-  description?: string;
-  averageVisitRating?: number;
-  totalVisits?: number;
-}
 
 interface StatsCardProps {
   visits: Visit[];
-  neighborhoods: Neighborhood[];
-  boroughs: Borough[];
+  neighborhoods: CachedNeighborhood[];
+  categories: (CachedBorough | CachedCity)[];
+  categoryType: CategoryType;
+  areaName: string; // e.g., "NYC", "Boston Greater Area"
 }
 
-const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, boroughs }) => {
+const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories, categoryType, areaName }) => {
   // Calculate total neighborhoods visited
   const totalVisited = visits.filter(v => v.visited).length;
   const totalNeighborhoods = neighborhoods.length;
   const completionPercentage = totalNeighborhoods > 0 ? (totalVisited / totalNeighborhoods) * 100 : 0;
 
-  // Create borough mapping
-  const boroughMap = new Map(boroughs.map(b => [b._id, b.name]));
-  const neighborhoodMap = new Map(neighborhoods.map(n => [n._id, n]));
+  // Create category mapping (works for both boroughs and cities)
+  const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+  const neighborhoodMap = new Map(neighborhoods.map(n => [n.id, n]));
 
-  // Calculate favorite borough (highest average rating)
-  const boroughStats = new Map<string, { totalRating: number; count: number; name: string }>();
+  // Calculate favorite category (highest average rating)
+  const categoryStats = new Map<string, { totalRating: number; count: number; name: string }>();
   
   visits
-    .filter(v => v.visited && v.rating != null)
+    .filter(v => v.visited && v.rating != null && v.neighborhoodId)
     .forEach(visit => {
-      const neighborhood = neighborhoodMap.get(visit.neighborhoodId);
+      const neighborhood = neighborhoodMap.get(visit.neighborhoodId!);
       if (neighborhood) {
-        const boroughName = boroughMap.get(neighborhood.boroughId);
-        if (boroughName) {
-          const current = boroughStats.get(boroughName) || { totalRating: 0, count: 0, name: boroughName };
+        // Use appropriate ID field based on category type
+        const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
+        const categoryName = categoryId ? categoryMap.get(categoryId) : undefined;
+        if (categoryName && visit.rating !== null) {
+          const current = categoryStats.get(categoryName) || { totalRating: 0, count: 0, name: categoryName };
           current.totalRating += visit.rating;
           current.count += 1;
-          boroughStats.set(boroughName, current);
+          categoryStats.set(categoryName, current);
         }
       }
     });
 
-  // Find favorite borough
-  let favoriteBorough = 'None';
+  // Find favorite category
+  let favoriteCategory = 'None';
   let highestAvgRating = 0;
 
-  boroughStats.forEach((stats, boroughName) => {
+  categoryStats.forEach((stats, categoryName) => {
     const avgRating = stats.totalRating / stats.count;
     if (avgRating > highestAvgRating) {
       highestAvgRating = avgRating;
-      favoriteBorough = boroughName;
+      favoriteCategory = categoryName;
     }
   });
 
   // Calculate top 3 neighborhoods
-  const ratedVisits = visits.filter(v => v.visited && v.rating != null);
+  const ratedVisits = visits.filter(v => v.visited && v.rating != null && v.neighborhoodId);
   const topNeighborhoods = ratedVisits
     .map(visit => {
-      const neighborhood = neighborhoodMap.get(visit.neighborhoodId);
-      const boroughName = neighborhood ? boroughMap.get(neighborhood.boroughId) : 'Unknown';
+      const neighborhood = neighborhoodMap.get(visit.neighborhoodId!);
+      const categoryId = categoryType === 'borough' ? neighborhood?.boroughId : neighborhood?.cityId;
+      const categoryName = categoryId ? categoryMap.get(categoryId) : undefined;
       return {
         name: neighborhood?.name || 'Unknown',
-        borough: boroughName || 'Unknown',
-        rating: visit.rating
+        category: categoryName || 'Unknown',
+        rating: visit.rating!
       };
     })
     .sort((a, b) => b.rating - a.rating)
@@ -108,7 +91,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, boroughs }
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <TrendingUp sx={{ mr: 1 }} />
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Your NYC Exploration Stats
+            Your {areaName} Exploration Stats
           </Typography>
         </Box>
 
@@ -126,16 +109,16 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, boroughs }
             </Typography>
           </Box>
 
-          {/* Favorite Borough */}
+          {/* Favorite Category */}
           <Box sx={{ textAlign: 'center' }}>
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
               <LocationOn sx={{ mr: 1 }} />
               <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                {favoriteBorough}
+                {favoriteCategory}
               </Typography>
             </Box>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Favorite Borough
+              Favorite {categoryType === 'borough' ? 'Borough' : 'City'}
             </Typography>
             {highestAvgRating > 0 && (
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
@@ -157,7 +140,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, boroughs }
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {topNeighborhoods.map((neighborhood, index) => (
                 <Box 
-                  key={`${neighborhood.name}-${neighborhood.borough}`}
+                  key={`${neighborhood.name}-${neighborhood.category}`}
                   sx={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
@@ -185,7 +168,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, boroughs }
                         {neighborhood.name}
                       </Typography>
                       <Typography variant="caption" sx={{ opacity: 0.8, lineHeight: 1 }}>
-                        {neighborhood.borough}
+                        {neighborhood.category}
                       </Typography>
                     </Box>
                   </Box>
@@ -208,7 +191,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, boroughs }
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2">
-              NYC Exploration Progress
+              {areaName} Exploration Progress
             </Typography>
             <Typography variant="body2">
               {completionPercentage.toFixed(1)}%

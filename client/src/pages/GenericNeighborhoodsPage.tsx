@@ -309,14 +309,17 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         <Box sx={{ p: 2, flexShrink: 0 }}>
           <StatsCard 
             visits={visits as any}
-            neighborhoods={neighborhoods as any}
-            boroughs={boroughs as any}
+            neighborhoods={neighborhoods}
+            categories={mapConfig.categoryType === 'borough' ? boroughs : cities}
+            categoryType={mapConfig.categoryType}
+            areaName={mapConfig.name}
           />
         </Box>
         <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <NeighborhoodList
-            neighborhoods={neighborhoods as any}
-            boroughs={boroughs as any}
+            neighborhoods={neighborhoods}
+            categories={mapConfig.categoryType === 'borough' ? boroughs : cities}
+            categoryType={mapConfig.categoryType}
             visits={visits as any}
             onNeighborhoodClick={handleNeighborhoodClick}
           />
