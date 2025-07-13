@@ -4,8 +4,14 @@ const boroughSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
+  },
+  city: {
+    type: String,
+    required: true,
+    trim: true,
+    enum: ['NYC', 'Boston', 'Cambridge', 'Somerville'],
+    default: 'NYC'
   },
   description: {
     type: String,
@@ -21,6 +27,8 @@ const boroughSchema = new mongoose.Schema({
 });
 
 boroughSchema.index({ coordinates: '2dsphere' });
+boroughSchema.index({ name: 1, city: 1 }, { unique: true });
+boroughSchema.index({ city: 1 });
 
 // Method to get populated neighborhood details
 boroughSchema.methods.getNeighborhoodDetails = async function() {
@@ -71,6 +79,16 @@ boroughSchema.statics.findByNeighborhood = async function(neighborhoodName) {
   const Neighborhood = mongoose.model('Neighborhood');
   const neighborhood = await Neighborhood.findOne({ name: neighborhoodName });
   return neighborhood ? await this.findOne({ _id: neighborhood.boroughId }) : null;
+};
+
+// Static method to find boroughs by city
+boroughSchema.statics.findByCity = function(city) {
+  return this.find({ city: city });
+};
+
+// Static method to find borough by name and city
+boroughSchema.statics.findByNameAndCity = function(name, city) {
+  return this.findOne({ name, city });
 };
 
 module.exports = mongoose.model('Borough', boroughSchema);

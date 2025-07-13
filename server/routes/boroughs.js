@@ -7,7 +7,14 @@ const router = express.Router();
 // Get all boroughs
 router.get('/', async (req, res) => {
   try {
-    const boroughs = await Borough.find()
+    const { city } = req.query;
+    let query = {};
+    
+    if (city) {
+      query.city = city;
+    }
+    
+    const boroughs = await Borough.find(query)
       .sort({ name: 1 });
     
     res.json(boroughs);
@@ -26,6 +33,20 @@ router.get('/:id', async (req, res) => {
     }
     
     res.json(borough);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get boroughs by city
+router.get('/city/:cityName', async (req, res) => {
+  try {
+    const cityName = req.params.cityName;
+    
+    const boroughs = await Borough.find({ city: cityName })
+      .sort({ name: 1 });
+    
+    res.json(boroughs);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

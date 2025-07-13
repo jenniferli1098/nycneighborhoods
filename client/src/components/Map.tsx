@@ -72,18 +72,14 @@ const NYCMap: React.FC<MapProps> = ({ neighborhoods, visitedNeighborhoods, onNei
     const { neighborhood, borough } = feature.properties;
     const isVisited = visitedNeighborhoods.has(neighborhood);
     
-    layer.bindPopup(`
-      <div>
-        <h3>${neighborhood}</h3>
-        <p><strong>Borough:</strong> ${borough}</p>
-        <p><strong>Status:</strong> ${isVisited ? 'Visited' : 'Not visited'}</p>
-      </div>
-    `);
+    // Removed popup to prevent thumbnail on left-click
 
     layer.on({
       click: (e: any) => {
         // Left click - mark as visited quickly
         if (e.originalEvent.button === 0 && onNeighborhoodQuickVisit) {
+          e.originalEvent.preventDefault();
+          e.originalEvent.stopPropagation();
           console.log('🖱️ Left click: Quick visit for', neighborhood, borough);
           onNeighborhoodQuickVisit(neighborhood, borough);
         }

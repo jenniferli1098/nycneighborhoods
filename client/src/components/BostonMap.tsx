@@ -50,37 +50,31 @@ const BostonMap: React.FC<MapProps> = ({
     setGeoJsonKey(prev => prev + 1);
   }, [visitedNeighborhoods]);
 
-  const getAreaColor = (area: string) => {
-    const areaColors: { [key: string]: string } = {
-      // Boston neighborhoods
-      'Boston': '#FF6B6B',        // Red
-      'Cambridge': '#4ECDC4',     // Teal
-      'Somerville': '#45B7D1',    // Blue
-      'Brookline': '#96CEB4',     // Green
-      'Newton': '#FECA57',        // Yellow
-      'Watertown': '#9B59B6',     // Purple
-      'Belmont': '#F38BA8',       // Pink
-      'Arlington': '#A8E6CF'      // Light green
+  const getCityColor = (city: string) => {
+    const cityColors: { [key: string]: string } = {
+      'Boston': '#E74C3C',        // Red - Boston neighborhoods
+      'Cambridge': '#3498DB',     // Blue - Cambridge neighborhoods
+      'Somerville': '#2ECC71',    // Green - Somerville neighborhoods
     };
-    return areaColors[area] || '#E74C3C'; // Red fallback
+    return cityColors[city] || '#9B59B6'; // Purple fallback
   };
 
   const getNeighborhoodName = (feature: any) => {
-    // Boston GeoJSON uses 'NAME' property
-    return feature.properties.NAME || feature.properties.neighborhood || 'Unknown';
+    // Boston GeoJSON uses 'name' property
+    return feature.properties.name || feature.properties.NAME || feature.properties.neighborhood || 'Unknown';
   };
 
-  const getBoroughName = (feature: any) => {
-    // For Boston data, we'll use the city name or a default
-    return feature.properties.borough || 'Boston Area';
+  const getCityName = (feature: any) => {
+    // Boston GeoJSON has 'city' property with "Boston" or "Cambridge"
+    return feature.properties.city || 'Unknown';
   };
 
   const getColor = (feature: any) => {
     const neighborhoodName = getNeighborhoodName(feature);
-    const boroughName = getBoroughName(feature);
+    const cityName = getCityName(feature);
     
     if (visitedNeighborhoods.has(neighborhoodName)) {
-      return getAreaColor(boroughName);
+      return getCityColor(cityName);
     }
     return '#E8E8E8'; // Light gray for unvisited
   };
@@ -96,30 +90,26 @@ const BostonMap: React.FC<MapProps> = ({
 
   const onEachFeature = (feature: any, layer: any) => {
     const neighborhoodName = getNeighborhoodName(feature);
-    const boroughName = getBoroughName(feature);
+    const cityName = getCityName(feature);
     const isVisited = visitedNeighborhoods.has(neighborhoodName);
     
-    layer.bindPopup(`
-      <div>
-        <h3>${neighborhoodName}</h3>
-        <p><strong>Area:</strong> ${boroughName}</p>
-        <p><strong>Status:</strong> ${isVisited ? 'Visited' : 'Not visited'}</p>
-      </div>
-    `);
+    // Removed popup to prevent thumbnail on left-click
 
     layer.on({
       click: (e: any) => {
         // Left click - mark as visited quickly
         if (e.originalEvent.button === 0 && onNeighborhoodQuickVisit) {
-          console.log('🖱️ Left click: Quick visit for', neighborhoodName, boroughName);
-          onNeighborhoodQuickVisit(neighborhoodName, boroughName);
+          e.originalEvent.preventDefault();
+          e.originalEvent.stopPropagation();
+          console.log('🖱️ Left click: Quick visit for', neighborhoodName, cityName);
+          onNeighborhoodQuickVisit(neighborhoodName, cityName);
         }
       },
       contextmenu: (e: any) => {
         // Right click - open detailed dialog
         e.originalEvent.preventDefault(); // Prevent browser context menu
-        console.log('🖱️ Right click: Opening dialog for', neighborhoodName, boroughName);
-        onNeighborhoodClick(neighborhoodName, boroughName);
+        console.log('🖱️ Right click: Opening dialog for', neighborhoodName, cityName);
+        onNeighborhoodClick(neighborhoodName, cityName);
       },
       mouseover: (e: any) => {
         const layer = e.target;

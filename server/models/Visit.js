@@ -117,7 +117,8 @@ visitSchema.methods.getFullDetails = async function() {
     locationDetails = {
       type: 'neighborhood',
       name: neighborhood?.name,
-      borough: borough?.name
+      borough: borough?.name,
+      city: neighborhood?.city
     };
   } else if (this.visitType === 'country' && this.countryId) {
     const Country = mongoose.model('Country');

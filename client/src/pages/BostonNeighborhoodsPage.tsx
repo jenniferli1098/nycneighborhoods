@@ -89,64 +89,40 @@ const BostonNeighborhoodsPage: React.FC = () => {
     }
   };
 
-  const handleNeighborhoodClick = (neighborhood: string, borough: string) => {
-    console.log('🖱️ BostonNeighborhoodsPage: Neighborhood clicked (right-click for dialog):', neighborhood, borough);
-    console.log('🔍 BostonNeighborhoodsPage: Available neighborhoods count:', neighborhoods.length);
-    console.log('🔍 BostonNeighborhoodsPage: Borough mapping size:', boroughIdToName.size);
+  const handleNeighborhoodClick = (neighborhood: string, city: string) => {
+    console.log('🖱️ BostonNeighborhoodsPage: Neighborhood clicked (right-click for dialog):', neighborhood, city);
     
-    // Find the neighborhood ID from API neighborhoods
-    const neighborhoodData = neighborhoods.find(n => {
-      const mappedBorough = boroughIdToName.get(n.boroughId);
-      console.log(`🔍 BostonNeighborhoodsPage: Comparing "${n.name}" === "${neighborhood}" && "${mappedBorough}" === "${borough}"`);
-      return n.name === neighborhood && mappedBorough === borough;
+    // For Boston/Cambridge/Somerville, we'll use a placeholder ID since neighborhoods may not be in DB
+    // The NeighborhoodDialog will handle creating the neighborhood/borough if needed
+    setSelectedNeighborhood({ 
+      id: `${neighborhood}-${city}`, // Placeholder ID
+      name: neighborhood, 
+      borough: city // Use city as borough for Boston area
     });
-    
-    if (neighborhoodData) {
-      console.log('✅ BostonNeighborhoodsPage: Found neighborhood:', neighborhoodData);
-      setSelectedNeighborhood({ 
-        id: neighborhoodData._id, 
-        name: neighborhood, 
-        borough 
-      });
-    } else {
-      console.error('❌ BostonNeighborhoodsPage: Could not find neighborhood ID for:', neighborhood, borough);
-      console.log('📋 BostonNeighborhoodsPage: Available neighborhoods sample:', neighborhoods.slice(0, 5).map(n => `${n.name} - ${boroughIdToName.get(n.boroughId)}`));
-      console.log('📋 BostonNeighborhoodsPage: Available boroughs:', Array.from(boroughIdToName.values()));
-    }
   };
 
-  const handleQuickVisit = async (neighborhood: string, borough: string) => {
-    console.log('⚡ BostonNeighborhoodsPage: Quick visit (left-click) for:', neighborhood, borough);
+  const handleQuickVisit = async (neighborhood: string, city: string) => {
+    console.log('⚡ BostonNeighborhoodsPage: Quick visit (left-click) for:', neighborhood, city);
     
     try {
-      // Find the neighborhood ID first
-      const borough_obj = boroughs.find(b => b.name === borough);
-      if (!borough_obj) {
-        console.error('❌ BostonNeighborhoodsPage: Borough not found:', borough);
-        return;
-      }
-
-      const neighborhood_obj = neighborhoods.find(n => 
-        n.name === neighborhood && n.boroughId === borough_obj._id
+      // For Boston/Cambridge/Somerville, we'll create visits directly without needing existing neighborhood records
+      // since we're using the GeoJSON data which may not be in the database yet
+      
+      // Check if visit already exists by neighborhood name and city
+      const existingVisit = visits.find(v => 
+        v.neighborhoodName === neighborhood || 
+        (v.neighborhoodId && neighborhoods.find(n => n._id === v.neighborhoodId && n.name === neighborhood))
       );
-      if (!neighborhood_obj) {
-        console.error('❌ BostonNeighborhoodsPage: Neighborhood not found:', neighborhood);
-        return;
-      }
-
-      // Check if visit already exists
-      const existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj._id);
       
       if (existingVisit) {
         console.log('⚡ BostonNeighborhoodsPage: Visit already exists, skipping to prevent data loss:', existingVisit);
-        // Don't overwrite existing visit data - just return
         return;
       }
 
-      // Only create new visit if none exists
+      // Create visit with city as borough for now (until we have proper Boston data in DB)
       const visitData = {
         neighborhoodName: neighborhood,
-        boroughName: borough,
+        boroughName: city, // Use city as borough for Boston area
         visited: true,
         notes: '',
         visitDate: new Date(),
