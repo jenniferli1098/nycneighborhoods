@@ -22,19 +22,35 @@ interface StatsCardProps {
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories, categoryType, areaName }) => {
-  // Calculate total neighborhoods visited
-  const totalVisited = visits.filter(v => v.visited).length;
-  const totalNeighborhoods = neighborhoods.length;
-  const completionPercentage = totalNeighborhoods > 0 ? (totalVisited / totalNeighborhoods) * 100 : 0;
-
-  // Create category mapping (works for both boroughs and cities)
+  // Create category and neighborhood mappings
   const categoryMap = new Map(categories.map(c => [c.id, c.name]));
   const neighborhoodMap = new Map(neighborhoods.map(n => [n.id, n]));
+  
+  // Filter visits to only include those for neighborhoods in the current context
+  const relevantVisits = visits.filter(visit => {
+    if (!visit.neighborhoodId) return false;
+    const neighborhood = neighborhoodMap.get(visit.neighborhoodId);
+    if (!neighborhood) return false;
+    
+    // Check if neighborhood belongs to current area's categories
+    const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
+    return categoryId && categoryMap.has(categoryId);
+  });
+
+  // Calculate total neighborhoods visited (only in current context)
+  const totalVisited = relevantVisits.filter(v => v.visited).length;
+  // Filter neighborhoods to only count those in current context
+  const relevantNeighborhoods = neighborhoods.filter(neighborhood => {
+    const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
+    return categoryId && categoryMap.has(categoryId);
+  });
+  const totalNeighborhoods = relevantNeighborhoods.length;
+  const completionPercentage = totalNeighborhoods > 0 ? (totalVisited / totalNeighborhoods) * 100 : 0;
 
   // Calculate favorite category (highest average rating)
   const categoryStats = new Map<string, { totalRating: number; count: number; name: string }>();
   
-  visits
+  relevantVisits
     .filter(v => v.visited && v.rating != null && v.neighborhoodId)
     .forEach(visit => {
       const neighborhood = neighborhoodMap.get(visit.neighborhoodId!);
@@ -64,7 +80,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories
   });
 
   // Calculate top 3 neighborhoods
-  const ratedVisits = visits.filter(v => v.visited && v.rating != null && v.neighborhoodId);
+  const ratedVisits = relevantVisits.filter(v => v.visited && v.rating != null && v.neighborhoodId);
   const topNeighborhoods = ratedVisits
     .map(visit => {
       const neighborhood = neighborhoodMap.get(visit.neighborhoodId!);
@@ -80,9 +96,9 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories
     .slice(0, 3);
 
   const categoryDistribution = {
-    Bad: visits.filter(v => v.category === 'Bad').length,
-    Mid: visits.filter(v => v.category === 'Mid').length,
-    Good: visits.filter(v => v.category === 'Good').length
+    Bad: relevantVisits.filter(v => v.category === 'Bad').length,
+    Mid: relevantVisits.filter(v => v.category === 'Mid').length,
+    Good: relevantVisits.filter(v => v.category === 'Good').length
   };
 
   return (
