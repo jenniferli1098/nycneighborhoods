@@ -17,6 +17,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/visits', require('./routes/visits'));
 app.use('/api/neighborhoods', require('./routes/neighborhoods'));
 app.use('/api/boroughs', require('./routes/boroughs'));
+app.use('/api/cities', require('./routes/cities'));
 app.use('/api/countries', require('./routes/countries'));
 
 app.get('/', (req, res) => {

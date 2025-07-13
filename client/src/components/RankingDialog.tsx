@@ -27,6 +27,7 @@ interface RankingDialogProps {
   existingVisits: any[];
   neighborhoods?: any[];
   boroughs?: any[];
+  cities?: any[];
   countries?: any[];
   continents?: any[];
   onRankingComplete: (category: 'Bad' | 'Mid' | 'Good', rating: number) => void;
@@ -39,6 +40,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
   existingVisits,
   neighborhoods = [],
   boroughs = [],
+  cities = [],
   countries = [],
   continents = [],
   onRankingComplete
@@ -70,9 +72,10 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
   };
 
   const getComparisonsInCategory = (category: 'Bad' | 'Mid' | 'Good') => {
-    // Create lookup maps for both neighborhoods/boroughs and countries/continents
+    // Create lookup maps for both neighborhoods/boroughs/cities and countries/continents
     const neighborhoodMap = new Map(neighborhoods.map(n => [n.id, n]));
     const boroughMap = new Map(boroughs.map(b => [b.id, b]));
+    const cityMap = new Map(cities.map(c => [c.id, c]));
     const countryMap = new Map(countries.map(c => [c._id, c]));
     const continentMap = new Map(continents.map(c => [c._id, c]));
     
@@ -81,43 +84,46 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
       .map(v => {
         // Check if this is a neighborhood or country visit
         if (v.neighborhoodId) {
-          // Neighborhood visit
+          // Neighborhood visit - only include if neighborhood is in current area
           const neighborhoodData = neighborhoodMap.get(v.neighborhoodId);
-          const boroughData = neighborhoodData ? boroughMap.get(neighborhoodData.boroughId) : null;
+          if (!neighborhoodData) {
+            return null; // Not in current area, exclude from comparisons
+          }
+          
+          const boroughData = neighborhoodData.boroughId ? boroughMap.get(neighborhoodData.boroughId) : null;
+          const cityData = neighborhoodData.cityId ? cityMap.get(neighborhoodData.cityId) : null;
           
           return {
             _id: v.neighborhoodId,
-            name: neighborhoodData?.name || 'Unknown',
-            location: boroughData?.name || 'Unknown',
+            name: neighborhoodData.name,
+            location: boroughData?.name || cityData?.name || neighborhoodData.cityName || neighborhoodData.city || 'Unknown',
             rating: v.rating,
             category: v.category,
             notes: v.notes
           };
         } else if (v.countryId) {
-          // Country visit
+          // Country visit - only include if country is in current area (if countries are filtered)
           const countryData = countryMap.get(v.countryId);
+          if (!countryData) {
+            return null; // Not in current area, exclude from comparisons
+          }
+          
           const continentData = countryData ? continentMap.get(countryData.continentId) : null;
           
           return {
             _id: v.countryId,
-            name: countryData?.name || 'Unknown',
-            location: continentData?.name || countryData?.continent || 'Unknown',
+            name: countryData.name,
+            location: continentData?.name || countryData.continent || 'Unknown',
             rating: v.rating,
             category: v.category,
             notes: v.notes
           };
         } else {
-          // Fallback for any other visit type
-          return {
-            _id: v._id,
-            name: 'Unknown',
-            location: 'Unknown',
-            rating: v.rating,
-            category: v.category,
-            notes: v.notes
-          };
+          // Fallback - exclude unknown visit types from comparisons
+          return null;
         }
       })
+      .filter((comp): comp is NonNullable<typeof comp> => comp !== null) // Remove null entries with type guard
       .filter(comp => comp.name !== entity.name || comp.location !== entity.location) // Remove current entity if it exists
       .sort((a, b) => b.rating - a.rating);
   };

@@ -3,7 +3,9 @@ import axios from 'axios';
 export interface Neighborhood {
   _id: string;
   name: string;
-  boroughId: string;
+  boroughId?: string;
+  cityId?: string;
+  city?: string; // Legacy field
   description?: string;
   averageVisitRating?: number;
   totalVisits?: number;

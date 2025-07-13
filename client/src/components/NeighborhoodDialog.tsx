@@ -15,6 +15,7 @@ interface NeighborhoodDialogProps {
   existingVisits?: any[];
   neighborhoods?: any[];
   boroughs?: any[];
+  cities?: any[];
 }
 
 interface Visit extends BaseVisit {
@@ -34,7 +35,8 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   onSave,
   existingVisits = [],
   neighborhoods = [],
-  boroughs = []
+  boroughs = [],
+  cities = []
 }) => {
   const [visit, setVisit] = useState<Visit>({
     neighborhood,
@@ -209,6 +211,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         existingVisits={existingVisits}
         neighborhoods={neighborhoods}
         boroughs={boroughs}
+        cities={cities}
         onRankingComplete={handleRankingComplete}
       />
     </>

@@ -13,7 +13,7 @@ import StatsCard from '../components/StatsCard';
 import { neighborhoodsApi, type Neighborhood } from '../services/neighborhoodsApi';
 import { boroughsApi, type Borough } from '../services/boroughsApi';
 import { visitsApi, type Visit } from '../services/visitsApi';
-import { neighborhoodCache, type CachedNeighborhood, type CachedBorough } from '../services/neighborhoodCache';
+import { neighborhoodCache, type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
 
 export type CategoryType = 'borough' | 'city';
 
@@ -41,6 +41,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const [neighborhoods, setNeighborhoods] = useState<CachedNeighborhood[]>([]);
   const [geoJsonNeighborhoods, setGeoJsonNeighborhoods] = useState<any[]>([]);
   const [boroughs, setBoroughs] = useState<CachedBorough[]>([]);
+  const [cities, setCities] = useState<CachedCity[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<{ id: string; name: string; borough: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +51,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     loadNeighborhoods();
     loadGeoJsonNeighborhoods();
     loadBoroughs();
+    loadCities();
   }, [mapConfig]);
 
   useEffect(() => {
@@ -109,6 +111,23 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       setBoroughs(boroughs);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to load ${mapConfig.categoryType}s:`, err);
+    }
+  };
+
+  const loadCities = async () => {
+    try {
+      console.log(`📡 ${mapConfig.name}: Loading cities from cache`);
+      let cities: CachedCity[] = [];
+      
+      if (mapConfig.categoryType === 'city') {
+        // Load cities for city-based maps
+        cities = await neighborhoodCache.getCities('Massachusetts'); // For Boston area
+      }
+      
+      console.log(`📝 ${mapConfig.name}: Received cities data:`, cities.length, 'cities');
+      setCities(cities);
+    } catch (err) {
+      console.error(`❌ ${mapConfig.name}: Failed to load cities:`, err);
     }
   };
 
@@ -269,17 +288,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       console.log(`✅ ${mapConfig.name}: Cached lookup: ${cachedNeighborhood.name} (ID: ${visitId})`);
     }
   }
-  
-  // For visits with only neighborhoodName (GeoJSON-only), add them directly
-  visits
-    .filter(v => v.visited && v.neighborhoodName && !v.neighborhoodId)
-    .forEach(v => {
-      if (v.neighborhoodName) {
-        visitedNeighborhoodNames.add(v.neighborhoodName);
-        console.log(`✅ ${mapConfig.name}: Direct name lookup: ${v.neighborhoodName}`);
-      }
-    });
-  
+
+
   console.log(`🏠 ${mapConfig.name}: Final visited neighborhood names for map:`, visitedNeighborhoodNames.size, Array.from(visitedNeighborhoodNames));
 
   const categoryIdToName = new Map<string, string>();
@@ -358,6 +368,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           existingVisits={visits}
           neighborhoods={neighborhoods}
           boroughs={boroughs}
+          cities={cities}
         />
       )}
     </Box>
