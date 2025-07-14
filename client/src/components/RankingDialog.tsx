@@ -60,9 +60,9 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
 
   const getCategoryRange = (category: 'Bad' | 'Mid' | 'Good') => {
     switch (category) {
-      case 'Bad': return { min: 0.0, max: 3.0 };
-      case 'Mid': return { min: 3.1, max: 7.0 };
-      case 'Good': return { min: 7.1, max: 10.0 };
+      case 'Bad': return { min: 0.0, max: 2.5 };
+      case 'Mid': return { min: 2.6, max: 6.0 };
+      case 'Good': return { min: 6.1, max: 10.0 };
     }
   };
 
@@ -90,8 +90,17 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
             return null; // Not in current area, exclude from comparisons
           }
           
+          // Additional safeguard: ensure neighborhood belongs to the same city/borough context
           const boroughData = neighborhoodData.boroughId ? boroughMap.get(neighborhoodData.boroughId) : null;
           const cityData = neighborhoodData.cityId ? cityMap.get(neighborhoodData.cityId) : null;
+          
+          // Only include if the neighborhood's borough or city is in our filtered data
+          if (neighborhoodData.boroughId && !boroughData) {
+            return null; // Borough not in current area
+          }
+          if (neighborhoodData.cityId && !cityData) {
+            return null; // City not in current area
+          }
           
           return {
             _id: v.neighborhoodId,
@@ -167,107 +176,89 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     if (allItems.length === 0) {
       // First item in category, place at midpoint
       calculatedNewRating = getCategoryMidpoint(selectedCategory);
-    } else if (insertIndex === 0) {
-      // Better than all existing, place at top of category
-      calculatedNewRating = categoryRange.max;
-      
-      // Redistribute ALL existing items to make room
-      const totalItems = allItems.length + 1; // +1 for the new one
-      const span = categoryRange.max - categoryRange.min;
-      const step = span / totalItems;
-      
-      // Update all existing items with new evenly distributed ratings
-      allItems.forEach((item, index) => {
-        const newRatingForExisting = categoryRange.max - (step * (index + 1));
-        
-        if (Math.abs(item.rating - newRatingForExisting) > 0.1) {
-          const visit = existingVisits.find(v => v.neighborhoodId === item._id || v.countryId === item._id);
-          if (visit) {
-            updates.push({
-              visitId: visit._id,
-              entityId: item._id,
-              oldRating: visit.rating,
-              newRating: newRatingForExisting,
-              category: selectedCategory
-            });
-          }
-        }
-      });
-    } else if (insertIndex === allItems.length) {
-      // Worse than all existing, place at bottom of category
-      calculatedNewRating = categoryRange.min;
-      
-      // Redistribute ALL existing items to make room
-      const totalItems = allItems.length + 1; // +1 for the new one
-      const span = categoryRange.max - categoryRange.min;
-      const step = span / totalItems;
-      
-      // Update all existing items with new evenly distributed ratings
-      allItems.forEach((item, index) => {
-        const newRatingForExisting = categoryRange.min + (step * (index + 1));
-        
-        if (Math.abs(item.rating - newRatingForExisting) > 0.1) {
-          const visit = existingVisits.find(v => v.neighborhoodId === item._id || v.countryId === item._id);
-          if (visit) {
-            updates.push({
-              visitId: visit._id,
-              entityId: item._id,
-              oldRating: visit.rating,
-              newRating: newRatingForExisting,
-              category: selectedCategory
-            });
-          }
-        }
-      });
     } else {
-      // Between two items - place in the middle
-      const upperRating = allItems[insertIndex - 1].rating;
-      const lowerRating = allItems[insertIndex].rating;
-      calculatedNewRating = (upperRating + lowerRating) / 2;
-    }
-    
-    // Adjust adjacent neighbors using averaging logic
-    // Only update the immediate neighbors (one above, one below)
-    
-    // Update neighbor above (if exists and there's a non-adjacent neighbor above it)
-    if (insertIndex > 0 && insertIndex > 1) {
-      const adjacentAbove = allItems[insertIndex - 1]; // B in example
-      const nonAdjacentAbove = allItems[insertIndex - 2]; // A in example
+      // Always redistribute 1/4 of the items in the category
+      const totalItems = allItems.length + 1; // +1 for the new item
+      const redistributeCount = Math.max(1, Math.ceil(totalItems / 4));
       
-      const newRatingForAdjacent = (nonAdjacentAbove.rating + calculatedNewRating) / 2;
+      // Determine the range of items to redistribute based on insertion point
+      let startIndex, endIndex;
       
-      if (Math.abs(adjacentAbove.rating - newRatingForAdjacent) > 0.1) {
-        const visit = existingVisits.find(v => v.neighborhoodId === adjacentAbove._id || v.countryId === adjacentAbove._id);
-        if (visit) {
-          updates.push({
-            visitId: visit._id,
-            entityId: adjacentAbove._id,
-            oldRating: visit.rating,
-            newRating: newRatingForAdjacent,
-            category: selectedCategory
-          });
+      if (insertIndex === 0) {
+        // Inserting at the beginning - redistribute from start
+        startIndex = 0;
+        endIndex = Math.min(redistributeCount - 1, allItems.length - 1);
+        calculatedNewRating = categoryRange.max;
+      } else if (insertIndex === allItems.length) {
+        // Inserting at the end - redistribute from end
+        endIndex = allItems.length - 1;
+        startIndex = Math.max(0, allItems.length - redistributeCount + 1);
+        calculatedNewRating = categoryRange.min;
+      } else {
+        // Inserting in the middle - redistribute around insertion point
+        const halfRedistribute = Math.floor(redistributeCount / 2);
+        startIndex = Math.max(0, insertIndex - halfRedistribute);
+        endIndex = Math.min(allItems.length - 1, insertIndex + halfRedistribute);
+        
+        // Adjust if we don't have enough items on one side
+        const actualCount = endIndex - startIndex + 1;
+        if (actualCount < redistributeCount) {
+          if (startIndex === 0) {
+            endIndex = Math.min(allItems.length - 1, startIndex + redistributeCount - 1);
+          } else if (endIndex === allItems.length - 1) {
+            startIndex = Math.max(0, endIndex - redistributeCount + 1);
+          }
         }
+        
+        // Calculate new rating as average of neighbors
+        const upperRating = insertIndex > 0 ? allItems[insertIndex - 1].rating : categoryRange.max;
+        const lowerRating = insertIndex < allItems.length ? allItems[insertIndex].rating : categoryRange.min;
+        calculatedNewRating = (upperRating + lowerRating) / 2;
       }
-    }
-    
-    // Update neighbor below (if exists and there's a non-adjacent neighbor below it)
-    if (insertIndex < allItems.length && insertIndex < allItems.length - 1) {
-      const adjacentBelow = allItems[insertIndex]; // C in example
-      const nonAdjacentBelow = allItems[insertIndex + 1]; // D in example
       
-      const newRatingForAdjacent = (calculatedNewRating + nonAdjacentBelow.rating) / 2;
+      // Redistribute the selected range of items
+      const itemsToRedistribute = allItems.slice(startIndex, endIndex + 1);
       
-      if (Math.abs(adjacentBelow.rating - newRatingForAdjacent) > 0.1) {
-        const visit = existingVisits.find(v => v.neighborhoodId === adjacentBelow._id || v.countryId === adjacentBelow._id);
-        if (visit) {
-          updates.push({
-            visitId: visit._id,
-            entityId: adjacentBelow._id,
-            oldRating: visit.rating,
-            newRating: newRatingForAdjacent,
-            category: selectedCategory
-          });
-        }
+      // Create new evenly spaced ratings for the redistribution range
+      if (itemsToRedistribute.length > 0) {
+        const totalRedistributeItems = itemsToRedistribute.length + (insertIndex >= startIndex && insertIndex <= endIndex + 1 ? 1 : 0);
+        const span = categoryRange.max - categoryRange.min;
+        const step = span / (totalRedistributeItems + 1);
+        
+        itemsToRedistribute.forEach((item, index) => {
+          let newRatingForExisting;
+          
+          if (insertIndex === 0) {
+            // New item at top, redistribute existing items below it
+            newRatingForExisting = categoryRange.max - (step * (index + 1));
+          } else if (insertIndex === allItems.length) {
+            // New item at bottom, redistribute existing items above it
+            newRatingForExisting = categoryRange.min + (step * (itemsToRedistribute.length - index));
+          } else {
+            // Middle insertion - redistribute around the insertion point
+            const relativeIndex = startIndex + index;
+            if (relativeIndex < insertIndex) {
+              // Items before insertion point
+              newRatingForExisting = categoryRange.min + (step * (index + 1));
+            } else {
+              // Items after insertion point
+              newRatingForExisting = categoryRange.min + (step * (index + 2));
+            }
+          }
+          
+          if (Math.abs(item.rating - newRatingForExisting) > 0.1) {
+            const visit = existingVisits.find(v => v.neighborhoodId === item._id || v.countryId === item._id);
+            if (visit) {
+              updates.push({
+                visitId: visit._id,
+                entityId: item._id,
+                oldRating: visit.rating,
+                newRating: newRatingForExisting,
+                category: selectedCategory
+              });
+            }
+          }
+        });
       }
     }
     
@@ -393,13 +384,13 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                   <Box className="flex justify-between items-center">
                     <Box>
                       <Typography variant="h6" color="error">
-                        Bad (0.0 - 3.0)
+                        Bad (0.0 - 2.5)
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Places you didn't enjoy or wouldn't recommend
                       </Typography>
                     </Box>
-                    <Chip label="0.0 - 3.0" color="error" variant="outlined" />
+                    <Chip label="0.0 - 2.5" color="error" variant="outlined" />
                   </Box>
                 </CardContent>
               </Card>
@@ -412,13 +403,13 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                   <Box className="flex justify-between items-center">
                     <Box>
                       <Typography variant="h6" color="warning.main">
-                        Mid (3.1 - 7.0)
+                        Mid (2.6 - 6.0)
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Decent places - nothing special but not bad
                       </Typography>
                     </Box>
-                    <Chip label="3.1 - 7.0" color="warning" variant="outlined" />
+                    <Chip label="2.6 - 6.0" color="warning" variant="outlined" />
                   </Box>
                 </CardContent>
               </Card>
@@ -431,13 +422,13 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
                   <Box className="flex justify-between items-center">
                     <Box>
                       <Typography variant="h6" color="success.main">
-                        Good (7.1 - 10.0)
+                        Good (6.1 - 10.0)
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Places you loved and would highly recommend
                       </Typography>
                     </Box>
-                    <Chip label="7.1 - 10.0" color="success" variant="outlined" />
+                    <Chip label="6.1 - 10.0" color="success" variant="outlined" />
                   </Box>
                 </CardContent>
               </Card>
