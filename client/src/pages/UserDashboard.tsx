@@ -11,6 +11,7 @@ import {
   LinearProgress,
   Paper
 } from '@mui/material';
+import { TrendingUp, LocationOn, Star, Public, Explore } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { visitsApi, type Visit } from '../services/visitsApi';
 import { countriesApi, type Country } from '../services/countriesApi';
@@ -225,401 +226,248 @@ const UserDashboard: React.FC = () => {
       sx={{ 
         width: '100vw', 
         maxWidth: 'none', 
-        padding: '48px 64px',
+        padding: '32px',
         margin: 0,
         boxSizing: 'border-box'
       }}
     >
-      <Typography variant="h4" className="mb-12 font-bold text-gray-800">
+      <Typography variant="h4" className="mb-8 font-bold text-gray-800" sx={{ textAlign: 'center' }}>
         Welcome back, {user?.username}!
       </Typography>
       
-      <Grid container spacing={6} sx={{ width: '100%', margin: 0 }}>
-
-        {/* NYC Neighborhoods Module */}
-        <Grid item xs={12} sx={{ width: '100%' }}>
+      <Grid container spacing={4} sx={{ width: '100%', margin: 0, justifyContent: 'center' }}>
+        {/* Countries StatsCard */}
+        <Grid item xs={12} lg={6}>
           <Card sx={{ 
-            backgroundColor: '#f8fafc', 
-            border: '2px solid #e2e8f0', 
-            width: '100%',
-            height: '100%',
-            minHeight: 'fit-content',
-            paddingY: '24px'
+            background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)', 
+            color: 'white',
+            height: 'fit-content'
           }}>
-            <CardContent sx={{ padding: '48px', height: '100%' }}>
-              <Typography variant="h4" className="mb-6 font-bold text-gray-800">
-                🏙️ NYC Neighborhoods
-              </Typography>
-              
-              {/* NYC Neighborhoods Stats */}
-              <Grid item xs={12}>
-                <Card className="mb-8" sx={{ paddingY: '16px' }}>
-                <CardContent sx={{ padding: '32px' }}>
-                  <Typography variant="h6" className="mb-4 font-semibold text-gray-700">
-                    Statistics
+            <CardContent>
+              {/* Header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Public sx={{ mr: 1 }} />
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  Your World Exploration Stats
+                </Typography>
+              </Box>
+
+              {/* Main Stats Grid */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 3 }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    {stats.totalCountries}
                   </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-purple-600 mb-2">
-                          {stats.totalNeighborhoods}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Neighborhoods Visited
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-indigo-600 mb-2">
-                          {stats.boroughsVisited || 5}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Boroughs Explored
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-blue-600 mb-2">
-                          {stats.recentNeighborhoods.length}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Recent Visits
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-cyan-600 mb-2">
-                          {stats.topRatedNeighborhoods.length}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Top Rated
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-                </Card>
-              </Grid>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Countries Visited
+                  </Typography>
+                </Box>
 
-              {/* Recent and Top Rated Neighborhoods */}
-              <Grid container spacing={6}>
-                {/* Recent Neighborhoods */}
-                <Grid item xs={12}>
-                  <Grid item xs={12} md={6}>
-                  <Card sx={{ height: '320px', paddingY: '12px' }}>
-                    <CardContent sx={{ height: '100%', padding: '24px' }}>
-                      <Typography variant="h6" className="mb-3">
-                        Recent Visits
-                      </Typography>
-                      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                        <Box className="space-y-2 h-full overflow-y-auto">
-                          {stats.recentNeighborhoods.length > 0 ? (
-                            stats.recentNeighborhoods.map((visit, index) => (
-                              <Paper key={visit._id} className="p-2" variant="outlined" sx={{ minHeight: 'fit-content' }}>
-                                <Box className="flex justify-between items-center">
-                                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                                    <Typography variant="body2" className="font-medium" sx={{ 
-                                      overflow: 'hidden', 
-                                      textOverflow: 'ellipsis', 
-                                      whiteSpace: 'nowrap' 
-                                    }}>
-                                      {formatVisitName(visit, countries, neighborhoods, boroughs)}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString() : 'No date'}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex items-center gap-1 ml-2" sx={{ flexShrink: 0 }}>
-                                    {visit.category && (
-                                      <Chip 
-                                        label={visit.category} 
-                                        color={getCategoryColor(visit.category) as any}
-                                        size="small" 
-                                      />
-                                    )}
-                                    {visit.rating && (
-                                      <Typography variant="body2" className="font-mono">
-                                        {visit.rating}/10
-                                      </Typography>
-                                    )}
-                                  </Box>
-                                </Box>
-                              </Paper>
-                            ))
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              No neighborhood visits yet
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                  </Grid>
-                </Grid>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
+                    <LocationOn sx={{ mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      {stats.continentsVisited} Continents
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Continents Explored
+                  </Typography>
+                </Box>
+              </Box>
 
-                {/* Top Rated Neighborhoods */}
-                <Grid item xs={12}>
-                  <Grid item xs={12} md={6}>
-                  <Card sx={{ height: '320px', paddingY: '12px' }}>
-                    <CardContent sx={{ height: '100%', padding: '24px' }}>
-                      <Typography variant="h6" className="mb-3">
-                        Top Rated
-                      </Typography>
-                      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                        <Box className="space-y-2 h-full overflow-y-auto">
-                          {stats.topRatedNeighborhoods.length > 0 ? (
-                            stats.topRatedNeighborhoods.map((visit, index) => (
-                              <Paper key={visit._id} className="p-2" variant="outlined" sx={{ minHeight: 'fit-content' }}>
-                                <Box className="flex justify-between items-center">
-                                  <Box className="flex items-center gap-2" sx={{ minWidth: 0, flex: 1 }}>
-                                    <Typography variant="body2" className="font-mono text-gray-500" sx={{ flexShrink: 0 }}>
-                                      #{index + 1}
-                                    </Typography>
-                                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                                      <Typography variant="body2" className="font-medium" sx={{ 
-                                        overflow: 'hidden', 
-                                        textOverflow: 'ellipsis', 
-                                        whiteSpace: 'nowrap' 
-                                      }}>
-                                        {formatVisitName(visit, countries, neighborhoods, boroughs)}
-                                      </Typography>
-                                      {visit.notes && (
-                                        <Typography variant="caption" color="text.secondary" sx={{ 
-                                          overflow: 'hidden', 
-                                          textOverflow: 'ellipsis', 
-                                          whiteSpace: 'nowrap',
-                                          display: 'block'
-                                        }}>
-                                          "{visit.notes}"
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                  </Box>
-                                  <Box className="flex items-center gap-1 ml-2" sx={{ flexShrink: 0 }}>
-                                    {visit.category && (
-                                      <Chip 
-                                        label={visit.category} 
-                                        color={getCategoryColor(visit.category) as any}
-                                        size="small" 
-                                      />
-                                    )}
-                                    <Typography variant="body2" className="font-bold text-blue-600">
-                                      {visit.rating}/10
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                              </Paper>
-                            ))
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              No rated neighborhoods yet
+              {/* Top Countries */}
+              {stats.topRatedCountries.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Star sx={{ mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      Top Countries
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {stats.topRatedCountries.slice(0, 3).map((visit, index) => (
+                      <Box 
+                        key={visit._id}
+                        sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                          borderRadius: 1,
+                          px: 2,
+                          py: 1
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontWeight: 'bold', 
+                              mr: 1,
+                              fontSize: '1.2em',
+                              opacity: index === 0 ? 1 : index === 1 ? 0.9 : 0.8
+                            }}
+                          >
+                            {index + 1}.
+                          </Typography>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+                              {formatVisitName(visit, countries, neighborhoods, boroughs)}
                             </Typography>
-                          )}
+                          </Box>
                         </Box>
+                        <Chip 
+                          label={visit.rating?.toFixed(1) || 'N/A'}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: index === 0 ? '#4fc3f7' : 'rgba(255,255,255,0.2)', 
+                            color: index === 0 ? '#1e3c72' : 'white',
+                            fontWeight: 'bold'
+                          }}
+                        />
                       </Box>
-                    </CardContent>
-                  </Card>
-                  </Grid>
-                </Grid>
-              </Grid>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Category Distribution */}
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Chip 
+                  label={`Good: ${stats.visitsByCategory.Good}`}
+                  size="small"
+                  sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                />
+                <Chip 
+                  label={`Mid: ${stats.visitsByCategory.Mid}`}
+                  size="small"
+                  sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                />
+                <Chip 
+                  label={`Bad: ${stats.visitsByCategory.Bad}`}
+                  size="small"
+                  sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Countries Module */}
-        <Grid item xs={12} sx={{ width: '100%' }}>
+        {/* Neighborhoods StatsCard */}
+        <Grid item xs={12} lg={6}>
           <Card sx={{ 
-            backgroundColor: '#f0fdf4', 
-            border: '2px solid #bbf7d0', 
-            width: '100%',
-            height: '100%',
-            minHeight: 'fit-content',
-            paddingY: '24px'
+            background: 'linear-gradient(135deg, #400B8B 0%, #B07FF6 100%)', 
+            color: 'white',
+            height: 'fit-content'
           }}>
-            <CardContent sx={{ padding: '48px', height: '100%' }}>
-              <Typography variant="h4" className="mb-6 font-bold text-gray-800">
-                🌍 Countries
-              </Typography>
-              
-              {/* Countries Stats */}
-              <Grid item xs={12}>
-                <Card className="mb-8" sx={{ paddingY: '16px' }}>
-                <CardContent sx={{ padding: '32px' }}>
-                  <Typography variant="h6" className="mb-4 font-semibold text-gray-700">
-                    Statistics
+            <CardContent>
+              {/* Header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Explore sx={{ mr: 1 }} />
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  Your NYC Exploration Stats
+                </Typography>
+              </Box>
+
+              {/* Main Stats Grid */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 3 }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    {stats.totalNeighborhoods}
                   </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-green-600 mb-2">
-                          {stats.totalCountries}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Countries Visited
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-emerald-600 mb-2">
-                          {stats.continentsVisited}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Continents Explored
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-teal-600 mb-2">
-                          {stats.recentCountries.length}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Recent Visits
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box className="text-center">
-                        <Typography variant="h3" className="font-bold text-lime-600 mb-2">
-                          {stats.topRatedCountries.length}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          Top Rated
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-                </Card>
-              </Grid>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Neighborhoods Visited
+                  </Typography>
+                </Box>
 
-              {/* Recent and Top Rated Countries */}
-              <Grid container spacing={6}>
-                {/* Recent Countries */}
-                <Grid item xs={12}>
-                  <Grid item xs={12} md={6}>
-                  <Card sx={{ height: '320px', paddingY: '12px' }}>
-                    <CardContent sx={{ height: '100%', padding: '24px' }}>
-                      <Typography variant="h6" className="mb-3">
-                        Recent Visits
-                      </Typography>
-                      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                        <Box className="space-y-2 h-full overflow-y-auto">
-                          {stats.recentCountries.length > 0 ? (
-                            stats.recentCountries.map((visit, index) => (
-                              <Paper key={visit._id} className="p-2" variant="outlined" sx={{ minHeight: 'fit-content' }}>
-                                <Box className="flex justify-between items-center">
-                                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                                    <Typography variant="body2" className="font-medium" sx={{ 
-                                      overflow: 'hidden', 
-                                      textOverflow: 'ellipsis', 
-                                      whiteSpace: 'nowrap' 
-                                    }}>
-                                      {formatVisitName(visit, countries, neighborhoods, boroughs)}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString() : 'No date'}
-                                    </Typography>
-                                  </Box>
-                                  <Box className="flex items-center gap-1 ml-2" sx={{ flexShrink: 0 }}>
-                                    {visit.category && (
-                                      <Chip 
-                                        label={visit.category} 
-                                        color={getCategoryColor(visit.category) as any}
-                                        size="small" 
-                                      />
-                                    )}
-                                    {visit.rating && (
-                                      <Typography variant="body2" className="font-mono">
-                                        {visit.rating}/10
-                                      </Typography>
-                                    )}
-                                  </Box>
-                                </Box>
-                              </Paper>
-                            ))
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              No country visits yet
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                  </Grid>
-                </Grid>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
+                    <LocationOn sx={{ mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      5 Boroughs
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    NYC Area Explored
+                  </Typography>
+                </Box>
+              </Box>
 
-                {/* Top Rated Countries */}
-                <Grid item xs={12}>
-                  <Grid item xs={12} md={6}>
-                  <Card sx={{ height: '320px', paddingY: '12px' }}>
-                    <CardContent sx={{ height: '100%', padding: '24px' }}>
-                      <Typography variant="h6" className="mb-3">
-                        Top Rated
-                      </Typography>
-                      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                        <Box className="space-y-2 h-full overflow-y-auto">
-                          {stats.topRatedCountries.length > 0 ? (
-                            stats.topRatedCountries.map((visit, index) => (
-                              <Paper key={visit._id} className="p-2" variant="outlined" sx={{ minHeight: 'fit-content' }}>
-                                <Box className="flex justify-between items-center">
-                                  <Box className="flex items-center gap-2" sx={{ minWidth: 0, flex: 1 }}>
-                                    <Typography variant="body2" className="font-mono text-gray-500" sx={{ flexShrink: 0 }}>
-                                      #{index + 1}
-                                    </Typography>
-                                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                                      <Typography variant="body2" className="font-medium" sx={{ 
-                                        overflow: 'hidden', 
-                                        textOverflow: 'ellipsis', 
-                                        whiteSpace: 'nowrap' 
-                                      }}>
-                                        {formatVisitName(visit, countries, neighborhoods, boroughs)}
-                                      </Typography>
-                                      {visit.notes && (
-                                        <Typography variant="caption" color="text.secondary" sx={{ 
-                                          overflow: 'hidden', 
-                                          textOverflow: 'ellipsis', 
-                                          whiteSpace: 'nowrap',
-                                          display: 'block'
-                                        }}>
-                                          "{visit.notes}"
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                  </Box>
-                                  <Box className="flex items-center gap-1 ml-2" sx={{ flexShrink: 0 }}>
-                                    {visit.category && (
-                                      <Chip 
-                                        label={visit.category} 
-                                        color={getCategoryColor(visit.category) as any}
-                                        size="small" 
-                                      />
-                                    )}
-                                    <Typography variant="body2" className="font-bold text-blue-600">
-                                      {visit.rating}/10
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                              </Paper>
-                            ))
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              No rated countries yet
+              {/* Top Neighborhoods */}
+              {stats.topRatedNeighborhoods.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Star sx={{ mr: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      Top Neighborhoods
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {stats.topRatedNeighborhoods.slice(0, 3).map((visit, index) => (
+                      <Box 
+                        key={visit._id}
+                        sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                          borderRadius: 1,
+                          px: 2,
+                          py: 1
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontWeight: 'bold', 
+                              mr: 1,
+                              fontSize: '1.2em',
+                              opacity: index === 0 ? 1 : index === 1 ? 0.9 : 0.8
+                            }}
+                          >
+                            {index + 1}.
+                          </Typography>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+                              {formatVisitName(visit, countries, neighborhoods, boroughs)}
                             </Typography>
-                          )}
+                          </Box>
                         </Box>
+                        <Chip 
+                          label={visit.rating?.toFixed(1) || 'N/A'}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: index === 0 ? '#FEF504' : 'rgba(255,255,255,0.2)', 
+                            color: index === 0 ? '#400B8B' : 'white',
+                            fontWeight: 'bold'
+                          }}
+                        />
                       </Box>
-                    </CardContent>
-                  </Card>
-                  </Grid>
-                </Grid>
-              </Grid>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Category Distribution */}
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Chip 
+                  label={`Good: ${stats.visitsByCategory.Good}`}
+                  size="small"
+                  sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                />
+                <Chip 
+                  label={`Mid: ${stats.visitsByCategory.Mid}`}
+                  size="small"
+                  sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                />
+                <Chip 
+                  label={`Bad: ${stats.visitsByCategory.Bad}`}
+                  size="small"
+                  sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                />
+              </Box>
             </CardContent>
           </Card>
         </Grid>

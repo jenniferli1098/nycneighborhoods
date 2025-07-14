@@ -10,16 +10,20 @@ import {
   Box, 
   CircularProgress,
   Tabs,
-  Tab
+  Tab,
+  Menu,
+  MenuItem
 } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CacheProvider } from './contexts/CacheContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import NeighborhoodsPage from './pages/NeighborhoodsPage';
 import BostonNeighborhoodsPage from './pages/BostonNeighborhoodsPage';
 import CountriesPage from './pages/CountriesPage';
 import UserDashboard from './pages/UserDashboard';
+import SettingsPage from './pages/SettingsPage';
 
 const theme = createTheme({
   palette: {
@@ -37,10 +41,40 @@ const Navigation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { settings, availableMaps } = useSettings();
+  const [neighborhoodMenuAnchor, setNeighborhoodMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
+    if (newValue === 'neighborhoods-menu') {
+      return; // Don't navigate for the dropdown trigger
+    }
     navigate(newValue);
   };
+
+  const handleNeighborhoodMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setNeighborhoodMenuAnchor(event.currentTarget);
+  };
+
+  const handleNeighborhoodMenuClose = () => {
+    setNeighborhoodMenuAnchor(null);
+  };
+
+  const handleNeighborhoodSelect = (route: string) => {
+    navigate(route);
+    handleNeighborhoodMenuClose();
+  };
+
+  // Separate neighborhoods from other maps
+  const neighborhoodMaps = availableMaps.filter(map => 
+    map.category === 'neighborhood' && settings.visibleMaps.includes(map.id)
+  );
+  const otherMaps = availableMaps.filter(map => 
+    map.category === 'other' && settings.visibleMaps.includes(map.id)
+  );
+
+  // Check if current path is a neighborhood route
+  const isNeighborhoodRoute = neighborhoodMaps.some(map => map.route === location.pathname);
+  const currentNeighborhoodValue = isNeighborhoodRoute ? 'neighborhoods-menu' : location.pathname;
 
   return (
     <AppBar position="sticky" sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)', top: 0, zIndex: 1100 }}>
@@ -51,7 +85,7 @@ const Navigation: React.FC = () => {
         {user && (
           <>
             <Tabs 
-              value={location.pathname} 
+              value={currentNeighborhoodValue} 
               onChange={handleTabChange}
               sx={{ 
                 mr: 3,
@@ -61,10 +95,47 @@ const Navigation: React.FC = () => {
               }}
             >
               <Tab label="Dashboard" value="/" />
-              <Tab label="NYC Neighborhoods" value="/neighborhoods" />
-              <Tab label="Boston Neighborhoods" value="/boston" />
-              <Tab label="Countries" value="/countries" />
+              
+              {/* Neighborhoods Dropdown */}
+              {neighborhoodMaps.length > 0 && (
+                <Tab 
+                  label="Neighborhoods ▼" 
+                  value="neighborhoods-menu"
+                  onClick={handleNeighborhoodMenuClick}
+                />
+              )}
+              
+              {/* Other Maps */}
+              {otherMaps.map(map => (
+                <Tab key={map.id} label={map.name} value={map.route} />
+              ))}
+              
+              <Tab label="Settings" value="/settings" />
             </Tabs>
+
+            {/* Neighborhoods Dropdown Menu */}
+            <Menu
+              anchorEl={neighborhoodMenuAnchor}
+              open={Boolean(neighborhoodMenuAnchor)}
+              onClose={handleNeighborhoodMenuClose}
+              sx={{
+                '& .MuiPaper-root': {
+                  backgroundColor: 'white',
+                  boxShadow: 3
+                }
+              }}
+            >
+              {neighborhoodMaps.map(map => (
+                <MenuItem 
+                  key={map.id} 
+                  onClick={() => handleNeighborhoodSelect(map.route)}
+                  selected={location.pathname === map.route}
+                >
+                  {map.name}
+                </MenuItem>
+              ))}
+            </Menu>
+
             <Box className="flex items-center gap-4">
               <Typography variant="body1">
                 Welcome, {user.username}!
@@ -82,15 +153,18 @@ const Navigation: React.FC = () => {
 
 const MainApp: React.FC = () => {
   return (
-    <Box className="h-screen flex flex-col" sx={{ overflow: 'hidden' }}>
-      <Navigation />
-      <Routes>
-        <Route path="/" element={<UserDashboard />} />
-        <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
-        <Route path="/boston" element={<BostonNeighborhoodsPage />} />
-        <Route path="/countries" element={<CountriesPage />} />
-      </Routes>
-    </Box>
+    <SettingsProvider>
+      <Box className="h-screen flex flex-col" sx={{ overflow: 'hidden' }}>
+        <Navigation />
+        <Routes>
+          <Route path="/" element={<UserDashboard />} />
+          <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
+          <Route path="/boston" element={<BostonNeighborhoodsPage />} />
+          <Route path="/countries" element={<CountriesPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
+      </Box>
+    </SettingsProvider>
   );
 };
 

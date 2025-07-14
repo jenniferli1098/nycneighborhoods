@@ -3,12 +3,7 @@ import {
   Box,
   CircularProgress,
   Alert,
-  Typography,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel
+  Typography
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { countriesApi, type Country } from '../services/countriesApi';
@@ -25,8 +20,6 @@ const CountriesPage: React.FC = () => {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedContinent, setSelectedContinent] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
 
   useEffect(() => {
@@ -89,24 +82,6 @@ const CountriesPage: React.FC = () => {
     }
   };
 
-  const getFilteredCountries = () => {
-    let filtered = [...countries];
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(country =>
-        country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        country.code.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Filter by continent
-    if (selectedContinent) {
-      filtered = filtered.filter(country => country.continent === selectedContinent);
-    }
-
-    return filtered;
-  };
 
 
   const getVisitedCountryIds = () => {
@@ -216,34 +191,6 @@ const CountriesPage: React.FC = () => {
 
 
         <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', p: 2 }}>
-          {/* Filters */}
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              label="Search Countries"
-              variant="outlined"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            
-            <FormControl fullWidth>
-              <InputLabel>Filter by Continent</InputLabel>
-              <Select
-                value={selectedContinent}
-                label="Filter by Continent"
-                onChange={(e) => setSelectedContinent(e.target.value)}
-              >
-                <MenuItem value="">All Continents</MenuItem>
-                {continents.map(continent => (
-                  <MenuItem key={continent} value={continent}>
-                    {continent}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
           <Typography variant="body2" color="text.secondary">
             {stats.totalVisited} countries visited on map
           </Typography>
@@ -257,7 +204,7 @@ const CountriesPage: React.FC = () => {
           visitedCountries={visitedCountryIds}
           onCountryClick={handleCountryClick}
           onCountryQuickVisit={handleCountryQuickVisit}
-          availableCountries={getFilteredCountries()}
+          availableCountries={countries}
         />
       </Box>
 

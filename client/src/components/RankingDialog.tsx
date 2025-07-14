@@ -447,7 +447,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
             </Typography>
 
             <Typography variant="body1" className="mb-4 text-center">
-              Click on the neighborhood you prefer:
+              Click on the option you prefer:
             </Typography>
 
             <Box className="flex gap-4 mb-6">
