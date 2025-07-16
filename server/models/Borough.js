@@ -6,40 +6,33 @@ const boroughSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  city: {
-    type: String,
-    required: true,
-    trim: true,
-    enum: ['NYC', 'Boston', 'Cambridge', 'Somerville'],
-    default: 'NYC'
+  cityId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'City',
+    required: true
   },
   description: {
     type: String,
     trim: true
   },
-  neighborhoodIds: [{
-    type: String,
-    required: true,
-    trim: true
-  }],
 }, {
   timestamps: true
 });
 
 boroughSchema.index({ coordinates: '2dsphere' });
-boroughSchema.index({ name: 1, city: 1 }, { unique: true });
-boroughSchema.index({ city: 1 });
+boroughSchema.index({ name: 1, cityId: 1 }, { unique: true });
+boroughSchema.index({ cityId: 1 });
 
 // Method to get populated neighborhood details
 boroughSchema.methods.getNeighborhoodDetails = async function() {
   const Neighborhood = mongoose.model('Neighborhood');
-  return await Neighborhood.find({ boroughId: this._id.toString() });
+  return await Neighborhood.find({ boroughId: this._id });
 };
 
 // Method to get all neighborhoods in this borough
 boroughSchema.methods.getNeighborhoods = async function() {
   const Neighborhood = mongoose.model('Neighborhood');
-  return await Neighborhood.find({ boroughId: this._id.toString() });
+  return await Neighborhood.find({ boroughId: this._id });
 };
 
 // Method to get borough statistics
@@ -47,8 +40,8 @@ boroughSchema.methods.getStats = async function() {
   const Neighborhood = mongoose.model('Neighborhood');
   const Visit = mongoose.model('Visit');
   
-  const neighborhoods = await Neighborhood.find({ boroughId: this._id.toString() });
-  const neighborhoodIds = neighborhoods.map(n => n._id.toString());
+  const neighborhoods = await Neighborhood.find({ boroughId: this._id });
+  const neighborhoodIds = neighborhoods.map(n => n._id);
   
   const visitStats = await Visit.aggregate([
     { $match: { neighborhoodId: { $in: neighborhoodIds } } },
@@ -81,14 +74,20 @@ boroughSchema.statics.findByNeighborhood = async function(neighborhoodName) {
   return neighborhood ? await this.findOne({ _id: neighborhood.boroughId }) : null;
 };
 
-// Static method to find boroughs by city
-boroughSchema.statics.findByCity = function(city) {
-  return this.find({ city: city });
+// Static method to find boroughs by city ID
+boroughSchema.statics.findByCityId = function(cityId) {
+  return this.find({ cityId: cityId });
 };
 
-// Static method to find borough by name and city
-boroughSchema.statics.findByNameAndCity = function(name, city) {
-  return this.findOne({ name, city });
+// Static method to find borough by name and city ID
+boroughSchema.statics.findByNameAndCityId = function(name, cityId) {
+  return this.findOne({ name, cityId });
+};
+
+// Method to get the associated city
+boroughSchema.methods.getCity = async function() {
+  const City = mongoose.model('City');
+  return await City.findById(this.cityId);
 };
 
 module.exports = mongoose.model('Borough', boroughSchema);

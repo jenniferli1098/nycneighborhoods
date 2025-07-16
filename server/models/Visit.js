@@ -2,18 +2,18 @@ const mongoose = require('mongoose');
 
 const visitSchema = new mongoose.Schema({
   userId: {
-    type: String,
-    required: true,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   // Either neighborhoodId OR countryId is required, not both
   neighborhoodId: {
-    type: String,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Neighborhood'
   },
   countryId: {
-    type: String,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Country'
   },
   visitType: {
     type: String,
@@ -60,7 +60,7 @@ visitSchema.pre('validate', function() {
   }
 });
 
-// Compound index for unique visits (either neighborhoodId or countryId will be non-null)
+// Single unique index for neighborhood and country visits
 visitSchema.index({ userId: 1, neighborhoodId: 1, countryId: 1 }, { unique: true, sparse: true });
 visitSchema.index({ neighborhoodId: 1 });
 visitSchema.index({ countryId: 1 });
@@ -70,13 +70,13 @@ visitSchema.index({ userId: 1 });
 visitSchema.post('save', async function() {
   if (this.visitType === 'neighborhood' && this.neighborhoodId) {
     const Neighborhood = mongoose.model('Neighborhood');
-    const neighborhood = await Neighborhood.findOne({ _id: this.neighborhoodId });
+    const neighborhood = await Neighborhood.findById(this.neighborhoodId);
     if (neighborhood) {
       await neighborhood.calculateAverageRating();
     }
   } else if (this.visitType === 'country' && this.countryId) {
     const Country = mongoose.model('Country');
-    const country = await Country.findOne({ _id: this.countryId });
+    const country = await Country.findById(this.countryId);
     if (country) {
       await country.calculateAverageRating();
     }
@@ -88,13 +88,13 @@ visitSchema.post('findOneAndDelete', async function(doc) {
   if (doc) {
     if (doc.visitType === 'neighborhood' && doc.neighborhoodId) {
       const Neighborhood = mongoose.model('Neighborhood');
-      const neighborhood = await Neighborhood.findOne({ _id: doc.neighborhoodId });
+      const neighborhood = await Neighborhood.findById(doc.neighborhoodId);
       if (neighborhood) {
         await neighborhood.calculateAverageRating();
       }
     } else if (doc.visitType === 'country' && doc.countryId) {
       const Country = mongoose.model('Country');
-      const country = await Country.findOne({ _id: doc.countryId });
+      const country = await Country.findById(doc.countryId);
       if (country) {
         await country.calculateAverageRating();
       }
@@ -105,24 +105,44 @@ visitSchema.post('findOneAndDelete', async function(doc) {
 // Method to get full location details
 visitSchema.methods.getFullDetails = async function() {
   const User = mongoose.model('User');
-  const user = await User.findOne({ _id: this.userId });
+  const user = await User.findById(this.userId);
   
   let locationDetails = null;
   
   if (this.visitType === 'neighborhood' && this.neighborhoodId) {
     const Neighborhood = mongoose.model('Neighborhood');
     const Borough = mongoose.model('Borough');
-    const neighborhood = await Neighborhood.findOne({ _id: this.neighborhoodId });
-    const borough = neighborhood ? await Borough.findOne({ _id: neighborhood.boroughId }) : null;
+    const City = mongoose.model('City');
+    const neighborhood = await Neighborhood.findById(this.neighborhoodId);
+    
+    let parentLocation = null;
+    if (neighborhood) {
+      if (neighborhood.categoryType === 'borough' && neighborhood.boroughId) {
+        const borough = await Borough.findById(neighborhood.boroughId);
+        if (borough) {
+          const city = await City.findById(borough.cityId);
+          parentLocation = {
+            borough: borough.name,
+            city: city?.name
+          };
+        }
+      } else if (neighborhood.categoryType === 'city' && neighborhood.cityId) {
+        const city = await City.findById(neighborhood.cityId);
+        parentLocation = {
+          city: city?.name
+        };
+      }
+    }
+    
     locationDetails = {
       type: 'neighborhood',
       name: neighborhood?.name,
-      borough: borough?.name,
-      city: neighborhood?.city
+      categoryType: neighborhood?.categoryType,
+      ...parentLocation
     };
   } else if (this.visitType === 'country' && this.countryId) {
     const Country = mongoose.model('Country');
-    const country = await Country.findOne({ _id: this.countryId });
+    const country = await Country.findById(this.countryId);
     locationDetails = {
       type: 'country',
       name: country?.name,
@@ -157,7 +177,7 @@ visitSchema.statics.getUserStats = async function(userId) {
       totalNeighborhoods++;
       if (visit.visited) {
         totalVisits++;
-        const neighborhood = await Neighborhood.findOne({ _id: visit.neighborhoodId });
+        const neighborhood = await Neighborhood.findById(visit.neighborhoodId);
         if (neighborhood) {
           boroughsVisitedSet.add(neighborhood.boroughId);
         }
@@ -166,7 +186,7 @@ visitSchema.statics.getUserStats = async function(userId) {
       totalCountries++;
       if (visit.visited) {
         totalVisits++;
-        const country = await Country.findOne({ _id: visit.countryId });
+        const country = await Country.findById(visit.countryId);
         if (country) {
           continentsVisitedSet.add(country.continent);
         }
@@ -211,8 +231,8 @@ visitSchema.statics.getNeighborhoodPopularity = async function(limit = 10) {
   
   const result = [];
   for (const item of visitedNeighborhoods) {
-    const neighborhood = await Neighborhood.findOne({ _id: item._id });
-    const borough = neighborhood ? await Borough.findOne({ _id: neighborhood.boroughId }) : null;
+    const neighborhood = await Neighborhood.findById(item._id);
+    const borough = neighborhood ? await Borough.findById(neighborhood.boroughId) : null;
     
     result.push({
       neighborhood: item._id,
@@ -247,7 +267,7 @@ visitSchema.statics.getCountryPopularity = async function(limit = 10) {
   
   const result = [];
   for (const item of visitedCountries) {
-    const country = await Country.findOne({ _id: item._id });
+    const country = await Country.findById(item._id);
     
     result.push({
       country: item._id,

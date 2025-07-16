@@ -24,6 +24,8 @@ interface GenericNeighborhoodsPageProps {
 }
 
 const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ mapConfig }) => {
+  console.log('🏗️ GenericNeighborhoodsPage: Component rendering with mapConfig:', mapConfig.name);
+  
   const { user } = useAuth();
   const [neighborhoods, setNeighborhoods] = useState<CachedNeighborhood[]>([]);
   const [geoJsonNeighborhoods, setGeoJsonNeighborhoods] = useState<any[]>([]);
@@ -76,8 +78,9 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     try {
       console.log(`📡 ${mapConfig.name}: Loading GeoJSON neighborhoods for map`);
       const data = await mapConfig.geoJsonEndpoint();
-      console.log(`📝 ${mapConfig.name}: Received GeoJSON data:`, data.features.length, 'features');
-      setGeoJsonNeighborhoods(data.features);
+      console.log(`📝 ${mapConfig.name}: Received GeoJSON data:`, data.features?.length || 0, 'features');
+      console.log(`📝 ${mapConfig.name}: Sample feature:`, data.features?.[0]?.properties);
+      setGeoJsonNeighborhoods(data.features || []);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to load GeoJSON neighborhoods:`, err);
     }
@@ -146,7 +149,15 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   };
 
   const handleNeighborhoodClick = (neighborhood: string, category: string) => {
-    console.log(`🖱️ ${mapConfig.name}: Neighborhood clicked (right-click for dialog):`, neighborhood, category);
+    console.log(`🖱️ ${mapConfig.name}: handleNeighborhoodClick called with:`, { neighborhood, category, user: !!user });
+    console.log(`🖱️ ${mapConfig.name}: Available categoryIdToName mapping:`, Array.from(categoryIdToName.entries()));
+    console.log(`🖱️ ${mapConfig.name}: Available neighborhoods sample:`, neighborhoods.slice(0, 3).map(n => ({name: n.name, boroughId: n.boroughId, cityId: n.cityId})));
+    
+    if (!user) {
+      console.log(`⚠️ ${mapConfig.name}: User not authenticated, skipping neighborhood click`);
+      alert('Please log in to interact with neighborhoods');
+      return;
+    }
     
     if (mapConfig.hasDbNeighborhoods) {
       // For maps with database neighborhoods, find actual neighborhood ID
@@ -186,7 +197,13 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   };
 
   const handleQuickVisit = async (neighborhood: string, category: string) => {
-    console.log(`⚡ ${mapConfig.name}: Quick visit (left-click) for:`, neighborhood, category);
+    console.log(`⚡ ${mapConfig.name}: handleQuickVisit called with:`, { neighborhood, category, user: !!user });
+    
+    if (!user) {
+      console.log(`⚠️ ${mapConfig.name}: User not authenticated, skipping quick visit`);
+      alert('Please log in to mark neighborhoods as visited');
+      return;
+    }
     
     try {
       if (!mapConfig.hasDbNeighborhoods) {
@@ -216,21 +233,38 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         console.log(`✅ ${mapConfig.name}: Quick visit created successfully:`, newVisit);
       } else {
         // For database-backed maps, lookup neighborhood ID
+        console.log(`🔍 ${mapConfig.name}: Looking for ${mapConfig.categoryType} "${category}" in:`, boroughs.map(b => b.name));
         const category_obj = boroughs.find(b => b.name === category);
         if (!category_obj) {
           console.error(`❌ ${mapConfig.name}: ${mapConfig.categoryType} not found:`, category);
+          console.log(`📋 ${mapConfig.name}: Available ${mapConfig.categoryType}s:`, boroughs.map(b => b.name));
           return;
         }
+        console.log(`✅ ${mapConfig.name}: Found ${mapConfig.categoryType}:`, category_obj);
 
+        console.log(`🔍 ${mapConfig.name}: Looking for neighborhood "${neighborhood}" with ${mapConfig.categoryType}Id "${category_obj.id}"`);
         const neighborhood_obj = neighborhoods.find(n => {
-          if (mapConfig.categoryType === 'borough') {
-            return n.name === neighborhood && n.boroughId === category_obj.id;
-          } else {
-            return n.name === neighborhood && n.cityId === category_obj.id;
+          const matches = mapConfig.categoryType === 'borough' 
+            ? n.name === neighborhood && n.boroughId === category_obj.id
+            : n.name === neighborhood && n.cityId === category_obj.id;
+          
+          if (n.name === neighborhood) {
+            console.log(`🔍 ${mapConfig.name}: Found matching name "${n.name}", checking ${mapConfig.categoryType}Id: "${mapConfig.categoryType === 'borough' ? n.boroughId : n.cityId}" === "${category_obj.id}" = ${matches}`);
           }
+          
+          return matches;
         });
         if (!neighborhood_obj) {
           console.error(`❌ ${mapConfig.name}: Neighborhood not found:`, neighborhood);
+          console.log(`📋 ${mapConfig.name}: Available neighborhoods with name "${neighborhood}":`, 
+            neighborhoods.filter(n => n.name === neighborhood).map(n => ({
+              name: n.name, 
+              boroughId: n.boroughId, 
+              cityId: n.cityId,
+              boroughName: n.boroughName,
+              cityName: n.cityName
+            }))
+          );
           return;
         }
 
@@ -303,6 +337,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   }
   
   console.log(`🏘️ ${mapConfig.name}: ${mapConfig.categoryType} mapping complete:`, categoryIdToName.size, `${mapConfig.categoryType}s loaded`);
+  console.log(`🏘️ ${mapConfig.name}: categoryIdToName contents:`, Array.from(categoryIdToName.entries()));
+  console.log(`🏘️ ${mapConfig.name}: neighborhoods sample:`, neighborhoods.slice(0, 5).map(n => ({name: n.name, boroughId: n.boroughId, boroughName: n.boroughName})));
 
   if (loading) {
     return (
@@ -390,6 +426,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           visitedNeighborhoods={visitedNeighborhoodNames}
           onNeighborhoodClick={handleNeighborhoodClick}
           onNeighborhoodQuickVisit={handleQuickVisit}
+          isAuthenticated={!!user}
           mapConfig={{
             center: mapConfig.center || [40.8, -73.9],
             zoom: mapConfig.zoom || 11,

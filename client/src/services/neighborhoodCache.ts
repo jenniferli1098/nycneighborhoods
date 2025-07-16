@@ -9,13 +9,16 @@ interface CachedNeighborhood {
   boroughName?: string;
   cityId?: string;
   cityName?: string;
-  city: string; // Legacy field
+  categoryType: 'borough' | 'city';
+  city: string; // For backward compatibility
 }
 
 interface CachedBorough {
   id: string;
   name: string;
-  city: string;
+  cityId: string;
+  cityName?: string;
+  city: string; // For backward compatibility
 }
 
 interface CachedCity {
@@ -109,10 +112,13 @@ class NeighborhoodCache {
       boroughs.forEach(borough => {
         boroughMap.set(borough._id, borough);
         // Update borough ID map
+        const cityInfo = borough.city || (borough.cityId ? cityMap.get(borough.cityId) : null);
         this.boroughIdMap.set(borough._id, {
           id: borough._id,
           name: borough.name,
-          city: borough.city || 'NYC'
+          cityId: borough.cityId,
+          cityName: cityInfo?.name,
+          city: cityInfo?.name || 'NYC'
         });
       });
 
@@ -130,17 +136,19 @@ class NeighborhoodCache {
 
       // Transform neighborhoods with borough/city info
       const cachedNeighborhoods: CachedNeighborhood[] = neighborhoods.map(neighborhood => {
-        if (neighborhood.boroughId) {
+        if (neighborhood.categoryType === 'borough' && neighborhood.boroughId) {
           // Borough-based neighborhood (NYC)
           const borough = boroughMap.get(neighborhood.boroughId);
+          const city = borough?.cityId ? cityMap.get(borough.cityId) : null;
           return {
             id: neighborhood._id,
             name: neighborhood.name,
             boroughId: neighborhood.boroughId,
             boroughName: borough?.name || 'Unknown',
-            city: neighborhood.city || borough?.city || 'NYC'
+            categoryType: 'borough',
+            city: city?.name || 'NYC'
           };
-        } else if (neighborhood.cityId) {
+        } else if (neighborhood.categoryType === 'city' && neighborhood.cityId) {
           // City-based neighborhood (Boston, etc.)
           const city = cityMap.get(neighborhood.cityId);
           return {
@@ -148,14 +156,16 @@ class NeighborhoodCache {
             name: neighborhood.name,
             cityId: neighborhood.cityId,
             cityName: city?.name || 'Unknown',
-            city: neighborhood.city || city?.name || 'Unknown'
+            categoryType: 'city',
+            city: city?.name || 'Unknown'
           };
         } else {
           // Fallback for legacy data
           return {
             id: neighborhood._id,
             name: neighborhood.name,
-            city: neighborhood.city || 'NYC'
+            categoryType: neighborhood.categoryType || 'borough',
+            city: 'Unknown'
           };
         }
       });
@@ -194,20 +204,37 @@ class NeighborhoodCache {
     try {
       // Fetch fresh data
       let boroughs: Borough[];
+      let cities: City[] = [];
 
       if (city) {
-        const response = await fetch(`/api/boroughs?city=${city}`);
-        boroughs = await response.json();
+        const [boroughsResponse, citiesResponse] = await Promise.all([
+          fetch(`/api/boroughs?city=${city}`),
+          citiesApi.getAllCities()
+        ]);
+        boroughs = await boroughsResponse.json();
+        cities = citiesResponse;
       } else {
-        boroughs = await boroughsApi.getAllBoroughs();
+        [boroughs, cities] = await Promise.all([
+          boroughsApi.getAllBoroughs(),
+          citiesApi.getAllCities()
+        ]);
       }
+
+      // Create city lookup map
+      const cityMap = new Map<string, City>();
+      cities.forEach(city => {
+        cityMap.set(city._id, city);
+      });
 
       // Transform boroughs
       const cachedBoroughs: CachedBorough[] = boroughs.map(borough => {
+        const city = borough.city || (borough.cityId ? cityMap.get(borough.cityId) : null);
         const cached: CachedBorough = {
           id: borough._id,
           name: borough.name,
-          city: borough.city || 'NYC'
+          cityId: borough.cityId,
+          cityName: city?.name,
+          city: city?.name || 'NYC'
         };
         
         // Update borough ID map

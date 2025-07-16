@@ -30,7 +30,7 @@ citySchema.index({ name: 1, state: 1 }, { unique: true });
 // Method to calculate average rating for the city
 citySchema.methods.calculateAverageRating = async function() {
   const Neighborhood = mongoose.model('Neighborhood');
-  const neighborhoods = await Neighborhood.find({ cityId: this._id.toString() });
+  const neighborhoods = await Neighborhood.find({ cityId: this._id });
   
   if (neighborhoods.length === 0) {
     this.averageVisitRating = null;

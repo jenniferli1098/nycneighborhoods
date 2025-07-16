@@ -118,14 +118,14 @@ async function seedBostonData() {
     for (const neighborhoodName of BOSTON_NEIGHBORHOODS) {
       const existing = await Neighborhood.findOne({ 
         name: neighborhoodName, 
-        cityId: bostonCity._id.toString() 
+        cityId: bostonCity._id 
       });
       
       if (!existing) {
         const neighborhood = new Neighborhood({
           name: neighborhoodName,
-          cityId: bostonCity._id.toString(),
-          city: 'Boston'
+          cityId: bostonCity._id,
+          categoryType: 'city'
         });
         await neighborhood.save();
         bostonCount++;
@@ -138,14 +138,14 @@ async function seedBostonData() {
     for (const neighborhoodName of CAMBRIDGE_NEIGHBORHOODS) {
       const existing = await Neighborhood.findOne({ 
         name: neighborhoodName, 
-        cityId: cambridgeCity._id.toString() 
+        cityId: cambridgeCity._id 
       });
       
       if (!existing) {
         const neighborhood = new Neighborhood({
           name: neighborhoodName,
-          cityId: cambridgeCity._id.toString(),
-          city: 'Cambridge'
+          cityId: cambridgeCity._id,
+          categoryType: 'city'
         });
         await neighborhood.save();
         cambridgeCount++;
@@ -158,14 +158,14 @@ async function seedBostonData() {
     for (const neighborhoodName of SOMERVILLE_NEIGHBORHOODS) {
       const existing = await Neighborhood.findOne({ 
         name: neighborhoodName, 
-        cityId: somervilleCity._id.toString() 
+        cityId: somervilleCity._id 
       });
       
       if (!existing) {
         const neighborhood = new Neighborhood({
           name: neighborhoodName,
-          cityId: somervilleCity._id.toString(),
-          city: 'Somerville'
+          cityId: somervilleCity._id,
+          categoryType: 'city'
         });
         await neighborhood.save();
         somervilleCount++;

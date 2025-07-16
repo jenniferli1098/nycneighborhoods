@@ -1,5 +1,6 @@
 const express = require('express');
 const Borough = require('../models/Borough');
+const City = require('../models/City');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -11,7 +12,10 @@ router.get('/', async (req, res) => {
     let query = {};
     
     if (city) {
-      query.city = city;
+      const cityDoc = await City.findOne({ name: city });
+      if (cityDoc) {
+        query.cityId = cityDoc._id;
+      }
     }
     
     const boroughs = await Borough.find(query)
@@ -43,7 +47,12 @@ router.get('/city/:cityName', async (req, res) => {
   try {
     const cityName = req.params.cityName;
     
-    const boroughs = await Borough.find({ city: cityName })
+    const city = await City.findOne({ name: cityName });
+    if (!city) {
+      return res.status(404).json({ error: 'City not found' });
+    }
+    
+    const boroughs = await Borough.find({ cityId: city._id })
       .sort({ name: 1 });
     
     res.json(boroughs);

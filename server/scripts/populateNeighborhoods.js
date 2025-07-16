@@ -6,6 +6,7 @@ require('dotenv').config();
 // Import models
 const Neighborhood = require('../models/Neighborhood');
 const Borough = require('../models/Borough');
+const City = require('../models/City');
 
 async function populateNeighborhoods() {
   try {
@@ -29,13 +30,28 @@ async function populateNeighborhoods() {
     const boroughNames = [...new Set(geoData.features.map(f => f.properties.borough))];
     console.log('Boroughs found:', boroughNames);
 
+    // Create or find NYC city
+    let nycCity = await City.findOne({ name: 'New York City' });
+    if (!nycCity) {
+      nycCity = new City({
+        name: 'New York City',
+        state: 'New York',
+        country: 'United States',
+        metropolitanArea: 'New York Metropolitan Area'
+      });
+      await nycCity.save();
+      console.log('Created NYC city');
+    } else {
+      console.log('NYC city already exists');
+    }
+
     // Create boroughs
     const boroughMap = {};
     for (const boroughName of boroughNames) {
       const borough = new Borough({
         name: boroughName,
-        description: `${boroughName} is one of the five boroughs of New York City.`,
-        neighborhoodIds: []
+        cityId: nycCity._id,
+        description: `${boroughName} is one of the five boroughs of New York City.`
       });
       await borough.save();
       boroughMap[boroughName] = borough;
@@ -52,7 +68,8 @@ async function populateNeighborhoods() {
       console.log("borough id:", boroughMap[boroughName]._id);
       const neighborhood = new Neighborhood({
         name: name,
-        boroughId: boroughMap[boroughName]._id.toString(),
+        boroughId: boroughMap[boroughName]._id,
+        categoryType: 'borough',
         description: `${name} is a neighborhood in ${boroughName}, New York City.`,
         averageVisitRating: null,
         totalVisits: 0
@@ -61,18 +78,12 @@ async function populateNeighborhoods() {
       await neighborhood.save();
       created++;
       
-      // Add neighborhood to borough's neighborhoodIds array
-      boroughMap[boroughName].neighborhoodIds.push(neighborhood._id.toString());
-      
       if ((i + 1) % 50 === 0) {
         console.log(`Processed ${i + 1}/${geoData.features.length} neighborhoods...`);
       }
     }
 
-    // Save borough updates
-    for (const borough of Object.values(boroughMap)) {
-      await borough.save();
-    }
+    // No need to save borough updates since we removed neighborhoodIds array
 
     console.log('\n=== SUMMARY ===');
     console.log(`Neighborhoods created: ${created}`);

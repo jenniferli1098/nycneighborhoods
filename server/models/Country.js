@@ -45,14 +45,14 @@ countrySchema.index({ continent: 1 });
 // Method to get visit statistics
 countrySchema.methods.getVisitStats = async function() {
   const Visit = mongoose.model('Visit');
-  return await Visit.find({ countryId: this._id.toString() });
+  return await Visit.find({ countryId: this._id });
 };
 
 // Method to calculate average rating from visits
 countrySchema.methods.calculateAverageRating = async function() {
   const Visit = mongoose.model('Visit');
   const result = await Visit.aggregate([
-    { $match: { countryId: this._id.toString(), rating: { $exists: true, $ne: null } } },
+    { $match: { countryId: this._id, rating: { $exists: true, $ne: null } } },
     { $group: { _id: null, avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
   ]);
   

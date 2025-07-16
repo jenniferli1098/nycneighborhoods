@@ -28,6 +28,7 @@ interface GenericMapProps {
   onNeighborhoodClick: (neighborhood: string, category: string) => void;
   onNeighborhoodQuickVisit?: (neighborhood: string, category: string) => void;
   mapConfig: MapConfig;
+  isAuthenticated?: boolean;
 }
 
 const GenericMap: React.FC<GenericMapProps> = ({ 
@@ -35,17 +36,29 @@ const GenericMap: React.FC<GenericMapProps> = ({
   visitedNeighborhoods, 
   onNeighborhoodClick, 
   onNeighborhoodQuickVisit,
-  mapConfig
+  mapConfig,
+  isAuthenticated = false
 }) => {
+  console.log('🗺️ GenericMap: Component rendered with props:', {
+    neighborhoodsCount: neighborhoods.length,
+    visitedCount: visitedNeighborhoods.size,
+    hasClickHandler: !!onNeighborhoodClick,
+    hasQuickVisitHandler: !!onNeighborhoodQuickVisit,
+    isAuthenticated
+  });
+  
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
   const [geoJsonKey, setGeoJsonKey] = useState(0);
 
   useEffect(() => {
     if (neighborhoods.length > 0) {
+      console.log('🗺️ GenericMap: Setting GeoJSON data with', neighborhoods.length, 'neighborhoods');
       setGeoJsonData({
         type: 'FeatureCollection',
         features: neighborhoods
       });
+    } else {
+      console.log('🗺️ GenericMap: No neighborhoods data available');
     }
   }, [neighborhoods]);
 
@@ -83,22 +96,30 @@ const GenericMap: React.FC<GenericMapProps> = ({
     const categoryName = mapConfig.getCategoryFromFeature(feature);
     const isVisited = visitedNeighborhoods.has(neighborhoodName);
     
+    console.log('🏘️ GenericMap: Setting up feature for', neighborhoodName, 'in', categoryName);
+    
     // Removed popup to prevent thumbnail on left-click
 
+    console.log('🔧 GenericMap: Attaching event listeners to', neighborhoodName);
+    
     layer.on({
       click: (e: any) => {
+        console.log('🖱️ GenericMap: Click event fired on', neighborhoodName, 'event:', e);
+        console.log('🖱️ GenericMap: Event details - button:', e.originalEvent?.button, 'type:', e.type);
+        
         // Left click - mark as visited quickly
-        if (e.originalEvent.button === 0 && onNeighborhoodQuickVisit) {
-          e.originalEvent.preventDefault();
-          e.originalEvent.stopPropagation();
-          console.log('🖱️ Left click: Quick visit for', neighborhoodName, categoryName);
+        if (onNeighborhoodQuickVisit) {
+          console.log('🖱️ Left click: Calling quick visit for', neighborhoodName, categoryName);
           onNeighborhoodQuickVisit(neighborhoodName, categoryName);
+        } else {
+          console.log('⚠️ GenericMap: onNeighborhoodQuickVisit not provided');
         }
       },
       contextmenu: (e: any) => {
+        console.log('🖱️ GenericMap: Context menu event fired on', neighborhoodName);
         // Right click - open detailed dialog
         e.originalEvent.preventDefault(); // Prevent browser context menu
-        console.log('🖱️ Right click: Opening dialog for', neighborhoodName, categoryName);
+        console.log('🖱️ Right click: Calling neighborhood click for', neighborhoodName, categoryName);
         onNeighborhoodClick(neighborhoodName, categoryName);
       },
       mouseover: (e: any) => {
@@ -124,7 +145,9 @@ const GenericMap: React.FC<GenericMapProps> = ({
         <span style="color: ${isVisited ? '#28a745' : '#dc3545'}; font-weight: bold;">
           ${isVisited ? '✓ Visited' : '✗ Not Visited'}
         </span><br/>
-        <small style="color: #888;">Left: Quick visit | Right: Details</small>
+        <small style="color: #888;">
+          ${isAuthenticated ? 'Left: Quick visit | Right: Details' : 'Login required to interact'}
+        </small>
       </div>
     `;
     
@@ -138,12 +161,15 @@ const GenericMap: React.FC<GenericMapProps> = ({
   };
 
   if (!geoJsonData) {
+    console.log('🗺️ GenericMap: No GeoJSON data, showing loading state');
     return (
       <div className="flex justify-center items-center h-full">
         <div>Loading map...</div>
       </div>
     );
   }
+
+  console.log('🗺️ GenericMap: Rendering map with', geoJsonData.features?.length || 0, 'features');
 
   return (
     <div className="w-full h-full">

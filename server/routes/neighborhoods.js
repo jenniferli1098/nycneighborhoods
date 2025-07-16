@@ -1,6 +1,7 @@
 const express = require('express');
 const Neighborhood = require('../models/Neighborhood');
 const Borough = require('../models/Borough');
+const City = require('../models/City');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -8,17 +9,24 @@ const router = express.Router();
 // Get all neighborhoods
 router.get('/', async (req, res) => {
   try {
-    const { borough, city } = req.query;
+    const { borough, city, categoryType } = req.query;
     let query = {};
     
+    if (categoryType) {
+      query.categoryType = categoryType;
+    }
+    
     if (city) {
-      query.city = city;
+      const cityDoc = await City.findOne({ name: city });
+      if (cityDoc) {
+        query.cityId = cityDoc._id;
+      }
     }
     
     if (borough) {
       const boroughDoc = await Borough.findOne({ name: borough });
       if (boroughDoc) {
-        query.boroughId = boroughDoc._id.toString();
+        query.boroughId = boroughDoc._id;
       }
     }
     
@@ -49,20 +57,38 @@ router.get('/:id', async (req, res) => {
 // Create neighborhood (admin only - for future use)
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, boroughName, city = 'NYC', description } = req.body;
+    const { name, boroughName, cityName, categoryType, description } = req.body;
     
-    // Find the borough
-    const borough = await Borough.findOne({ name: boroughName, city: city });
-    if (!borough) {
-      return res.status(404).json({ error: 'Borough not found in specified city' });
+    let neighborhood;
+    if (categoryType === 'borough' && boroughName) {
+      // Find the borough
+      const borough = await Borough.findOne({ name: boroughName });
+      if (!borough) {
+        return res.status(404).json({ error: 'Borough not found' });
+      }
+      
+      neighborhood = new Neighborhood({
+        name,
+        boroughId: borough._id,
+        categoryType: 'borough',
+        description
+      });
+    } else if (categoryType === 'city' && cityName) {
+      // Find the city
+      const city = await City.findOne({ name: cityName });
+      if (!city) {
+        return res.status(404).json({ error: 'City not found' });
+      }
+      
+      neighborhood = new Neighborhood({
+        name,
+        cityId: city._id,
+        categoryType: 'city',
+        description
+      });
+    } else {
+      return res.status(400).json({ error: 'Invalid categoryType or missing parent location' });
     }
-    
-    const neighborhood = new Neighborhood({
-      name,
-      boroughId: borough._id.toString(),
-      city,
-      description
-    });
     
     await neighborhood.save();
     
@@ -77,7 +103,12 @@ router.get('/city/:cityName', async (req, res) => {
   try {
     const cityName = req.params.cityName;
     
-    const neighborhoods = await Neighborhood.find({ city: cityName })
+    const city = await City.findOne({ name: cityName });
+    if (!city) {
+      return res.status(404).json({ error: 'City not found' });
+    }
+    
+    const neighborhoods = await Neighborhood.find({ cityId: city._id })
       .sort({ name: 1 });
     
     res.json(neighborhoods);
@@ -90,7 +121,7 @@ router.get('/city/:cityName', async (req, res) => {
 router.get('/search/:query', async (req, res) => {
   try {
     const query = req.params.query;
-    const { city } = req.query;
+    const { city, categoryType } = req.query;
     
     let searchQuery = {
       $or: [
@@ -99,8 +130,15 @@ router.get('/search/:query', async (req, res) => {
       ]
     };
     
+    if (categoryType) {
+      searchQuery.categoryType = categoryType;
+    }
+    
     if (city) {
-      searchQuery.city = city;
+      const cityDoc = await City.findOne({ name: city });
+      if (cityDoc) {
+        searchQuery.cityId = cityDoc._id;
+      }
     }
     
     const neighborhoods = await Neighborhood.find(searchQuery)

@@ -5,16 +5,51 @@ export interface Neighborhood {
   name: string;
   boroughId?: string;
   cityId?: string;
-  city?: string; // Legacy field
+  categoryType: 'borough' | 'city';
   description?: string;
   averageVisitRating?: number;
   totalVisits?: number;
+  // Populated fields when using populate()
+  borough?: {
+    _id: string;
+    name: string;
+  };
+  city?: {
+    _id: string;
+    name: string;
+    state?: string;
+  };
 }
 
 export const neighborhoodsApi = {
   // Get all neighborhoods
-  getAllNeighborhoods: async (): Promise<Neighborhood[]> => {
-    const response = await axios.get('/api/neighborhoods');
+  getAllNeighborhoods: async (params?: {
+    borough?: string;
+    city?: string;
+    categoryType?: 'borough' | 'city';
+  }): Promise<Neighborhood[]> => {
+    const response = await axios.get('/api/neighborhoods', { params });
+    return response.data;
+  },
+
+  // Get neighborhood by ID
+  getNeighborhoodById: async (id: string): Promise<Neighborhood> => {
+    const response = await axios.get(`/api/neighborhoods/${id}`);
+    return response.data;
+  },
+
+  // Get neighborhoods by city
+  getNeighborhoodsByCity: async (cityName: string): Promise<Neighborhood[]> => {
+    const response = await axios.get(`/api/neighborhoods/city/${cityName}`);
+    return response.data;
+  },
+
+  // Search neighborhoods
+  searchNeighborhoods: async (query: string, params?: {
+    city?: string;
+    categoryType?: 'borough' | 'city';
+  }): Promise<Neighborhood[]> => {
+    const response = await axios.get(`/api/neighborhoods/search/${query}`, { params });
     return response.data;
   },
 
