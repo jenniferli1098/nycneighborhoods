@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   CircularProgress,
-  Alert
+  Alert,
+  Tabs,
+  Tab
 } from '@mui/material';
+import { BarChart, List } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import GenericMap from '../components/GenericMap';
 import NeighborhoodList from '../components/NeighborhoodList';
@@ -28,6 +31,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const [cities, setCities] = useState<CachedCity[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<{ id: string; name: string; borough: string } | null>(null);
+  const [activeTab, setActiveTab] = useState(0); // 0 = Stats, 1 = List
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -321,24 +325,61 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   return (
     <Box className="flex-1 flex">
       {/* Left Sidebar - Stats and Neighborhood List */}
-      <Box className="w-80 border-r bg-white" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ p: 2, flexShrink: 0 }}>
-          <StatsCard 
-            visits={visits as any}
-            neighborhoods={neighborhoods}
-            categories={mapConfig.categoryType === 'borough' ? boroughs : cities}
-            categoryType={mapConfig.categoryType}
-            areaName={mapConfig.name}
-          />
+      <Box className="border-r bg-white" sx={{ width: 400, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Tab Navigation */}
+        <Box sx={{ borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, newValue) => setActiveTab(newValue)}
+            variant="fullWidth"
+            sx={{
+              '& .MuiTab-root': {
+                minHeight: 48,
+                fontSize: '0.875rem',
+                fontWeight: 500
+              }
+            }}
+          >
+            <Tab 
+              icon={<BarChart />} 
+              label="Stats" 
+              iconPosition="start"
+              sx={{ gap: 1 }}
+            />
+            <Tab 
+              icon={<List />} 
+              label="List" 
+              iconPosition="start"
+              sx={{ gap: 1 }}
+            />
+          </Tabs>
         </Box>
+
+        {/* Content Area - Takes remaining space */}
         <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <NeighborhoodList
-            neighborhoods={neighborhoods}
-            categories={mapConfig.categoryType === 'borough' ? boroughs : cities}
-            categoryType={mapConfig.categoryType}
-            visits={visits as any}
-            onNeighborhoodClick={handleNeighborhoodClick}
-          />
+          {activeTab === 0 && (
+            <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
+              <StatsCard 
+                visits={visits as any}
+                neighborhoods={neighborhoods}
+                categories={mapConfig.categoryType === 'borough' ? boroughs : cities}
+                categoryType={mapConfig.categoryType}
+                areaName={mapConfig.name}
+              />
+            </Box>
+          )}
+          
+          {activeTab === 1 && (
+            <Box sx={{ height: '100%' }}>
+              <NeighborhoodList
+                neighborhoods={neighborhoods}
+                categories={mapConfig.categoryType === 'borough' ? boroughs : cities}
+                categoryType={mapConfig.categoryType}
+                visits={visits as any}
+                onNeighborhoodClick={handleNeighborhoodClick}
+              />
+            </Box>
+          )}
         </Box>
       </Box>
       
