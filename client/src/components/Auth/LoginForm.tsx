@@ -5,8 +5,10 @@ import {
   Paper, 
   Typography, 
   Box, 
-  Alert 
+  Alert,
+  Divider
 } from '@mui/material';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginFormProps {
@@ -18,7 +20,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +34,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setLoading(true);
+      setError('');
+      if (credentialResponse.credential) {
+        await loginWithGoogle(credentialResponse.credential);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google login failed');
   };
 
   return (
@@ -75,11 +95,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
           {loading ? 'Signing In...' : 'Sign In'}
         </Button>
         
+        <Divider className="my-4">OR</Divider>
+        
+        <Box className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+          />
+        </Box>
+        
         <Button
           fullWidth
           variant="text"
           onClick={onSwitchToRegister}
-          className="mt-2"
+          className="mt-4"
         >
           Don't have an account? Sign Up
         </Button>

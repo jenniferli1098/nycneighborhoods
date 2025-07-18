@@ -10,6 +10,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (token: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
@@ -66,6 +67,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async (token: string) => {
+    try {
+      const response = await axios.post('/api/auth/google', { token });
+      const { token: jwtToken, user } = response.data;
+      
+      localStorage.setItem('token', jwtToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
+      setUser(user);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Google login failed');
+    }
+  };
+
   const register = async (username: string, email: string, password: string) => {
     try {
       const response = await axios.post('/api/auth/register', { username, email, password });
@@ -88,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     user,
     login,
+    loginWithGoogle,
     register,
     logout,
     loading

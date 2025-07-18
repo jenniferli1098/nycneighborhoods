@@ -94,6 +94,56 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/google', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Google token is required' });
+    }
+
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      user = new User({
+        username: name,
+        email,
+        googleId,
+        avatar: picture
+      });
+      await user.save();
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      user.avatar = picture;
+      await user.save();
+    }
+
+    const jwtToken = generateToken(user._id);
+    res.json({
+      token: jwtToken,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ error: 'Google authentication failed' });
+  }
+});
+
 router.get('/me', auth, async (req, res) => {
   try {
     res.json({
