@@ -172,15 +172,13 @@ const AuthScreen: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
-    <Box className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Box className="w-full max-w-md">
-        {isLogin ? (
-          <LoginForm onSwitchToRegister={() => setIsLogin(false)} />
-        ) : (
-          <RegisterForm onSwitchToLogin={() => setIsLogin(true)} />
-        )}
-      </Box>
-    </Box>
+    <>
+      {isLogin ? (
+        <LoginForm onSwitchToRegister={() => setIsLogin(false)} />
+      ) : (
+        <RegisterForm onSwitchToLogin={() => setIsLogin(true)} />
+      )}
+    </>
   );
 };
 
