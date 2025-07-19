@@ -12,11 +12,11 @@ const generateToken = (userId) => {
 router.post('/register', async (req, res) => {
   try {
     console.log('Registration request received:', req.body);
-    const { username, email, password } = req.body;
+    const { username, email, password, firstName, lastName } = req.body;
 
     // Validate required fields
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Username, email, and password are required' });
+    if (!username || !email || !password || !firstName || !lastName) {
+      return res.status(400).json({ error: 'Username, email, password, first name, and last name are required' });
     }
 
     // Check password length
@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
     }
 
     console.log('Creating new user...');
-    const user = new User({ username, email, password });
+    const user = new User({ username, email, password, firstName, lastName });
     await user.save();
     console.log('User created successfully:', user._id);
 
@@ -44,7 +44,9 @@ router.post('/register', async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName
       }
     });
   } catch (error) {
@@ -150,10 +152,54 @@ router.get('/me', auth, async (req, res) => {
       user: {
         id: req.user._id,
         username: req.user.username,
-        email: req.user.email
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName
       }
     });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { firstName, lastName } = req.body;
+    
+    // Validate required fields
+    if (!firstName || !lastName) {
+      return res.status(400).json({ error: 'First name and last name are required' });
+    }
+    
+    // Update user profile
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { firstName, lastName },
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      user: {
+        id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName
+      }
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ error: `Validation error: ${validationErrors.join(', ')}` });
+    }
+    
     res.status(500).json({ error: error.message });
   }
 });

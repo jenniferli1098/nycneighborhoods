@@ -7,11 +7,6 @@ import {
   Card,
   CardContent,
   Alert,
-  FormControl,
-  FormLabel,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
   CircularProgress,
   Avatar,
   Switch,
@@ -26,18 +21,27 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings, type UserSettings } from '../contexts/SettingsContext';
+import axios from 'axios';
 
 
 const SettingsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { settings, availableMaps, updateSettings, toggleMapVisibility, loading } = useSettings();
   const [localSettings, setLocalSettings] = useState<UserSettings>(settings);
   const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    setLocalSettings(settings);
-  }, [settings]);
+    // Initialize with user data from AuthContext if available
+    const initialSettings = {
+      ...settings,
+      firstName: user?.firstName || settings.firstName || '',
+      lastName: user?.lastName || settings.lastName || ''
+    };
+    setLocalSettings(initialSettings);
+  }, [settings, user]);
 
 
 
@@ -60,16 +64,42 @@ const SettingsPage: React.FC = () => {
     }));
   };
 
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    setProfileMessage(null);
+
+    try {
+      await axios.put('/api/auth/profile', {
+        firstName: localSettings.firstName,
+        lastName: localSettings.lastName
+      });
+      
+      // Refresh user data in AuthContext
+      await refreshUser();
+      
+      // Also update local settings to keep them in sync
+      updateSettings(localSettings);
+      
+      setProfileMessage({ type: 'success', text: 'Profile updated successfully!' });
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      setProfileMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
 
     try {
+      // Update local settings (map preferences)
       updateSettings(localSettings);
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
     } catch (error) {
       console.error('Failed to save settings:', error);
-      setMessage({ type: 'error', text: 'Failed to save settings' });
+      setMessage({ type: 'error', text: 'Failed to save settings. Please try again.' });
     } finally {
       setSaving(false);
     }
@@ -153,6 +183,22 @@ const SettingsPage: React.FC = () => {
             }}
           >
             {message.text}
+          </Alert>
+        )}
+
+        {profileMessage && (
+          <Alert 
+            severity={profileMessage.type} 
+            onClose={() => setProfileMessage(null)}
+            sx={{ 
+              mb: 4, 
+              borderRadius: 3,
+              '& .MuiAlert-icon': {
+                fontSize: '1.5rem'
+              }
+            }}
+          >
+            {profileMessage.text}
           </Alert>
         )}
 
@@ -270,6 +316,39 @@ const SettingsPage: React.FC = () => {
                     }
                   }}
                 />
+              </Box>
+              
+              {/* Profile Save Button */}
+              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                  startIcon={savingProfile ? <CircularProgress size={20} /> : <Save />}
+                  sx={{
+                    background: 'linear-gradient(135deg, #0277bd 0%, #0288d1 100%)',
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1.2,
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    boxShadow: '0 3px 12px rgba(2, 119, 189, 0.3)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #01579b 0%, #0277bd 100%)',
+                      boxShadow: '0 4px 16px rgba(2, 119, 189, 0.4)',
+                      transform: 'translateY(-1px)'
+                    },
+                    '&:disabled': {
+                      background: '#9ca3af',
+                      boxShadow: 'none',
+                      transform: 'none'
+                    }
+                  }}
+                >
+                  {savingProfile ? 'Saving...' : 'Save Profile'}
+                </Button>
               </Box>
             </CardContent>
           </Card>
@@ -436,10 +515,10 @@ const SettingsPage: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#374151', mb: 0.5 }}>
-                  Save Your Changes
+                  Save Map Preferences
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                  Your preferences will be saved locally in your browser
+                  Your map visibility preferences will be saved locally in your browser
                 </Typography>
               </Box>
               
@@ -471,7 +550,7 @@ const SettingsPage: React.FC = () => {
                   }
                 }}
               >
-                {saving ? 'Saving...' : 'Save Settings'}
+                {saving ? 'Saving...' : 'Save Map Preferences'}
               </Button>
             </Box>
           </CardContent>

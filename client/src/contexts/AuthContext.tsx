@@ -5,14 +5,17 @@ interface User {
   id: string;
   username: string;
   email: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (token: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -80,9 +83,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const response = await axios.post('/api/auth/register', { username, email, password });
+      const response = await axios.post('/api/auth/register', { username, email, password, firstName, lastName });
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -99,12 +102,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await axios.get('/api/auth/me');
+      setUser(response.data.user);
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  };
+
   const value = {
     user,
     login,
     loginWithGoogle,
     register,
     logout,
+    refreshUser,
     loading
   };
 
