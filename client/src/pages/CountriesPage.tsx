@@ -11,6 +11,7 @@ import { visitsApi, type Visit } from '../services/visitsApi';
 import WorldMap from '../components/WorldMap';
 import CountryDialog from '../components/CountryDialog';
 import CountryStatsCard from '../components/CountryStatsCard';
+import MapLegend from '../components/MapLegend';
 
 const CountriesPage: React.FC = () => {
   const { user } = useAuth();
@@ -198,7 +199,18 @@ const CountriesPage: React.FC = () => {
       </Box>
       
       {/* Main Content Area */}
-      <Box className="flex-1" sx={{ overflow: 'hidden' }}>
+      <Box className="flex-1" sx={{ overflow: 'hidden', position: 'relative' }}>
+        {/* Map Legend Overlay */}
+        <MapLegend
+          legendItems={[
+            { label: 'Visited Countries', color: '#4caf50' }
+          ]}
+          unvisitedColor="#e0e0e0"
+          unvisitedLabel="Unvisited Countries"
+          showInstructions={true}
+          isAuthenticated={!!user}
+        />
+        
         <WorldMap
           countries={geoJsonCountries}
           visitedCountries={visitedCountryIds}

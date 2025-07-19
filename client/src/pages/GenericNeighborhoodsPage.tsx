@@ -12,6 +12,7 @@ import GenericMap from '../components/GenericMap';
 import NeighborhoodList from '../components/NeighborhoodList';
 import NeighborhoodDialog from '../components/NeighborhoodDialog';
 import StatsCard from '../components/StatsCard';
+import MapLegend from '../components/MapLegend';
 import { visitsApi } from '../services/visitsApi';
 import type { Visit } from '../services/visitsApi';
 import { neighborhoodCache, type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
@@ -420,7 +421,19 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       </Box>
       
       {/* Map takes remaining space */}
-      <Box className="flex-1">
+      <Box className="flex-1" sx={{ position: 'relative' }}>
+        {/* Map Legend Overlay */}
+        <MapLegend
+          legendItems={Object.entries(mapConfig.categoryColors || {}).map(([category, color]) => ({
+            label: category,
+            color: color
+          }))}
+          unvisitedColor={mapConfig.defaultColor || '#E8E8E8'}
+          unvisitedLabel="Unvisited"
+          showInstructions={true}
+          isAuthenticated={!!user}
+        />
+        
         <GenericMap
           neighborhoods={geoJsonNeighborhoods}
           visitedNeighborhoods={visitedNeighborhoodNames}
