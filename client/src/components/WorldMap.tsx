@@ -125,9 +125,9 @@ const WorldMap: React.FC<WorldMapProps> = ({
             onCountryQuickVisit(apiCountry);
           }
         },
-        contextmenu: (e) => {
-          L.DomEvent.stopPropagation(e);
-          L.DomEvent.preventDefault(e);
+        contextmenu: (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e as any);
+          L.DomEvent.preventDefault(e as any);
           if (apiCountry) {
             console.log('🖱️ WorldMap: Right-click (dialog) for:', apiCountry.name);
             onCountryClick(apiCountry);

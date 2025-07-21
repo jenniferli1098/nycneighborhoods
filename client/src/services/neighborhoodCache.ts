@@ -342,7 +342,7 @@ class NeighborhoodCache {
 
     return {
       neighborhood: neighborhood.name,
-      borough: neighborhood.boroughName,
+      borough: neighborhood.boroughName || '',
       city: neighborhood.city
     };
   }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -236,7 +235,7 @@ const UserDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Box className="flex justify-center items-center h-full">
+      <Box className="flex justify-center sizes-center h-full">
         <CircularProgress />
       </Box>
     );
@@ -244,7 +243,7 @@ const UserDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <Box className="flex justify-center items-center h-full">
+      <Box className="flex justify-center sizes-center h-full">
         <Alert severity="error">{error}</Alert>
       </Box>
     );
@@ -252,7 +251,7 @@ const UserDashboard: React.FC = () => {
 
   if (!stats) {
     return (
-      <Box className="flex justify-center items-center h-full">
+      <Box className="flex justify-center sizes-center h-full">
         <Alert severity="info">No data available</Alert>
       </Box>
     );
@@ -335,8 +334,8 @@ const UserDashboard: React.FC = () => {
             Your Exploration Overview
           </Typography>
           
-          <Grid container spacing={3}>
-            <Grid item xs={6} sm={3}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+            <Box sx={{ flex: '1 1 200px' }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1e3c72', mb: 1 }}>
                   {stats.totalVisits}
@@ -345,9 +344,9 @@ const UserDashboard: React.FC = () => {
                   Total Visits
                 </Typography>
               </Box>
-            </Grid>
+            </Box>
             
-            <Grid item xs={6} sm={3}>
+            <Box sx={{ flex: '1 1 200px' }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#400B8B', mb: 1 }}>
                   {stats.totalNeighborhoods}
@@ -356,9 +355,9 @@ const UserDashboard: React.FC = () => {
                   Neighborhoods
                 </Typography>
               </Box>
-            </Grid>
+            </Box>
             
-            <Grid item xs={6} sm={3}>
+            <Box sx={{ flex: '1 1 200px' }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1e3c72', mb: 1 }}>
                   {stats.totalCountries}
@@ -367,9 +366,9 @@ const UserDashboard: React.FC = () => {
                   Countries
                 </Typography>
               </Box>
-            </Grid>
+            </Box>
             
-            <Grid item xs={6} sm={3}>
+            <Box sx={{ flex: '1 1 200px' }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#059669', mb: 1 }}>
                   {stats.averageRating?.toFixed(1) || 'N/A'}
@@ -378,14 +377,14 @@ const UserDashboard: React.FC = () => {
                   Avg. Rating
                 </Typography>
               </Box>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </CardContent>
       </Card>
 
-      <Grid container spacing={4} sx={{ width: '100%', margin: 0, justifyContent: 'center' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, width: '100%', justifyContent: 'center' }}>
         {/* Countries StatsCard */}
-        <Grid item xs={12} lg={Object.keys(mapAreas).length > 0 ? 4 : 6}>
+        <Box sx={{ flex: '1 1 300px', maxWidth: Object.keys(mapAreas).length > 0 ? '400px' : '600px' }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)', 
             color: 'white',
@@ -500,13 +499,13 @@ const UserDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Dynamic Neighborhood StatsCards for all configured maps */}
         {Object.entries(mapAreas)
           .filter(([, areaData]) => areaData.isLoaded && areaData.neighborhoods.length > 0 && areaData.categories.length > 0)
           .map(([mapName, areaData]) => (
-            <Grid item xs={12} lg={4} key={mapName}>
+            <Box key={mapName} sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
               <StatsCard
                 visits={allVisits}
                 neighborhoods={areaData.neighborhoods}
@@ -514,10 +513,10 @@ const UserDashboard: React.FC = () => {
                 categoryType={areaData.config.categoryType}
                 areaName={areaData.config.name === 'Boston Greater Area' ? 'Boston Greater Area' : areaData.config.name}
               />
-            </Grid>
+            </Box>
           ))
         }
-      </Grid>
+      </Box>
     </Box>
   );
 };

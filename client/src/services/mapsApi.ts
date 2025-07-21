@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { Neighborhood } from './neighborhoodsApi';
-import { City } from './citiesApi';
-import { Borough } from './boroughsApi';
+import { type Neighborhood } from './neighborhoodsApi';
+import { type City } from './citiesApi';
+import { type Borough } from './boroughsApi';
 
 export interface Map {
   _id: string;

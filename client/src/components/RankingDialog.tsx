@@ -168,7 +168,7 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     if (!selectedCategory) return { newRating, updates: [] };
     
     const categoryRange = getCategoryRange(selectedCategory);
-    const updates = [];
+    const updates: any[] = [];
     
     // Calculate the new rating for the item being inserted
     let calculatedNewRating = newRating;

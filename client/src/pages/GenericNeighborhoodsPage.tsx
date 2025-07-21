@@ -103,6 +103,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         boroughs = cities.map(city => ({
           id: city.id,
           name: city.name,
+          cityId: city.id,
           city: city.name // Required field for CachedBorough
         }));
       }

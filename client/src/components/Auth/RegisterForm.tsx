@@ -34,7 +34,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
     }
 
     try {
-      await register(username, email, password);
+      await register(username, email, password, '', '');
     } catch (err: any) {
       setError(err.message);
     } finally {
