@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../config/api';
 
 export interface Country {
   _id: string;
@@ -16,31 +16,31 @@ export const countriesApi = {
   // Get all countries, optionally filtered by continent
   getAllCountries: async (continent?: string): Promise<Country[]> => {
     const params = continent ? { continent } : {};
-    const response = await axios.get('/api/countries', { params });
+    const response = await api.get('/api/countries', { params });
     return response.data;
   },
 
   // Search countries by name
   searchCountries: async (query: string): Promise<Country[]> => {
-    const response = await axios.get(`/api/countries/search/${encodeURIComponent(query)}`);
+    const response = await api.get(`/api/countries/search/${encodeURIComponent(query)}`);
     return response.data;
   },
 
   // Get countries by continent
   getCountriesByContinent: async (continent: string): Promise<Country[]> => {
-    const response = await axios.get(`/api/countries/continent/${encodeURIComponent(continent)}`);
+    const response = await api.get(`/api/countries/continent/${encodeURIComponent(continent)}`);
     return response.data;
   },
 
   // Get list of all continents
   getContinents: async (): Promise<string[]> => {
-    const response = await axios.get('/api/countries/meta/continents');
+    const response = await api.get('/api/countries/meta/continents');
     return response.data;
   },
 
   // Get country by ID
   getCountryById: async (countryId: string): Promise<Country> => {
-    const response = await axios.get(`/api/countries/${countryId}`);
+    const response = await api.get(`/api/countries/${countryId}`);
     return response.data;
   },
 

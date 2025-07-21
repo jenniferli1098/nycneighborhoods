@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../config/api';
 
 export interface Neighborhood {
   _id: string;
@@ -28,19 +28,19 @@ export const neighborhoodsApi = {
     city?: string;
     categoryType?: 'borough' | 'city';
   }): Promise<Neighborhood[]> => {
-    const response = await axios.get('/api/neighborhoods', { params });
+    const response = await api.get('/api/neighborhoods', { params });
     return response.data;
   },
 
   // Get neighborhood by ID
   getNeighborhoodById: async (id: string): Promise<Neighborhood> => {
-    const response = await axios.get(`/api/neighborhoods/${id}`);
+    const response = await api.get(`/api/neighborhoods/${id}`);
     return response.data;
   },
 
   // Get neighborhoods by city
   getNeighborhoodsByCity: async (cityName: string): Promise<Neighborhood[]> => {
-    const response = await axios.get(`/api/neighborhoods/city/${cityName}`);
+    const response = await api.get(`/api/neighborhoods/city/${cityName}`);
     return response.data;
   },
 
@@ -49,7 +49,7 @@ export const neighborhoodsApi = {
     city?: string;
     categoryType?: 'borough' | 'city';
   }): Promise<Neighborhood[]> => {
-    const response = await axios.get(`/api/neighborhoods/search/${query}`, { params });
+    const response = await api.get(`/api/neighborhoods/search/${query}`, { params });
     return response.data;
   },
 

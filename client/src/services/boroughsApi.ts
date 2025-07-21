@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../config/api';
 
 export interface Borough {
   _id: string;
@@ -18,25 +18,25 @@ export const boroughsApi = {
   getAllBoroughs: async (params?: {
     city?: string;
   }): Promise<Borough[]> => {
-    const response = await axios.get('/api/boroughs', { params });
+    const response = await api.get('/api/boroughs', { params });
     return response.data;
   },
 
   // Get borough by ID
   getBoroughById: async (id: string): Promise<Borough> => {
-    const response = await axios.get(`/api/boroughs/${id}`);
+    const response = await api.get(`/api/boroughs/${id}`);
     return response.data;
   },
 
   // Get boroughs by city
   getBoroughsByCity: async (cityName: string): Promise<Borough[]> => {
-    const response = await axios.get(`/api/boroughs/city/${cityName}`);
+    const response = await api.get(`/api/boroughs/city/${cityName}`);
     return response.data;
   },
 
   // Get borough statistics
   getBoroughStats: async (id: string): Promise<any> => {
-    const response = await axios.get(`/api/boroughs/${id}/stats`);
+    const response = await api.get(`/api/boroughs/${id}/stats`);
     return response.data;
   }
 };

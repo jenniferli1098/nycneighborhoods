@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../config/api';
 
 export interface City {
   _id: string;
@@ -13,19 +13,19 @@ export interface City {
 export const citiesApi = {
   // Get all cities
   getAllCities: async (): Promise<City[]> => {
-    const response = await axios.get('/api/cities');
+    const response = await api.get('/api/cities');
     return response.data;
   },
 
   // Get cities by state
   getCitiesByState: async (state: string): Promise<City[]> => {
-    const response = await axios.get(`/api/cities/state/${state}`);
+    const response = await api.get(`/api/cities/state/${state}`);
     return response.data;
   },
 
   // Get a specific city by ID
   getCityById: async (cityId: string): Promise<City> => {
-    const response = await axios.get(`/api/cities/${cityId}`);
+    const response = await api.get(`/api/cities/${cityId}`);
     return response.data;
   },
 
@@ -36,7 +36,7 @@ export const citiesApi = {
     country?: string;
     metropolitanArea?: string;
   }): Promise<City> => {
-    const response = await axios.post('/api/cities', cityData);
+    const response = await api.post('/api/cities', cityData);
     return response.data;
   },
 
@@ -47,12 +47,12 @@ export const citiesApi = {
     country?: string;
     metropolitanArea?: string;
   }): Promise<City> => {
-    const response = await axios.put(`/api/cities/${cityId}`, cityData);
+    const response = await api.put(`/api/cities/${cityId}`, cityData);
     return response.data;
   },
 
   // Delete a city
   deleteCity: async (cityId: string): Promise<void> => {
-    await axios.delete(`/api/cities/${cityId}`);
+    await api.delete(`/api/cities/${cityId}`);
   }
 };
