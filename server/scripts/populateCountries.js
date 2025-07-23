@@ -209,7 +209,7 @@ const countriesData = [
 async function populateCountries() {
   try {
     console.log('Connecting to MongoDB...');
-    await mongoose.connect(MONGODB_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/nycneighborhoods');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/nycneighborhoods');
     console.log('Connected to MongoDB');
 
     // Clear existing countries
