@@ -55,7 +55,6 @@ const mapSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-mapSchema.index({ name: 1 }, { unique: true });
 mapSchema.index({ categoryType: 1 });
 mapSchema.index({ isActive: 1 });
 mapSchema.index({ 'coordinates.longitude': 1, 'coordinates.latitude': 1 });

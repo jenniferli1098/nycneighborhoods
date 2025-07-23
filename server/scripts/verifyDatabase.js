@@ -11,8 +11,7 @@ const Map = require('../models/Map');
 async function verifyDatabase() {
   try {
     console.log('Connecting to MongoDB...');
-    const MONGODB_URI = "mongodb+srv://jenniferli1098:KE8sQdRAvzIBbYPb@nycneighborhoods-cluste.lbnjlnw.mongodb.net/?retryWrites=true&w=majority&appName=nycneighborhoods-cluster";
-    await mongoose.connect(MONGODB_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/nycneighborhoods');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/nycneighborhoods');
     console.log('Connected to MongoDB');
 
     console.log('\n=== DATABASE VERIFICATION ===');

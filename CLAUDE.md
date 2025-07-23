@@ -35,3 +35,6 @@
 - Map Features: Use OpenStreetMap tiles
 - Use GeoJSON to render NYC neighborhoods on map
 - Use Leaflet to create interactive map of NYC
+
+## Security and Configuration
+- Do not assign MONGODB_URI in .js files, instead look and see if the variable is already defined in .env files
