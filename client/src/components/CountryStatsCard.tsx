@@ -70,6 +70,14 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
 
   // Calculate visited countries by continent
   const visitedByContinent: Record<string, number> = {};
+  const totalByContinent: Record<string, number> = {};
+  
+  // Count total countries per continent
+  countries.forEach(country => {
+    totalByContinent[country.continent] = (totalByContinent[country.continent] || 0) + 1;
+  });
+  
+  // Count visited countries per continent
   visits.filter(v => v.visited && v.countryId).forEach(visit => {
     const country = countryMap.get(visit.countryId!);
     if (country) {
@@ -89,7 +97,7 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <TrendingUp sx={{ mr: 1 }} />
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Your World Exploration Stats
+            Your World Stats
           </Typography>
         </Box>
 
@@ -185,21 +193,44 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
           </Box>
         )}
 
-        {/* Countries by Continent */}
-        {Object.keys(visitedByContinent).length > 0 && (
+        {/* Progress by Continent */}
+        {Object.keys(totalByContinent).length > 0 && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" gutterBottom>
-              Countries by Continent:
+              Progress by Continent:
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {Object.entries(visitedByContinent).map(([continent, count]) => (
-                <Chip
-                  key={continent}
-                  label={`${continent}: ${count}`}
-                  size="small"
-                  sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
-                />
-              ))}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {Object.entries(totalByContinent)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([continent, total]) => {
+                  const visited = visitedByContinent[continent] || 0;
+                  const percentage = total > 0 ? (visited / total) * 100 : 0;
+                  return (
+                    <Box key={continent}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                          {continent}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                          {visited}/{total} ({percentage.toFixed(0)}%)
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={percentage}
+                        sx={{
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: 'rgba(255,255,255,0.2)',
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: '#4fc3f7',
+                            borderRadius: 3
+                          }
+                        }}
+                      />
+                    </Box>
+                  );
+                })}
             </Box>
           </Box>
         )}
@@ -208,7 +239,7 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2">
-              World Exploration Progress
+              World Progress
             </Typography>
             <Typography variant="body2">
               {completionPercentage.toFixed(1)}%

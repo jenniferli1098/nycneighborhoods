@@ -107,7 +107,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <TrendingUp sx={{ mr: 1 }} />
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Your {areaName} Exploration Stats
+            Your {areaName} Stats
           </Typography>
         </Box>
 
@@ -207,7 +207,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2">
-              {areaName} Exploration Progress
+              {areaName} Progress
             </Typography>
             <Typography variant="body2">
               {completionPercentage.toFixed(1)}%
