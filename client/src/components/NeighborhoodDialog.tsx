@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { visitsApi } from '../services/visitsApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import RankingDialog, { type RankableEntity } from './RankingDialog';
+import EloRankingDialog, { type RankableEntity } from './EloRankingDialog';
 
 
 interface NeighborhoodDialogProps {
@@ -117,6 +117,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate ? visit.visitDate.toISOString() : undefined,
           rating: visit.rating,
+          eloRating: visit.eloRating,
           category: visit.category,
         };
         console.log('📤 NeighborhoodDialog: Sending update data:', updateData);
@@ -131,6 +132,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate || undefined,
           rating: visit.rating,
+          eloRating: visit.eloRating,
           category: visit.category,
         };
         console.log('📤 NeighborhoodDialog: Sending create data:', createData);
@@ -168,8 +170,8 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     }
   };
 
-  const handleRankingComplete = (category: 'Bad' | 'Mid' | 'Good', rating: number) => {
-    setVisit({ ...visit, category, rating });
+  const handleRankingComplete = (category: 'Bad' | 'Mid' | 'Good', eloRating: number, displayRating: number) => {
+    setVisit({ ...visit, category, rating: displayRating, eloRating });
   };
 
   const handleVisitChange = (updates: Partial<BaseVisit>) => {
@@ -204,7 +206,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         />
       </BaseVisitDialog>
 
-      <RankingDialog
+      <EloRankingDialog
         open={showRanking}
         onClose={() => setShowRanking(false)}
         entity={entity}

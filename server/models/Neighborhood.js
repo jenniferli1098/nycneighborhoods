@@ -87,6 +87,7 @@ neighborhoodSchema.methods.calculateAverageRating = async function() {
   ]);
   
   if (result.length > 0) {
+    // Always use display rating for consistent 0-10 scale averages
     this.averageVisitRating = Math.round(result[0].avgRating * 10) / 10;
     this.totalVisits = result[0].count;
   } else {

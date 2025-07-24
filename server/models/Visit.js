@@ -36,6 +36,17 @@ const visitSchema = new mongoose.Schema({
     min: 0,
     max: 10
   },
+  eloRating: {
+    type: Number,
+    min: 800,
+    max: 2200,
+    default: null
+  },
+  ratingType: {
+    type: String,
+    enum: ['legacy', 'elo'],
+    default: 'elo'
+  },
   category: {
     type: String,
     enum: ['Bad', 'Mid', 'Good']

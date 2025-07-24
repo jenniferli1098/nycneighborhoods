@@ -3,7 +3,7 @@ import { visitsApi, type Visit } from '../services/visitsApi';
 import { type Country } from '../services/countriesApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import RankingDialog, { type RankableEntity } from './RankingDialog';
+import EloRankingDialog, { type RankableEntity } from './EloRankingDialog';
 
 interface CountryDialogProps {
   open: boolean;
@@ -111,6 +111,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate ? visit.visitDate.toISOString() : undefined,
           rating: visit.rating,
+          eloRating: visit.eloRating,
           category: visit.category,
         };
         console.log('📤 CountryDialog: Sending update data:', updateData);
@@ -124,6 +125,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate || undefined,
           rating: visit.rating,
+          eloRating: visit.eloRating,
           category: visit.category,
         };
         console.log('📤 CountryDialog: Sending create data:', createData);
@@ -147,8 +149,8 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
     setVisit({ ...visit, ...updates });
   };
 
-  const handleRankingComplete = (category: 'Bad' | 'Mid' | 'Good', rating: number) => {
-    setVisit({ ...visit, category, rating });
+  const handleRankingComplete = (category: 'Bad' | 'Mid' | 'Good', eloRating: number, displayRating: number) => {
+    setVisit({ ...visit, category, rating: displayRating, eloRating });
   };
 
   const entity: RankableEntity = {
@@ -178,7 +180,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
         />
       </BaseVisitDialog>
 
-      <RankingDialog
+      <EloRankingDialog
         open={showRanking}
         onClose={() => setShowRanking(false)}
         entity={entity}

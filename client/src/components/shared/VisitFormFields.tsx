@@ -10,8 +10,21 @@ import {
   MenuItem,
   Slider,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Card,
+  CardContent,
+  Chip,
+  Avatar,
+  Divider
 } from '@mui/material';
+import {
+  Event,
+  Notes,
+  Star,
+  Category,
+  CheckCircle,
+  Analytics
+} from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -21,6 +34,7 @@ export interface BaseVisit {
   notes: string;
   visitDate: Date | null;
   rating: number | null;
+  eloRating?: number | null;
   category?: 'Bad' | 'Mid' | 'Good' | null;
 }
 
@@ -47,33 +61,96 @@ const VisitFormFields: React.FC<VisitFormFieldsProps> = ({
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {showVisitedToggle && (
-          <Box>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={visit.visited}
-                  onChange={(e) => onVisitChange({ visited: e.target.checked })}
-                  color="primary"
+          <Card 
+            sx={{ 
+              background: 'linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%)',
+              border: '1px solid #4caf50',
+              borderRadius: 3
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box className="flex items-center justify-between">
+                <Box className="flex items-center">
+                  <Avatar sx={{ 
+                    width: 40, 
+                    height: 40, 
+                    mr: 2,
+                    background: 'linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)'
+                  }}>
+                    <CheckCircle />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" className="font-bold">
+                      Visit Status
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Mark this place as visited
+                    </Typography>
+                  </Box>
+                </Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={visit.visited}
+                      onChange={(e) => onVisitChange({ visited: e.target.checked })}
+                      sx={{
+                        '& .MuiSwitch-track': {
+                          backgroundColor: visit.visited ? '#4caf50' : '#ccc'
+                        },
+                        '& .MuiSwitch-thumb': {
+                          backgroundColor: visit.visited ? '#2e7d32' : '#fff'
+                        }
+                      }}
+                    />
+                  }
+                  label=""
                 />
-              }
-              label="Mark as visited"
-            />
-          </Box>
+              </Box>
+            </CardContent>
+          </Card>
         )}
 
         {visit.visited && (
           <>
-            <DatePicker
-              label="Visit Date"
-              value={visit.visitDate}
-              onChange={(date) => onVisitChange({ visitDate: date })}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  margin: 'normal'
-                }
-              }}
-            />
+            <Card sx={{ borderRadius: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Box className="flex items-center mb-3">
+                  <Avatar sx={{ 
+                    width: 32, 
+                    height: 32, 
+                    mr: 2,
+                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)'
+                  }}>
+                    <Event />
+                  </Avatar>
+                  <Typography variant="h6" className="font-bold">
+                    Visit Date
+                  </Typography>
+                </Box>
+                <DatePicker
+                  label="When did you visit?"
+                  value={visit.visitDate}
+                  onChange={(date) => onVisitChange({ visitDate: date })}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      variant: 'outlined',
+                      sx: {
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          '&:hover fieldset': {
+                            borderColor: '#2196F3'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#2196F3'
+                          }
+                        }
+                      }
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
 
             {showRankingButton && (
               <Box className="flex gap-2">
