@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../config/api';
 import {
   Dialog,
   DialogTitle,
@@ -314,15 +315,9 @@ const RankingDialog: React.FC<RankingDialogProps> = ({
     
     for (const update of updates) {
       try {
-        await fetch(`/api/visits/${update.visitId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            rating: update.newRating,
-            category: update.category
-          }),
+        await api.put(`/api/visits/${update.visitId}`, {
+          rating: update.newRating,
+          category: update.category
         });
         console.log(`✅ Updated visit ${update.visitId}: ${update.oldRating} → ${update.newRating}`);
       } catch (error) {

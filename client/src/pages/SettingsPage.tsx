@@ -21,7 +21,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings, type UserSettings } from '../contexts/SettingsContext';
-import axios from 'axios';
+import api from '../config/api';
 
 
 const SettingsPage: React.FC = () => {
@@ -69,7 +69,7 @@ const SettingsPage: React.FC = () => {
     setProfileMessage(null);
 
     try {
-      await axios.put('/api/auth/profile', {
+      await api.put('/api/auth/profile', {
         firstName: localSettings.firstName,
         lastName: localSettings.lastName
       });

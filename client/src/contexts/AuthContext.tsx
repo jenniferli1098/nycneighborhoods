@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../config/api';
 
 interface User {
   id: string;
@@ -29,7 +29,7 @@ export const useAuth = () => {
   return context;
 };
 
-// Use relative URLs - Vite proxy will handle routing to localhost:8000
+// Using configured API instance for consistent baseURL handling
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchUser();
     } else {
       setLoading(false);
@@ -47,11 +47,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get('/api/auth/me');
+      const response = await api.get('/api/auth/me');
       setUser(response.data.user);
     } catch (error) {
       localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
+      delete api.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
     }
@@ -59,11 +59,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await api.post('/api/auth/login', { email, password });
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Login failed');
@@ -72,11 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async (token: string) => {
     try {
-      const response = await axios.post('/api/auth/google', { token });
+      const response = await api.post('/api/auth/google', { token });
       const { token: jwtToken, user } = response.data;
       
       localStorage.setItem('token', jwtToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
+      api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
       setUser(user);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Google login failed');
@@ -85,11 +85,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (username: string, email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const response = await axios.post('/api/auth/register', { username, email, password, firstName, lastName });
+      const response = await api.post('/api/auth/register', { username, email, password, firstName, lastName });
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Registration failed');
@@ -98,13 +98,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    delete api.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
   const refreshUser = async () => {
     try {
-      const response = await axios.get('/api/auth/me');
+      const response = await api.get('/api/auth/me');
       setUser(response.data.user);
     } catch (error) {
       console.error('Failed to refresh user data:', error);

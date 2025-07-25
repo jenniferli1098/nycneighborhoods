@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../config/api';
 import {
   Dialog,
   DialogTitle,
@@ -243,14 +244,10 @@ const EloRankingDialog: React.FC<EloRankingDialogProps> = ({
   const applyRatingUpdates = async (updates: EloRatingUpdate[]) => {
     for (const update of updates) {
       try {
-        await fetch(`/api/visits/${update.visitId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rating: convertEloToDisplayRating(update.newRating, update.category),
-            eloRating: update.newRating,
-            category: update.category
-          }),
+        await api.put(`/api/visits/${update.visitId}`, {
+          rating: convertEloToDisplayRating(update.newRating, update.category),
+          eloRating: update.newRating,
+          category: update.category
         });
       } catch (error) {
         console.error(`Failed to update visit ${update.visitId}:`, error);

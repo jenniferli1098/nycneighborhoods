@@ -1,6 +1,7 @@
 import { neighborhoodsApi, type Neighborhood } from './neighborhoodsApi';
 import { boroughsApi, type Borough } from './boroughsApi';
 import { citiesApi, type City } from './citiesApi';
+import api from '../config/api';
 
 interface CachedNeighborhood {
   id: string;
@@ -89,12 +90,12 @@ class NeighborhoodCache {
       if (city) {
         // Fetch by city
         const [neighborhoodsResponse, boroughsResponse, citiesResponse] = await Promise.all([
-          fetch(`/api/neighborhoods?city=${city}`),
-          fetch(`/api/boroughs?city=${city}`),
+          api.get(`/api/neighborhoods?city=${city}`),
+          api.get(`/api/boroughs?city=${city}`),
           citiesApi.getAllCities()
         ]);
-        neighborhoods = await neighborhoodsResponse.json();
-        boroughs = await boroughsResponse.json();
+        neighborhoods = neighborhoodsResponse.data;
+        boroughs = boroughsResponse.data;
         cities = citiesResponse;
       } else {
         // Fetch all
@@ -208,10 +209,10 @@ class NeighborhoodCache {
 
       if (city) {
         const [boroughsResponse, citiesResponse] = await Promise.all([
-          fetch(`/api/boroughs?city=${city}`),
+          api.get(`/api/boroughs?city=${city}`),
           citiesApi.getAllCities()
         ]);
-        boroughs = await boroughsResponse.json();
+        boroughs = boroughsResponse.data;
         cities = citiesResponse;
       } else {
         [boroughs, cities] = await Promise.all([
