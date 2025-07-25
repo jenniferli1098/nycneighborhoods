@@ -216,7 +216,14 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         );
         
         if (existingVisit) {
-          console.log(`⚡ ${mapConfig.name}: Visit already exists, skipping to prevent data loss:`, existingVisit);
+          // Check if visit has user data (notes, rating, category) - if not, toggle to unvisited
+          if (!existingVisit.notes && !existingVisit.rating && !existingVisit.category) {
+            console.log(`⚡ ${mapConfig.name}: Toggling visit to unvisited (no user data):`, existingVisit);
+            await visitsApi.deleteVisit(existingVisit._id);
+            await fetchVisits();
+            return;
+          }
+          console.log(`⚡ ${mapConfig.name}: Visit already exists with user data, skipping to prevent data loss:`, existingVisit);
           return;
         }
 
@@ -273,7 +280,14 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         const existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj.id);
         
         if (existingVisit) {
-          console.log(`⚡ ${mapConfig.name}: Visit already exists, skipping to prevent data loss:`, existingVisit);
+          // Check if visit has user data (notes, rating, category) - if not, toggle to unvisited
+          if (!existingVisit.notes && !existingVisit.rating && !existingVisit.category) {
+            console.log(`⚡ ${mapConfig.name}: Toggling visit to unvisited (no user data):`, existingVisit);
+            await visitsApi.deleteVisit(existingVisit._id);
+            await fetchVisits();
+            return;
+          }
+          console.log(`⚡ ${mapConfig.name}: Visit already exists with user data, skipping to prevent data loss:`, existingVisit);
           return;
         }
 

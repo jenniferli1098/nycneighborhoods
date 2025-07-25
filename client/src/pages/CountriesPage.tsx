@@ -120,8 +120,14 @@ const CountriesPage: React.FC = () => {
       const existingVisit = visits.find(v => v.countryId === country._id);
       
       if (existingVisit) {
-        console.log('⚡ CountriesPage: Visit already exists, skipping to prevent data loss:', existingVisit);
-        // Don't overwrite existing visit data - just return
+        // Check if visit has user data (notes, rating, category) - if not, toggle to unvisited
+        if (!existingVisit.notes && !existingVisit.rating && !existingVisit.category) {
+          console.log('⚡ CountriesPage: Toggling visit to unvisited (no user data):', existingVisit);
+          await visitsApi.deleteVisit(existingVisit._id);
+          await fetchCountryVisits();
+          return;
+        }
+        console.log('⚡ CountriesPage: Visit already exists with user data, skipping to prevent data loss:', existingVisit);
         return;
       }
 
