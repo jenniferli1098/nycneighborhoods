@@ -46,7 +46,7 @@ export const countriesApi = {
 
   // Get GeoJSON countries for map
   getGeoJsonCountries: async () => {
-    const response = await fetch('/data/countries.geojson');
-    return response.json();
+    const response = await api.get('/api/maps/geojson/countries');
+    return response.data;
   }
 };

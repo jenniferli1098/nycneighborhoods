@@ -96,11 +96,9 @@ const GenericMap: React.FC<GenericMapProps> = ({
     const categoryName = mapConfig.getCategoryFromFeature(feature);
     const isVisited = visitedNeighborhoods.has(neighborhoodName);
     
-    console.log('🏘️ GenericMap: Setting up feature for', neighborhoodName, 'in', categoryName);
     
     // Removed popup to prevent thumbnail on left-click
 
-    console.log('🔧 GenericMap: Attaching event listeners to', neighborhoodName);
     
     layer.on({
       click: (e: any) => {
@@ -169,7 +167,6 @@ const GenericMap: React.FC<GenericMapProps> = ({
     );
   }
 
-  console.log('🗺️ GenericMap: Rendering map with', geoJsonData.features?.length || 0, 'features');
 
   return (
     <div className="w-full h-full">

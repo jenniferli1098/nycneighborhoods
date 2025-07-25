@@ -55,13 +55,13 @@ export const neighborhoodsApi = {
 
   // Get GeoJSON neighborhoods for map
   getGeoJsonNeighborhoods: async () => {
-    const response = await fetch('/data/nyc_neighborhoods_clean.geojson');
-    return response.json();
+    const response = await api.get('/api/maps/geojson/nyc');
+    return response.data;
   },
 
   // Get Boston/Cambridge GeoJSON neighborhoods for map
   getBostonGeoJsonNeighborhoods: async () => {
-    const response = await fetch('/data/boston_cambridge_neighborhoods.geojson');
-    return response.json();
+    const response = await api.get('/api/maps/geojson/boston');
+    return response.data;
   }
 };

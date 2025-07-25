@@ -1,6 +1,8 @@
 const express = require('express');
 const Map = require('../models/Map');
 const auth = require('../middleware/auth');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
 
@@ -162,6 +164,58 @@ router.get('/by-borough/:boroughId', async (req, res) => {
   } catch (error) {
     console.error('❌ GET /maps/by-borough: Error finding maps:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// GeoJSON endpoints for map data
+router.get('/geojson/nyc', async (req, res) => {
+  try {
+    console.log('📡 GET /maps/geojson/nyc: Serving NYC neighborhoods GeoJSON');
+    const filePath = path.join(__dirname, '../data/nyc_neighborhoods_clean.geojson');
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'NYC GeoJSON file not found' });
+    }
+    
+    const geoJsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    res.json(geoJsonData);
+  } catch (error) {
+    console.error('❌ GET /maps/geojson/nyc: Error serving GeoJSON:', error);
+    res.status(500).json({ error: 'Failed to load NYC GeoJSON data' });
+  }
+});
+
+router.get('/geojson/boston', async (req, res) => {
+  try {
+    console.log('📡 GET /maps/geojson/boston: Serving Boston neighborhoods GeoJSON');
+    const filePath = path.join(__dirname, '../data/boston_cambridge_neighborhoods.geojson');
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Boston GeoJSON file not found' });
+    }
+    
+    const geoJsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    res.json(geoJsonData);
+  } catch (error) {
+    console.error('❌ GET /maps/geojson/boston: Error serving GeoJSON:', error);
+    res.status(500).json({ error: 'Failed to load Boston GeoJSON data' });
+  }
+});
+
+router.get('/geojson/countries', async (req, res) => {
+  try {
+    console.log('📡 GET /maps/geojson/countries: Serving countries GeoJSON');
+    const filePath = path.join(__dirname, '../data/countries.geojson');
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Countries GeoJSON file not found' });
+    }
+    
+    const geoJsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    res.json(geoJsonData);
+  } catch (error) {
+    console.error('❌ GET /maps/geojson/countries: Error serving GeoJSON:', error);
+    res.status(500).json({ error: 'Failed to load countries GeoJSON data' });
   }
 });
 

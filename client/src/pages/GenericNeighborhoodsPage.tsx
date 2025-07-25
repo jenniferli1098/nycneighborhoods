@@ -339,7 +339,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     const cachedNeighborhood = neighborhoodCache.getNeighborhoodById(visitId);
     if (cachedNeighborhood) {
       visitedNeighborhoodNames.add(cachedNeighborhood.name);
-      console.log(`✅ ${mapConfig.name}: Cached lookup: ${cachedNeighborhood.name} (ID: ${visitId})`);
     }
   }
 
