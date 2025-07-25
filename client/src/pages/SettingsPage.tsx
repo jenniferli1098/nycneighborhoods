@@ -116,9 +116,10 @@ const SettingsPage: React.FC = () => {
   return (
     <Box 
       sx={{ 
-        minHeight: '100vh',
+        height: '100vh',
         background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        p: 4
+        p: 4,
+        overflow: 'auto'
       }}
     >
       <Box className="max-w-5xl mx-auto">

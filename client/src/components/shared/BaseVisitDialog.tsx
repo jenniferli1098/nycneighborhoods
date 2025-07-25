@@ -8,15 +8,15 @@ import {
   Typography,
   Alert,
   Box,
-  Avatar,
-  Paper,
-  Fade
+  IconButton,
+  Divider
 } from '@mui/material';
 import {
   LocationOn,
   Save,
   Delete,
-  Close
+  Close,
+  Star
 } from '@mui/icons-material';
 
 interface BaseVisitDialogProps {
@@ -60,150 +60,112 @@ const BaseVisitDialog: React.FC<BaseVisitDialogProps> = ({
       onClose={onClose} 
       maxWidth="sm" 
       fullWidth
-      sx={{
-        '& .MuiDialog-paper': {
-          borderRadius: 4,
-          overflow: 'visible'
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
         }
       }}
     >
-      <DialogTitle sx={{ 
-        background: 'linear-gradient(135deg, #400B8B 0%, #B07FF6 100%)',
-        color: 'white',
-        borderRadius: '16px 16px 0 0',
-        position: 'relative'
-      }}>
-        <Box className="flex items-center justify-between">
-          <Box className="flex items-center">
-            <Avatar sx={{ 
-              width: 40, 
-              height: 40, 
-              mr: 2,
-              background: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <LocationOn />
-            </Avatar>
+      {/* Clean Header */}
+      <DialogTitle sx={{ p: 0 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          p: 3,
+          pb: 2
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <LocationOn sx={{ color: '#6366f1', fontSize: 24 }} />
             <Box>
-              <Typography variant="h6" className="font-bold">
+              <Typography variant="h6" sx={{ 
+                fontWeight: 600, 
+                color: '#111827',
+                lineHeight: 1.2
+              }}>
                 {title}
               </Typography>
               {subtitle && (
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                <Typography variant="body2" sx={{ 
+                  color: '#6b7280',
+                  mt: 0.5
+                }}>
                   {subtitle}
                 </Typography>
               )}
             </Box>
           </Box>
-          <Button
+          <IconButton
             onClick={onClose}
+            size="small"
             sx={{ 
-              color: 'white',
-              minWidth: 'auto',
-              borderRadius: '50%',
-              width: 40,
-              height: 40
+              color: '#9ca3af',
+              '&:hover': { 
+                backgroundColor: '#f3f4f6',
+                color: '#6b7280'
+              }
             }}
           >
-            <Close />
-          </Button>
+            <Close fontSize="small" />
+          </IconButton>
         </Box>
+        <Divider sx={{ borderColor: '#e5e7eb' }} />
       </DialogTitle>
       
-      <DialogContent sx={{ 
-        background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
-        pt: 3
-      }}>
+      {/* Content */}
+      <DialogContent sx={{ p: 3 }}>
         {error && (
-          <Fade in={!!error}>
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 2,
-                borderRadius: 2,
-                '& .MuiAlert-icon': {
-                  alignItems: 'center'
-                }
-              }}
-            >
-              {error}
-            </Alert>
-          </Fade>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              borderRadius: 2,
+              border: '1px solid #fecaca',
+              backgroundColor: '#fef2f2'
+            }}
+          >
+            {error}
+          </Alert>
         )}
         
-        <Paper 
-          elevation={1}
-          sx={{ 
-            p: 3,
-            borderRadius: 3,
-            background: 'white',
-            border: '1px solid #e0e0e0'
-          }}
-        >
-          {children}
-        </Paper>
+        {children}
       </DialogContent>
       
+      {/* Actions */}
       <DialogActions sx={{ 
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        borderRadius: '0 0 16px 16px',
-        p: 3,
-        gap: 2
+        p: 3, 
+        pt: 2, 
+        gap: 2,
+        borderTop: '1px solid #e5e7eb'
       }}>
         <Button 
           onClick={onClose}
           variant="outlined"
           disabled={loading}
           sx={{
-            borderRadius: 3,
-            textTransform: 'none',
-            fontWeight: 'bold',
-            borderColor: '#9e9e9e',
-            color: '#666',
+            color: '#6b7280',
+            borderColor: '#d1d5db',
             '&:hover': {
-              borderColor: '#757575',
-              background: 'rgba(158, 158, 158, 0.1)'
+              borderColor: '#9ca3af',
+              backgroundColor: '#f9fafb'
             }
           }}
         >
           Cancel
         </Button>
         
-        {showDeleteButton && onDelete && (
-          <Button 
-            onClick={onDelete} 
-            variant="outlined"
-            disabled={loading}
-            sx={{
-              borderRadius: 3,
-              textTransform: 'none',
-              fontWeight: 'bold',
-              borderColor: '#f44336',
-              color: '#f44336',
-              '&:hover': {
-                borderColor: '#d32f2f',
-                background: 'rgba(244, 67, 54, 0.1)'
-              }
-            }}
-          >
-            <Delete sx={{ mr: 1 }} />
-            {deleteButtonText}
-          </Button>
-        )}
-        
         {showRankingButton && onRankingClick && (
           <Button 
             onClick={onRankingClick}
             variant="outlined"
+            startIcon={<Star />}
             sx={{
-              borderRadius: 3,
-              textTransform: 'none',
-              fontWeight: 'bold',
-              borderColor: '#ff9800',
-              color: '#ff9800',
+              color: '#f59e0b',
+              borderColor: '#f59e0b',
               '&:hover': {
-                borderColor: '#f57c00',
-                background: 'rgba(255, 152, 0, 0.1)'
+                borderColor: '#d97706',
+                backgroundColor: '#fffbeb'
               }
             }}
           >
@@ -211,29 +173,40 @@ const BaseVisitDialog: React.FC<BaseVisitDialogProps> = ({
           </Button>
         )}
         
+        {showDeleteButton && onDelete && (
+          <Button 
+            onClick={onDelete} 
+            variant="outlined"
+            disabled={loading}
+            startIcon={<Delete />}
+            sx={{
+              color: '#ef4444',
+              borderColor: '#ef4444',
+              '&:hover': {
+                borderColor: '#dc2626',
+                backgroundColor: '#fef2f2'
+              }
+            }}
+          >
+            {deleteButtonText}
+          </Button>
+        )}
+        
         <Button 
           onClick={onSave} 
           variant="contained" 
           disabled={loading}
+          startIcon={<Save />}
           sx={{
-            background: 'linear-gradient(45deg, #400B8B 30%, #B07FF6 90%)',
-            borderRadius: 3,
-            textTransform: 'none',
-            fontWeight: 'bold',
-            px: 4,
-            py: 1.5,
-            boxShadow: '0 4px 12px rgba(64, 11, 139, 0.3)',
+            backgroundColor: '#6366f1',
             '&:hover': {
-              background: 'linear-gradient(45deg, #350973 30%, #9c6fd6 90%)',
-              boxShadow: '0 6px 16px rgba(64, 11, 139, 0.4)'
+              backgroundColor: '#4f46e5'
             },
             '&:disabled': {
-              background: 'rgba(0, 0, 0, 0.12)',
-              color: 'rgba(0, 0, 0, 0.26)'
+              backgroundColor: '#d1d5db'
             }
           }}
         >
-          <Save sx={{ mr: 1 }} />
           {loading ? 'Saving...' : saveButtonText}
         </Button>
       </DialogActions>
