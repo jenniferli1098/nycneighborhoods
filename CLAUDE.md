@@ -38,3 +38,6 @@
 
 ## Security and Configuration
 - Do not assign MONGODB_URI in .js files, instead look and see if the variable is already defined in .env files
+
+## Project Guidelines
+- Do not push to GitHub unless explicitly asked

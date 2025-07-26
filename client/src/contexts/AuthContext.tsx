@@ -7,6 +7,11 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  description?: string;
+  location?: string;
+  mapPreferences?: {
+    visibleMaps: string[];
+  };
 }
 
 interface AuthContextType {

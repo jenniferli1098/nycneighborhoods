@@ -17,7 +17,9 @@ import {
   Map,
   Visibility,
   Save,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  LocationOn,
+  Description
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings, type UserSettings } from '../contexts/SettingsContext';
@@ -38,7 +40,9 @@ const SettingsPage: React.FC = () => {
     const initialSettings = {
       ...settings,
       firstName: user?.firstName || settings.firstName || '',
-      lastName: user?.lastName || settings.lastName || ''
+      lastName: user?.lastName || settings.lastName || '',
+      description: user?.description || settings.description || '',
+      location: user?.location || settings.location || ''
     };
     setLocalSettings(initialSettings);
   }, [settings, user]);
@@ -71,7 +75,9 @@ const SettingsPage: React.FC = () => {
     try {
       await api.put('/api/auth/profile', {
         firstName: localSettings.firstName,
-        lastName: localSettings.lastName
+        lastName: localSettings.lastName,
+        description: localSettings.description,
+        location: localSettings.location
       });
       
       // Refresh user data in AuthContext
@@ -265,6 +271,16 @@ const SettingsPage: React.FC = () => {
                   <Typography variant="body2" sx={{ color: '#6b7280', mt: 1 }}>
                     Username: {user?.username}
                   </Typography>
+                  {localSettings.location && (
+                    <Typography variant="body2" sx={{ color: '#6b7280', mt: 0.5, fontStyle: 'italic' }}>
+                      📍 {localSettings.location}
+                    </Typography>
+                  )}
+                  {localSettings.description && (
+                    <Typography variant="body2" sx={{ color: '#6b7280', mt: 1, fontStyle: 'italic', lineHeight: 1.4 }}>
+                      "{localSettings.description}"
+                    </Typography>
+                  )}
                 </Box>
               </Box>
               
@@ -300,6 +316,76 @@ const SettingsPage: React.FC = () => {
                   value={localSettings.lastName}
                   onChange={handleInputChange('lastName')}
                   variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        '& > fieldset': {
+                          borderColor: '#667eea'
+                        }
+                      },
+                      '&.Mui-focused': {
+                        '& > fieldset': {
+                          borderColor: '#667eea',
+                          borderWidth: 2
+                        }
+                      }
+                    }
+                  }}
+                />
+              </Box>
+              
+              {/* Additional Profile Fields */}
+              <Box sx={{ mt: 3 }}>
+                <TextField
+                  fullWidth
+                  label="Location"
+                  value={localSettings.location}
+                  onChange={handleInputChange('location')}
+                  variant="outlined"
+                  placeholder="e.g., New York, NY"
+                  inputProps={{ maxLength: 100 }}
+                  InputProps={{
+                    startAdornment: (
+                      <LocationOn sx={{ color: '#667eea', mr: 1 }} />
+                    ),
+                  }}
+                  sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        '& > fieldset': {
+                          borderColor: '#667eea'
+                        }
+                      },
+                      '&.Mui-focused': {
+                        '& > fieldset': {
+                          borderColor: '#667eea',
+                          borderWidth: 2
+                        }
+                      }
+                    }
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Bio/Description"
+                  value={localSettings.description}
+                  onChange={handleInputChange('description')}
+                  variant="outlined"
+                  multiline
+                  rows={3}
+                  placeholder="Tell us about yourself and your travel interests..."
+                  inputProps={{ maxLength: 500 }}
+                  helperText={`${localSettings.description.length}/500 characters`}
+                  InputProps={{
+                    startAdornment: (
+                      <Description sx={{ color: '#667eea', mr: 1, alignSelf: 'flex-start', mt: 1 }} />
+                    ),
+                  }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -521,7 +607,7 @@ const SettingsPage: React.FC = () => {
                   Save Map Preferences
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                  Your map visibility preferences will be saved locally in your browser
+                  Your map visibility preferences will be saved to your account and synced across devices
                 </Typography>
               </Box>
               

@@ -1,8 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import api from '../config/api';
+import { useAuth } from './AuthContext';
 
 export interface UserSettings {
   firstName: string;
   lastName: string;
+  description: string;
+  location: string;
   visibleMaps: string[];
 }
 
@@ -26,6 +30,8 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 const defaultSettings: UserSettings = {
   firstName: '',
   lastName: '',
+  description: '',
+  location: '',
   visibleMaps: ['nyc', 'boston', 'countries']
 };
 
@@ -38,12 +44,58 @@ const availableMaps: MapConfig[] = [
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (user) {
+      loadSettings();
+    } else {
+      // If no user, load from localStorage as fallback
+      loadLocalSettings();
+    }
+  }, [user]);
 
-  const loadSettings = () => {
+  const loadSettings = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // First try to get from user object (from auth context)
+      if (user.mapPreferences) {
+        setSettings({
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          description: user.description || '',
+          location: user.location || '',
+          visibleMaps: user.mapPreferences.visibleMaps || defaultSettings.visibleMaps
+        });
+        setLoading(false);
+        return;
+      }
+
+      // If not in user object, fetch from API
+      const response = await api.get('/api/auth/preferences');
+      const { mapPreferences } = response.data;
+      
+      setSettings({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        description: user.description || '',
+        location: user.location || '',
+        visibleMaps: mapPreferences.visibleMaps || defaultSettings.visibleMaps
+      });
+    } catch (error) {
+      console.error('Failed to load settings from server:', error);
+      // Fallback to localStorage
+      loadLocalSettings();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadLocalSettings = () => {
     try {
       const savedSettings = localStorage.getItem('userSettings');
       if (savedSettings) {
@@ -51,32 +103,49 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         setSettings({ ...defaultSettings, ...parsed });
       }
     } catch (error) {
-      console.error('Failed to load settings:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load local settings:', error);
     }
   };
 
-  const saveSettings = (newSettings: UserSettings) => {
-    try {
-      localStorage.setItem('userSettings', JSON.stringify(newSettings));
-    } catch (error) {
-      console.error('Failed to save settings:', error);
+  const saveSettings = async (newSettings: UserSettings) => {
+    if (user) {
+      try {
+        await api.put('/api/auth/preferences', {
+          mapPreferences: {
+            visibleMaps: newSettings.visibleMaps
+          }
+        });
+      } catch (error) {
+        console.error('Failed to save settings to server:', error);
+        // Fallback to localStorage
+        try {
+          localStorage.setItem('userSettings', JSON.stringify(newSettings));
+        } catch (localError) {
+          console.error('Failed to save settings locally:', localError);
+        }
+      }
+    } else {
+      // Save to localStorage if no user
+      try {
+        localStorage.setItem('userSettings', JSON.stringify(newSettings));
+      } catch (error) {
+        console.error('Failed to save settings locally:', error);
+      }
     }
   };
 
-  const updateSettings = (newSettings: UserSettings) => {
+  const updateSettings = async (newSettings: UserSettings) => {
     setSettings(newSettings);
-    saveSettings(newSettings);
+    await saveSettings(newSettings);
   };
 
-  const toggleMapVisibility = (mapId: string) => {
+  const toggleMapVisibility = async (mapId: string) => {
     const newVisibleMaps = settings.visibleMaps.includes(mapId)
       ? settings.visibleMaps.filter(id => id !== mapId)
       : [...settings.visibleMaps, mapId];
     
     const newSettings = { ...settings, visibleMaps: newVisibleMaps };
-    updateSettings(newSettings);
+    await updateSettings(newSettings);
   };
 
   const value: SettingsContextType = {

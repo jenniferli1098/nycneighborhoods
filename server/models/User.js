@@ -39,6 +39,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
+  },
+  description: {
+    type: String,
+    trim: true,
+    maxlength: 500,
+    default: ''
+  },
+  location: {
+    type: String,
+    trim: true,
+    maxlength: 100,
+    default: ''
+  },
+  mapPreferences: {
+    visibleMaps: {
+      type: [String],
+      default: ['nyc', 'boston', 'countries'] // Default visible maps
+    }
   }
 }, {
   timestamps: true

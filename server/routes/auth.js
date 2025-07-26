@@ -46,7 +46,10 @@ router.post('/register', async (req, res) => {
         username: user.username,
         email: user.email,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        description: user.description || '',
+        location: user.location || '',
+        mapPreferences: user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
       }
     });
   } catch (error) {
@@ -88,7 +91,12 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        description: user.description || '',
+        location: user.location || '',
+        mapPreferences: user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
       }
     });
   } catch (error) {
@@ -98,14 +106,22 @@ router.post('/login', async (req, res) => {
 
 router.post('/google', async (req, res) => {
   try {
+    console.log('🔐 Google auth request received');
     const { token } = req.body;
     
     if (!token) {
+      console.log('❌ No token provided');
       return res.status(400).json({ error: 'Google token is required' });
     }
 
+    console.log('🔍 Verifying Google token...');
     const { OAuth2Client } = require('google-auth-library');
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      console.log('❌ GOOGLE_CLIENT_ID not set');
+      return res.status(500).json({ error: 'Google Client ID not configured' });
+    }
     
     const ticket = await client.verifyIdToken({
       idToken: token,
@@ -113,18 +129,29 @@ router.post('/google', async (req, res) => {
     });
     
     const payload = ticket.getPayload();
-    const { sub: googleId, email, name, picture } = payload;
+    const { sub: googleId, email, name, picture, given_name, family_name } = payload;
+    
+    console.log('✅ Google token verified for:', email);
 
     let user = await User.findOne({ email });
     
     if (!user) {
+      // Parse name into firstName and lastName
+      const nameParts = name ? name.split(' ') : [];
+      const firstName = given_name || nameParts[0] || 'User';
+      const lastName = family_name || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Google');
+      
+      console.log('🆕 Creating new user from Google auth');
       user = new User({
-        username: name,
+        username: name || email.split('@')[0],
         email,
         googleId,
-        avatar: picture
+        avatar: picture,
+        firstName,
+        lastName
       });
       await user.save();
+      console.log('✅ New user created:', user._id);
     } else if (!user.googleId) {
       user.googleId = googleId;
       user.avatar = picture;
@@ -137,7 +164,12 @@ router.post('/google', async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        description: user.description || '',
+        location: user.location || '',
+        mapPreferences: user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
       }
     });
   } catch (error) {
@@ -154,7 +186,10 @@ router.get('/me', auth, async (req, res) => {
         username: req.user.username,
         email: req.user.email,
         firstName: req.user.firstName,
-        lastName: req.user.lastName
+        lastName: req.user.lastName,
+        description: req.user.description || '',
+        location: req.user.location || '',
+        mapPreferences: req.user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
       }
     });
   } catch (error) {
@@ -164,17 +199,30 @@ router.get('/me', auth, async (req, res) => {
 
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { firstName, lastName } = req.body;
+    const { firstName, lastName, description, location } = req.body;
     
     // Validate required fields
     if (!firstName || !lastName) {
       return res.status(400).json({ error: 'First name and last name are required' });
     }
     
+    // Validate field lengths
+    if (description && description.length > 500) {
+      return res.status(400).json({ error: 'Description must be 500 characters or less' });
+    }
+    
+    if (location && location.length > 100) {
+      return res.status(400).json({ error: 'Location must be 100 characters or less' });
+    }
+    
     // Update user profile
+    const updateData = { firstName, lastName };
+    if (description !== undefined) updateData.description = description;
+    if (location !== undefined) updateData.location = location;
+    
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
-      { firstName, lastName },
+      updateData,
       { new: true, runValidators: true }
     );
     
@@ -188,7 +236,9 @@ router.put('/profile', auth, async (req, res) => {
         username: updatedUser.username,
         email: updatedUser.email,
         firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName
+        lastName: updatedUser.lastName,
+        description: updatedUser.description || '',
+        location: updatedUser.location || ''
       }
     });
   } catch (error) {
@@ -200,6 +250,51 @@ router.put('/profile', auth, async (req, res) => {
       return res.status(400).json({ error: `Validation error: ${validationErrors.join(', ')}` });
     }
     
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user's map preferences
+router.get('/preferences', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      mapPreferences: user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
+    });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update user's map preferences
+router.put('/preferences', auth, async (req, res) => {
+  try {
+    const { mapPreferences } = req.body;
+    
+    if (!mapPreferences || !Array.isArray(mapPreferences.visibleMaps)) {
+      return res.status(400).json({ error: 'Invalid map preferences format' });
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { mapPreferences },
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      mapPreferences: updatedUser.mapPreferences
+    });
+  } catch (error) {
+    console.error('Update preferences error:', error);
     res.status(500).json({ error: error.message });
   }
 });
