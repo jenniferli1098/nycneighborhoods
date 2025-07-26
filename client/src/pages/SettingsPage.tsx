@@ -510,7 +510,8 @@ const SettingsPage: React.FC = () => {
             borderRadius: 4, 
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
             background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            mb: 4 // Added bottom margin for spacing
           }}
         >
           <CardContent sx={{ p: 4 }}>
