@@ -41,3 +41,8 @@
 
 ## Project Guidelines
 - Do not push to GitHub unless explicitly asked
+
+## Deployment
+- When asked to deploy, call the following two Render deployment URLs:
+  ⏺ Fetch(https://api.render.com/deploy/srv-d1vb9ap5pdvs73d2ambg?key=XUmuUqG9tF4)
+  ⏺ Fetch(https://api.render.com/deploy/srv-d1vb8g95pdvs73d2a3og?key=7rzVTOEGUrs)

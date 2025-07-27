@@ -4,6 +4,7 @@ import { useTheme, useMediaQuery, Fab, Box } from '@mui/material';
 import { Add as AddIcon, Remove as RemoveIcon, MyLocation as MyLocationIcon } from '@mui/icons-material';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { useTouchInteractions, getDeviceType } from '../utils/deviceDetection';
 
 interface Neighborhood {
   type: string;
@@ -87,8 +88,19 @@ const GenericMap: React.FC<GenericMapProps> = ({
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const useTouchInteraction = useTouchInteractions();
   const [map, setMap] = useState<L.Map | null>(null);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
+
+  // Log device detection for debugging
+  useEffect(() => {
+    console.log('🔍 Device Detection:', {
+      deviceType: getDeviceType(),
+      isMobile: isMobile,
+      useTouchInteraction: useTouchInteraction,
+      screenWidth: window.innerWidth
+    });
+  }, [isMobile, useTouchInteraction]);
 
   const style = (feature: any) => ({
     fillColor: getColor(feature),
@@ -108,24 +120,27 @@ const GenericMap: React.FC<GenericMapProps> = ({
     // Removed popup to prevent thumbnail on left-click
 
     
-    // Enhanced touch/click handling for mobile
+    // Device-specific interaction handling
     const handleInteraction = (e: any, isLongPress = false) => {
-      if (isMobile) {
+      if (useTouchInteraction) {
+        // Touch device behavior (phones/tablets)
         if (isLongPress) {
-          // Long press on mobile - open detailed dialog
+          // Long press on touch device - open detailed dialog
           onNeighborhoodClick(neighborhoodName, categoryName);
         } else {
-          // Quick tap on mobile - mark as visited
+          // Quick tap on touch device - mark as visited
           if (onNeighborhoodQuickVisit) {
             onNeighborhoodQuickVisit(neighborhoodName, categoryName);
           }
         }
       } else {
-        // Desktop behavior unchanged
+        // Desktop/laptop behavior (mouse interactions)
         if (e.originalEvent?.button === 2 || e.type === 'contextmenu') {
+          // Right click on desktop - open detailed dialog
           e.originalEvent?.preventDefault();
           onNeighborhoodClick(neighborhoodName, categoryName);
         } else if (onNeighborhoodQuickVisit) {
+          // Left click on desktop - mark as visited
           onNeighborhoodQuickVisit(neighborhoodName, categoryName);
         }
       }
@@ -139,7 +154,7 @@ const GenericMap: React.FC<GenericMapProps> = ({
         handleInteraction(e, true);
       },
       touchstart: (e: any) => {
-        if (isMobile) {
+        if (useTouchInteraction) {
           setTouchStart({
             x: e.originalEvent.touches[0].clientX,
             y: e.originalEvent.touches[0].clientY,
@@ -148,7 +163,7 @@ const GenericMap: React.FC<GenericMapProps> = ({
         }
       },
       touchend: (e: any) => {
-        if (isMobile && touchStart) {
+        if (useTouchInteraction && touchStart) {
           const touchEnd = {
             x: e.originalEvent.changedTouches[0].clientX,
             y: e.originalEvent.changedTouches[0].clientY,
@@ -172,7 +187,8 @@ const GenericMap: React.FC<GenericMapProps> = ({
         }
       },
       mouseover: (e: any) => {
-        if (!isMobile) {
+        if (!useTouchInteraction) {
+          // Only show hover effects on desktop/laptop with mouse
           const layer = e.target;
           layer.setStyle({
             weight: 5,
@@ -183,7 +199,8 @@ const GenericMap: React.FC<GenericMapProps> = ({
         }
       },
       mouseout: (e: any) => {
-        if (!isMobile) {
+        if (!useTouchInteraction) {
+          // Only reset hover effects on desktop/laptop with mouse
           const layer = e.target;
           layer.setStyle(style(feature));
         }
@@ -326,8 +343,8 @@ const GenericMap: React.FC<GenericMapProps> = ({
         </Box>
       )}
       
-      {/* Mobile instruction overlay */}
-      {isMobile && (
+      {/* Device-specific instruction overlay */}
+      {(isMobile || useTouchInteraction) && (
         <Box sx={{
           position: 'absolute',
           bottom: 16,
@@ -342,7 +359,10 @@ const GenericMap: React.FC<GenericMapProps> = ({
           zIndex: 1000,
           opacity: 0.8
         }}>
-          Tap to mark visited • Long press for details
+          {useTouchInteraction 
+            ? 'Tap to mark visited • Long press for details'
+            : 'Left click to mark visited • Right click for details'
+          }
         </Box>
       )}
     </Box>
