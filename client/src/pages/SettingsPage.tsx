@@ -82,9 +82,14 @@ const SettingsPage: React.FC = () => {
 
   const handleSaveProfile = async () => {
     // Check for validation errors before submitting
-    const hasErrors = Object.values(validationErrors).some(error => error !== null);
-    if (hasErrors) {
-      setProfileMessage({ type: 'error', text: 'Please fix validation errors before saving.' });
+    const errorEntries = Object.entries(validationErrors).filter(([_, error]) => error !== null);
+    if (errorEntries.length > 0) {
+      const errorFields = errorEntries.map(([field, _]) => field).join(', ');
+      const errorMessage = errorEntries.length === 1 
+        ? `Your ${errorFields} contains inappropriate language. Please use appropriate language and try again.`
+        : `The following fields contain inappropriate language: ${errorFields}. Please use appropriate language and try again.`;
+      
+      setProfileMessage({ type: 'error', text: errorMessage });
       return;
     }
 

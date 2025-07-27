@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -20,6 +20,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { validateFieldProfanity } from '../../utils/contentModeration';
 
 export interface BaseVisit {
   visited: boolean;
@@ -38,6 +39,7 @@ interface VisitFormFieldsProps {
   showManualRating?: boolean;
   onRankingClick?: () => void;
   ratingButtonText?: string;
+  onValidationChange?: (hasErrors: boolean) => void;
 }
 
 const VisitFormFields: React.FC<VisitFormFieldsProps> = ({
@@ -47,8 +49,25 @@ const VisitFormFields: React.FC<VisitFormFieldsProps> = ({
   showRankingButton = false,
   showManualRating = false,
   onRankingClick,
-  ratingButtonText = "Rank"
+  ratingButtonText = "Rank",
+  onValidationChange
 }) => {
+  const [notesError, setNotesError] = useState<string | null>(null);
+
+  // Validate notes for profanity
+  useEffect(() => {
+    const error = validateFieldProfanity(visit.notes, 'Notes');
+    setNotesError(error);
+    
+    // Notify parent component about validation status
+    if (onValidationChange) {
+      onValidationChange(!!error);
+    }
+  }, [visit.notes, onValidationChange]);
+
+  const handleNotesChange = (value: string) => {
+    onVisitChange({ notes: value });
+  };
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Stack spacing={3}>
@@ -230,8 +249,10 @@ const VisitFormFields: React.FC<VisitFormFieldsProps> = ({
                 multiline
                 rows={4}
                 value={visit.notes}
-                onChange={(e) => onVisitChange({ notes: e.target.value })}
+                onChange={(e) => handleNotesChange(e.target.value)}
                 placeholder="What did you do? What did you like? Any recommendations?"
+                error={!!notesError}
+                helperText={notesError}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     backgroundColor: '#ffffff'

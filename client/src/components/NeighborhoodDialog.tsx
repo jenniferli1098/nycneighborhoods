@@ -50,6 +50,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
   const [showRanking, setShowRanking] = useState(false);
 
   useEffect(() => {
@@ -103,6 +104,12 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   };
 
   const handleSave = async () => {
+    // Check for validation errors before proceeding
+    if (hasValidationErrors) {
+      setError('Notes contain inappropriate language. Please use appropriate language and try again.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     
@@ -203,6 +210,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           showRankingButton={true}
           onRankingClick={() => setShowRanking(true)}
           ratingButtonText="Rank"
+          onValidationChange={setHasValidationErrors}
         />
       </BaseVisitDialog>
 
