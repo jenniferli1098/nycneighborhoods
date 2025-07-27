@@ -1,13 +1,23 @@
 // Initialize the profanity filter using dynamic import
 let filter;
+let filterPromise;
 
 // Async function to initialize the filter
 const initializeFilter = async () => {
-  if (!filter) {
-    const { Filter } = await import('bad-words');
-    filter = new Filter();
+  if (!filterPromise) {
+    filterPromise = (async () => {
+      try {
+        const { Filter } = await import('bad-words');
+        filter = new Filter();
+        console.log('✅ Content moderation filter initialized');
+        return filter;
+      } catch (error) {
+        console.error('❌ Failed to initialize content moderation filter:', error);
+        throw error;
+      }
+    })();
   }
-  return filter;
+  return filterPromise;
 };
 
 // Add any custom words to the filter if needed
@@ -163,9 +173,19 @@ function contentModerationMiddleware(options = {}) {
   };
 }
 
+// Pre-initialize the filter for better performance
+const preInitializeFilter = async () => {
+  try {
+    await initializeFilter();
+  } catch (error) {
+    console.warn('⚠️ Content moderation pre-initialization failed, will retry on first use');
+  }
+};
+
 module.exports = {
   contentModerationMiddleware,
   sanitizeObject,
   cleanObject,
-  initializeFilter
+  initializeFilter,
+  preInitializeFilter
 };
