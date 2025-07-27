@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings, type UserSettings } from '../contexts/SettingsContext';
 import api from '../config/api';
+import { validateFieldProfanity } from '../utils/contentModeration';
 
 
 const SettingsPage: React.FC = () => {
@@ -34,6 +35,7 @@ const SettingsPage: React.FC = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     // Initialize with user data from AuthContext if available
@@ -52,9 +54,19 @@ const SettingsPage: React.FC = () => {
   const handleInputChange = (field: keyof UserSettings) => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
+    const value = event.target.value;
+    
+    // Update the local settings
     setLocalSettings(prev => ({
       ...prev,
-      [field]: event.target.value
+      [field]: value
+    }));
+    
+    // Validate for profanity
+    const error = validateFieldProfanity(value, field);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
     }));
   };
 
@@ -69,6 +81,13 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleSaveProfile = async () => {
+    // Check for validation errors before submitting
+    const hasErrors = Object.values(validationErrors).some(error => error !== null);
+    if (hasErrors) {
+      setProfileMessage({ type: 'error', text: 'Please fix validation errors before saving.' });
+      return;
+    }
+
     setSavingProfile(true);
     setProfileMessage(null);
 
@@ -292,18 +311,20 @@ const SettingsPage: React.FC = () => {
                   value={localSettings.firstName}
                   onChange={handleInputChange('firstName')}
                   variant="outlined"
+                  error={!!validationErrors.firstName}
+                  helperText={validationErrors.firstName}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       transition: 'all 0.2s ease-in-out',
                       '&:hover': {
                         '& > fieldset': {
-                          borderColor: '#667eea'
+                          borderColor: validationErrors.firstName ? '#d32f2f' : '#667eea'
                         }
                       },
                       '&.Mui-focused': {
                         '& > fieldset': {
-                          borderColor: '#667eea',
+                          borderColor: validationErrors.firstName ? '#d32f2f' : '#667eea',
                           borderWidth: 2
                         }
                       }
@@ -316,18 +337,20 @@ const SettingsPage: React.FC = () => {
                   value={localSettings.lastName}
                   onChange={handleInputChange('lastName')}
                   variant="outlined"
+                  error={!!validationErrors.lastName}
+                  helperText={validationErrors.lastName}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       transition: 'all 0.2s ease-in-out',
                       '&:hover': {
                         '& > fieldset': {
-                          borderColor: '#667eea'
+                          borderColor: validationErrors.lastName ? '#d32f2f' : '#667eea'
                         }
                       },
                       '&.Mui-focused': {
                         '& > fieldset': {
-                          borderColor: '#667eea',
+                          borderColor: validationErrors.lastName ? '#d32f2f' : '#667eea',
                           borderWidth: 2
                         }
                       }

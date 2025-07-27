@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const { contentModerationMiddleware } = require('../middleware/contentModeration');
 
 const router = express.Router();
 
@@ -9,7 +10,12 @@ const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
 };
 
-router.post('/register', async (req, res) => {
+router.post('/register', 
+  contentModerationMiddleware({ 
+    fields: ['firstName', 'lastName', 'username'], 
+    strict: true 
+  }), 
+  async (req, res) => {
   try {
     console.log('Registration request received:', req.body);
     const { username, email, password, firstName, lastName } = req.body;
@@ -197,7 +203,13 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', 
+  auth, 
+  contentModerationMiddleware({ 
+    fields: ['firstName', 'lastName', 'description', 'location'], 
+    strict: true 
+  }), 
+  async (req, res) => {
   try {
     const { firstName, lastName, description, location } = req.body;
     
