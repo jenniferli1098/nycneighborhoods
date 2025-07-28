@@ -232,9 +232,6 @@ const CountriesPage: React.FC = () => {
           onClose={handleCloseDialog}
           country={selectedCountry}
           onSave={handleSaveVisit}
-          existingVisits={visits}
-          countries={countries}
-          continents={continents}
         />
       )}
     </Box>

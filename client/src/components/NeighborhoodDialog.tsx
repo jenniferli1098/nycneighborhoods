@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { visitsApi } from '../services/visitsApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import EloRankingDialog, { type RankableEntity } from './EloRankingDialog';
+import PairwiseRankingDialog, { type RankableEntity } from './PairwiseRankingDialog';
 
 
 interface NeighborhoodDialogProps {
@@ -12,10 +12,6 @@ interface NeighborhoodDialogProps {
   neighborhood: string;
   borough: string;
   onSave: () => void;
-  existingVisits?: any[];
-  neighborhoods?: any[];
-  boroughs?: any[];
-  cities?: any[];
 }
 
 interface Visit extends BaseVisit {
@@ -24,6 +20,7 @@ interface Visit extends BaseVisit {
   neighborhoodId?: string;
   neighborhood?: string; // For form display only
   borough?: string; // For form display only
+  ratingType?: string;
 }
 
 const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
@@ -32,11 +29,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   neighborhoodId,
   neighborhood,
   borough,
-  onSave,
-  existingVisits = [],
-  neighborhoods = [],
-  boroughs = [],
-  cities = []
+  onSave
 }) => {
   const [visit, setVisit] = useState<Visit>({
     neighborhood,
@@ -51,7 +44,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [hasValidationErrors, setHasValidationErrors] = useState(false);
-  const [showRanking, setShowRanking] = useState(false);
+  const [showPairwiseRanking, setShowPairwiseRanking] = useState(false);
 
   useEffect(() => {
     if (open && neighborhoodId && neighborhood && borough) {
@@ -177,8 +170,8 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     }
   };
 
-  const handleRankingComplete = (category: 'Bad' | 'Mid' | 'Good', eloRating: number, displayRating: number) => {
-    setVisit({ ...visit, category, rating: displayRating, eloRating });
+  const handlePairwiseRankingComplete = (category: 'Good' | 'Mid' | 'Bad', eloRating: number) => {
+    setVisit({ ...visit, category, eloRating, rating: eloRating, ratingType: 'elo' });
   };
 
   const handleVisitChange = (updates: Partial<BaseVisit>) => {
@@ -208,21 +201,25 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           visit={visit}
           onVisitChange={handleVisitChange}
           showRankingButton={true}
-          onRankingClick={() => setShowRanking(true)}
+          onRankingClick={() => setShowPairwiseRanking(true)}
           ratingButtonText="Rank"
           onValidationChange={setHasValidationErrors}
         />
       </BaseVisitDialog>
 
-      <EloRankingDialog
-        open={showRanking}
-        onClose={() => setShowRanking(false)}
+      <PairwiseRankingDialog
+        open={showPairwiseRanking}
+        onClose={() => setShowPairwiseRanking(false)}
         entity={entity}
-        existingVisits={existingVisits}
-        neighborhoods={neighborhoods}
-        boroughs={boroughs}
-        cities={cities}
-        onRankingComplete={handleRankingComplete}
+        visitType="neighborhood"
+        locationData={{
+          neighborhoodName: neighborhood,
+          boroughName: borough,
+          visited: visit.visited,
+          notes: visit.notes,
+          visitDate: visit.visitDate?.toISOString()
+        }}
+        onRankingComplete={handlePairwiseRankingComplete}
       />
     </>
   );

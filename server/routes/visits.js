@@ -23,7 +23,7 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, rating, eloRating, category } = req.body;
+    const { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, rating, category } = req.body;
 
     console.log('🆕 POST /visits: Creating visit for user:', req.user._id.toString());
     console.log('📍 POST /visits: Request data:', { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, rating, category });
@@ -72,8 +72,6 @@ router.post('/', auth, async (req, res) => {
           notes,
           visitDate,
           rating,
-          eloRating,
-          ratingType: eloRating ? 'elo' : 'legacy',
           category
         };
       } else {
@@ -112,8 +110,6 @@ router.post('/', auth, async (req, res) => {
             notes,
             visitDate,
             rating,
-            eloRating,
-            ratingType: eloRating ? 'elo' : 'legacy',
             category
           };
         } else {
@@ -146,8 +142,6 @@ router.post('/', auth, async (req, res) => {
         notes,
         visitDate,
         rating,
-        eloRating,
-        ratingType: eloRating ? 'elo' : 'legacy',
         category
       };
     }
@@ -168,10 +162,6 @@ router.post('/', auth, async (req, res) => {
       existingVisit.notes = notes;
       existingVisit.visitDate = visitDate;
       existingVisit.rating = rating;
-      if (eloRating !== undefined) {
-        existingVisit.eloRating = eloRating;
-        existingVisit.ratingType = 'elo';
-      }
       existingVisit.category = category;
       await existingVisit.save();
       console.log('✅ POST /visits: Updated existing visit successfully');
@@ -211,7 +201,7 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { visited, notes, visitDate, rating, eloRating, category } = req.body;
+    const { visited, notes, visitDate, rating, category } = req.body;
     
     console.log('🔄 PUT /visits: Updating visit ID:', req.params.id, 'for user:', req.user._id.toString());
     console.log('📝 PUT /visits: Update data:', { visited, notes, visitDate, rating, category });
@@ -240,10 +230,6 @@ router.put('/:id', auth, async (req, res) => {
     visit.notes = notes;
     visit.visitDate = visitDate;
     visit.rating = rating;
-    if (eloRating !== undefined) {
-      visit.eloRating = eloRating;
-      visit.ratingType = 'elo';
-    }
     visit.category = category;
     
     console.log('💾 PUT /visits: Saving updated visit');

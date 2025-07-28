@@ -473,10 +473,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           neighborhood={selectedNeighborhood.name}
           borough={selectedNeighborhood.borough}
           onSave={handleSaveVisit}
-          existingVisits={visits}
-          neighborhoods={neighborhoods as any}
-          boroughs={boroughs as any}
-          cities={cities}
         />
       )}
     </Box>

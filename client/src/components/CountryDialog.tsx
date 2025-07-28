@@ -3,16 +3,13 @@ import { visitsApi, type Visit } from '../services/visitsApi';
 import { type Country } from '../services/countriesApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import EloRankingDialog, { type RankableEntity } from './EloRankingDialog';
+import PairwiseRankingDialog, { type RankableEntity } from './PairwiseRankingDialog';
 
 interface CountryDialogProps {
   open: boolean;
   onClose: () => void;
   country: Country;
   onSave: () => void;
-  existingVisits?: Visit[];
-  countries?: Country[];
-  continents?: string[];
 }
 
 interface CountryVisit extends BaseVisit {
@@ -21,16 +18,14 @@ interface CountryVisit extends BaseVisit {
   countryId?: string;
   countryName?: string; // For form display only
   continent?: string; // For form display only
+  ratingType?: string;
 }
 
 const CountryDialog: React.FC<CountryDialogProps> = ({
   open,
   onClose,
   country,
-  onSave,
-  existingVisits = [],
-  countries = [],
-  continents = []
+  onSave
 }) => {
   const [visit, setVisit] = useState<CountryVisit>({
     countryName: country.name,
@@ -44,7 +39,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showRanking, setShowRanking] = useState(false);
+  const [showPairwiseRanking, setShowPairwiseRanking] = useState(false);
 
   useEffect(() => {
     if (open && country) {
@@ -149,8 +144,8 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
     setVisit({ ...visit, ...updates });
   };
 
-  const handleRankingComplete = (category: 'Bad' | 'Mid' | 'Good', eloRating: number, displayRating: number) => {
-    setVisit({ ...visit, category, rating: displayRating, eloRating });
+  const handlePairwiseRankingComplete = (category: 'Good' | 'Mid' | 'Bad', eloRating: number) => {
+    setVisit({ ...visit, category, eloRating, rating: eloRating, ratingType: 'elo' });
   };
 
   const entity: RankableEntity = {
@@ -175,19 +170,23 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           visit={visit}
           onVisitChange={handleVisitChange}
           showRankingButton={true}
-          onRankingClick={() => setShowRanking(true)}
+          onRankingClick={() => setShowPairwiseRanking(true)}
           ratingButtonText="Rank"
         />
       </BaseVisitDialog>
 
-      <EloRankingDialog
-        open={showRanking}
-        onClose={() => setShowRanking(false)}
+      <PairwiseRankingDialog
+        open={showPairwiseRanking}
+        onClose={() => setShowPairwiseRanking(false)}
         entity={entity}
-        existingVisits={existingVisits}
-        countries={countries}
-        continents={continents.map(c => ({ _id: c, name: c }))}
-        onRankingComplete={handleRankingComplete}
+        visitType="country"
+        locationData={{
+          countryName: country.name,
+          visited: visit.visited,
+          notes: visit.notes,
+          visitDate: visit.visitDate?.toISOString()
+        }}
+        onRankingComplete={handlePairwiseRankingComplete}
       />
     </>
   );

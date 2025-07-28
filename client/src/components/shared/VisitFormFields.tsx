@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import {
   CheckCircle,
-  Star
+  Psychology
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -181,15 +181,15 @@ const VisitFormFields: React.FC<VisitFormFieldsProps> = ({
               <Button
                 variant="outlined"
                 onClick={onRankingClick}
-                startIcon={<Star />}
+                startIcon={<Psychology />}
                 fullWidth
                 sx={{
                   py: 1.5,
-                  color: '#f59e0b',
-                  borderColor: '#f59e0b',
+                  color: '#6366f1',
+                  borderColor: '#6366f1',
                   '&:hover': {
-                    borderColor: '#d97706',
-                    backgroundColor: '#fffbeb'
+                    borderColor: '#4f46e5',
+                    backgroundColor: '#f0f9ff'
                   }
                 }}
               >
