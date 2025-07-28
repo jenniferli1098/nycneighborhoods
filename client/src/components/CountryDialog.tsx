@@ -171,7 +171,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           onVisitChange={handleVisitChange}
           showRankingButton={true}
           onRankingClick={() => setShowPairwiseRanking(true)}
-          ratingButtonText="Rank"
+          ratingButtonText={visit.rating ? "Re-rank" : "Rank"}
         />
       </BaseVisitDialog>
 
@@ -187,6 +187,11 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           visitDate: visit.visitDate?.toISOString()
         }}
         onRankingComplete={handlePairwiseRankingComplete}
+        existingRating={visit.rating && visit.category && visit._id ? {
+          rating: visit.rating,
+          category: visit.category,
+          visitId: visit._id
+        } : undefined}
       />
     </>
   );

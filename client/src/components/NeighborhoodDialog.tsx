@@ -202,7 +202,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           onVisitChange={handleVisitChange}
           showRankingButton={true}
           onRankingClick={() => setShowPairwiseRanking(true)}
-          ratingButtonText="Rank"
+          ratingButtonText={visit.rating ? "Re-rank" : "Rank"}
           onValidationChange={setHasValidationErrors}
         />
       </BaseVisitDialog>
@@ -220,6 +220,11 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           visitDate: visit.visitDate?.toISOString()
         }}
         onRankingComplete={handlePairwiseRankingComplete}
+        existingRating={visit.rating && visit.category && visit._id ? {
+          rating: visit.rating,
+          category: visit.category,
+          visitId: visit._id
+        } : undefined}
       />
     </>
   );

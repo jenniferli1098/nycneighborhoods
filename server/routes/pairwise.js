@@ -8,7 +8,8 @@ const {
   getUserRankings,
   createVisitFromPairwiseResult,
   rebalanceCategory,
-  getComparisonSession
+  getComparisonSession,
+  getGlobalRankingPosition
 } = require('../utils/pairwiseRanking');
 
 const router = express.Router();
@@ -16,10 +17,10 @@ const router = express.Router();
 // Start a new pairwise ranking session
 router.post('/start', auth, async (req, res) => {
   try {
-    const { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, category } = req.body;
+    const { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, category, isReranking, existingVisitId } = req.body;
 
     console.log('🚀 POST /pairwise/start: Starting pairwise ranking for user:', req.user._id.toString());
-    console.log('📍 POST /pairwise/start: Location data:', { visitType, neighborhoodName, boroughName, countryName, category });
+    console.log('📍 POST /pairwise/start: Location data:', { visitType, neighborhoodName, boroughName, countryName, category, isReranking, existingVisitId });
 
     if (!visitType || !['neighborhood', 'country'].includes(visitType)) {
       return res.status(400).json({ error: 'visitType must be either "neighborhood" or "country"' });
@@ -49,7 +50,7 @@ router.post('/start', auth, async (req, res) => {
       preSelectedCategory: category
     };
 
-    const result = await initializePairwiseSession(req.user._id.toString(), newLocationData, category);
+    const result = await initializePairwiseSession(req.user._id.toString(), newLocationData, category, isReranking, existingVisitId);
 
     if (result.isComplete) {
       console.log('✅ POST /pairwise/start: No existing visits in category, auto-completed with score:', result.result.score);
@@ -204,6 +205,7 @@ router.post('/create-visit', auth, async (req, res) => {
     }
 
     // Update existing visit or create new one
+    let finalVisit;
     if (existingVisit) {
       console.log('🔄 POST /pairwise/create-visit: Updating existing visit');
       existingVisit.visited = visitData.visited;
@@ -212,9 +214,8 @@ router.post('/create-visit', auth, async (req, res) => {
       existingVisit.rating = visitData.rating;
       existingVisit.category = visitData.category;
       await existingVisit.save();
-      
+      finalVisit = existingVisit;
       console.log('✅ POST /pairwise/create-visit: Visit updated successfully');
-      res.json(existingVisit);
     } else {
       console.log('🆕 POST /pairwise/create-visit: Creating new visit');
       const visit = new Visit({
@@ -222,9 +223,35 @@ router.post('/create-visit', auth, async (req, res) => {
         ...visitData
       });
       await visit.save();
-      
+      finalVisit = visit;
       console.log('✅ POST /pairwise/create-visit: Visit created successfully');
-      res.status(201).json(visit);
+    }
+
+    // Get global ranking position
+    try {
+      console.log('🚀 POST /pairwise/create-visit: Calculating global ranking for:', {
+        userId: req.user._id.toString(),
+        visitId: finalVisit._id.toString(),
+        visitType: visitData.visitType,
+        category: finalVisit.category,
+        rating: finalVisit.rating
+      });
+      
+      const globalRanking = await getGlobalRankingPosition(
+        req.user._id.toString(),
+        finalVisit._id,
+        visitData.visitType
+      );
+      
+      console.log('📊 POST /pairwise/create-visit: Global ranking calculated:', globalRanking);
+      res.status(existingVisit ? 200 : 201).json({
+        ...finalVisit.toObject(),
+        globalRanking: globalRanking
+      });
+    } catch (rankingError) {
+      console.warn('⚠️ POST /pairwise/create-visit: Could not calculate global ranking:', rankingError.message);
+      // Still return the visit even if ranking calculation fails
+      res.status(existingVisit ? 200 : 201).json(finalVisit);
     }
   } catch (error) {
     console.error('❌ POST /pairwise/create-visit: Error:', error);

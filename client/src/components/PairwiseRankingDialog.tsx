@@ -18,7 +18,6 @@ import {
   Fade,
   IconButton,
   Divider,
-  Stack,
   Alert
 } from '@mui/material';
 import {
@@ -60,6 +59,13 @@ interface PairwiseResult {
   category: 'Good' | 'Mid' | 'Bad';
 }
 
+interface GlobalRanking {
+  position: number;
+  total: number;
+  category: string;
+  rating: number;
+}
+
 interface PairwiseRankingDialogProps {
   open: boolean;
   onClose: () => void;
@@ -74,6 +80,11 @@ interface PairwiseRankingDialogProps {
     visitDate?: string;
   };
   onRankingComplete: (category: 'Good' | 'Mid' | 'Bad', rating: number) => void;
+  existingRating?: {
+    rating: number;
+    category: 'Good' | 'Mid' | 'Bad';
+    visitId: string;
+  };
 }
 
 const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
@@ -82,12 +93,14 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
   entity,
   visitType,
   locationData,
-  onRankingComplete
+  onRankingComplete,
+  existingRating
 }) => {
   const [step, setStep] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<'Good' | 'Mid' | 'Bad' | null>(null);
   const [currentComparison, setCurrentComparison] = useState<PairwiseComparison | null>(null);
   const [finalResult, setFinalResult] = useState<PairwiseResult | null>(null);
+  const [globalRanking, setGlobalRanking] = useState<GlobalRanking | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,11 +118,19 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     setError(null);
     
     try {
-      const response = await api.post('/api/pairwise/start', {
+      const requestBody: any = {
         visitType,
         category: category || selectedCategory,
         ...locationData
-      });
+      };
+
+      // Add re-ranking parameters if this is a re-rank
+      if (existingRating) {
+        requestBody.isReranking = true;
+        requestBody.existingVisitId = existingRating.visitId;
+      }
+
+      const response = await api.post('/api/pairwise/start', requestBody);
 
       if (response.data.isComplete) {
         // No existing visits, auto-completed
@@ -173,9 +194,19 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
       const response = await api.post('/api/pairwise/create-visit', { sessionId });
       console.log('Create-visit response:', response.data);
       
+      // Check if global ranking data is available in the response
+      if (response.data.globalRanking) {
+        setGlobalRanking(response.data.globalRanking);
+        console.log('Global ranking received:', response.data.globalRanking);
+      }
+      
       console.log('Calling onRankingComplete with:', finalResult.category, finalResult.score);
       onRankingComplete(finalResult.category, finalResult.score);
-      handleClose();
+      
+      // Don't close immediately if we have global ranking to show
+      if (!response.data.globalRanking) {
+        handleClose();
+      }
     } catch (err: any) {
       console.error('Failed to save ranking:', err);
       setError(err.response?.data?.error || 'Failed to save ranking');
@@ -189,6 +220,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     setSelectedCategory(null);
     setCurrentComparison(null);
     setFinalResult(null);
+    setGlobalRanking(null);
     setSessionId(null);
     setError(null);
     onClose();
@@ -255,7 +287,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
             <Psychology sx={{ color: '#6366f1', fontSize: 24 }} />
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>
-                Pairwise Ranking
+                {existingRating ? 'Re-ranking' : 'Pairwise Ranking'}
               </Typography>
               <Typography variant="body2" sx={{ color: '#6b7280' }}>
                 {entity.name}, {entity.location}
@@ -293,11 +325,21 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
             <Box sx={{ textAlign: 'center' }}>
               <CompareArrows sx={{ fontSize: 48, color: '#6366f1', mb: 2 }} />
               <Typography variant="h6" sx={{ mb: 2 }}>
-                How would you categorize {entity.name}?
+                {existingRating 
+                  ? `Re-rank ${entity.name}` 
+                  : `How would you categorize ${entity.name}?`
+                }
               </Typography>
+              {existingRating ? (
+                <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                  Currently rated <strong>{existingRating.rating.toFixed(1)}</strong> in <em>{existingRating.category}</em> category
+                </Typography>
+              ) : null}
               <Typography variant="body2" sx={{ color: '#6b7280', mb: 4 }}>
-                First, choose a category. Then we'll compare it only with places in that same category 
-                for faster, more relevant rankings.
+                {existingRating 
+                  ? 'Choose a category to re-rank this location. We\'ll compare it with other places in that category.'
+                  : 'First, choose a category. Then we\'ll compare it only with places in that same category for faster, more relevant rankings.'
+                }
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 4 }}>
@@ -517,6 +559,31 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                     fontWeight: 600
                   }}
                 />
+                
+                {/* Global Ranking Display */}
+                {globalRanking && (
+                  <Box sx={{ mt: 3, p: 2, backgroundColor: '#f8fafc', borderRadius: 2 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: '#374151' }}>
+                      🏆 Your Ranking
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: '#6b7280' }}>
+                      <strong>#{globalRanking.position}</strong> out of <strong>{globalRanking.total}</strong> places
+                      {globalRanking.category && (
+                        <span> in your <em>{globalRanking.category}</em> category</span>
+                      )}
+                    </Typography>
+                    {globalRanking.total > 1 && (
+                      <Typography variant="caption" sx={{ color: '#9ca3af', display: 'block', mt: 0.5 }}>
+                        {globalRanking.position === 1 
+                          ? "🥇 This is your top-rated place!" 
+                          : globalRanking.position <= 3 
+                          ? "🥉 One of your favorites!" 
+                          : `Better than ${globalRanking.total - globalRanking.position} other places`
+                        }
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Box>
 
 
@@ -538,7 +605,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
           Cancel
         </Button>
         
-        {step === 2 && finalResult && (
+        {step === 2 && finalResult && !globalRanking && (
           <Button 
             onClick={handleComplete} 
             variant="contained"
@@ -546,6 +613,17 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
             disabled={loading}
           >
             Save Ranking ✨
+          </Button>
+        )}
+        
+        {step === 2 && globalRanking && (
+          <Button 
+            onClick={handleClose} 
+            variant="contained"
+            sx={{ backgroundColor: '#22c55e' }}
+            disabled={loading}
+          >
+            Done 🎉
           </Button>
         )}
       </DialogActions>
