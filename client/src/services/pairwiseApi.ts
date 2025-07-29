@@ -22,7 +22,7 @@ export interface PairwiseComparison {
     _id: string;
     neighborhoodId?: any;
     countryId?: any;
-    eloRating: number;
+    rating: number;
     category: string;
     notes?: string;
   };

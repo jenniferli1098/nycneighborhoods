@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { visitsApi } from '../services/visitsApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import PairwiseRankingDialog, { type RankableEntity } from './PairwiseRankingDialog';
-
+import NewPairwiseRankingDialog, { type RankableEntity } from './NewPairwiseRankingDialog';
 
 interface NeighborhoodDialogProps {
   open: boolean;
@@ -20,7 +19,6 @@ interface Visit extends BaseVisit {
   neighborhoodId?: string;
   neighborhood?: string; // For form display only
   borough?: string; // For form display only
-  ratingType?: string;
 }
 
 const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
@@ -54,18 +52,11 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
 
   const fetchVisit = async () => {
     try {
-      console.log('🔍 NeighborhoodDialog: Fetching visits for', neighborhood, borough, 'with ID:', neighborhoodId);
       const visits = await visitsApi.getAllVisits();
-      console.log('📝 NeighborhoodDialog: Received visits data:', visits);
       
       const existingVisit = visits.find(
-        (v: any) => {
-          console.log('🔍 NeighborhoodDialog: Comparing visit neighborhoodId:', v.neighborhoodId, 'with:', neighborhoodId);
-          return v.neighborhoodId === neighborhoodId;
-        }
+        (v: any) => v.neighborhoodId === neighborhoodId
       );
-      
-      console.log('📍 NeighborhoodDialog: Found existing visit:', existingVisit);
       
       if (existingVisit) {
         const updatedVisit = {
@@ -74,7 +65,6 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           borough,
           visitDate: existingVisit.visitDate ? new Date(existingVisit.visitDate) : null
         };
-        console.log('✅ NeighborhoodDialog: Setting existing visit:', updatedVisit);
         setVisit(updatedVisit);
       } else {
         const newVisit = {
@@ -87,11 +77,9 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           rating: null,
           category: null,
               };
-        console.log('🆕 NeighborhoodDialog: Setting new visit:', newVisit);
         setVisit(newVisit);
       }
     } catch (err: any) {
-      console.error('❌ NeighborhoodDialog: Error fetching visit data:', err);
       setError('Failed to load visit data');
     }
   };
@@ -105,9 +93,6 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
 
     setLoading(true);
     setError('');
-    
-    console.log('💾 NeighborhoodDialog: Starting save for', neighborhood, borough);
-    console.log('💾 NeighborhoodDialog: Visit data:', visit);
 
     try {
       if (visit._id) {
@@ -117,11 +102,8 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate ? visit.visitDate.toISOString() : undefined,
           rating: visit.rating,
-          eloRating: visit.eloRating,
           category: visit.category,
         };
-        console.log('📤 NeighborhoodDialog: Sending update data:', updateData);
-        console.log('🔄 NeighborhoodDialog: Updating existing visit with ID:', visit._id);
         await visitsApi.updateVisit(visit._id, updateData);
       } else {
         // POST request - send lookup fields to find/create neighborhood
@@ -132,21 +114,14 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate || undefined,
           rating: visit.rating,
-          eloRating: visit.eloRating,
           category: visit.category,
         };
-        console.log('📤 NeighborhoodDialog: Sending create data:', createData);
-        console.log('🆕 NeighborhoodDialog: Creating new visit');
         await visitsApi.createNeighborhoodVisit(createData);
       }
       
-      console.log('✅ NeighborhoodDialog: Save successful, calling onSave callback');
       onSave();
-      console.log('✅ NeighborhoodDialog: Closing dialog');
       onClose();
     } catch (err: any) {
-      console.error('❌ NeighborhoodDialog: Save error:', err);
-      console.error('❌ NeighborhoodDialog: Error response:', err.response);
       setError(err.response?.data?.error || 'Failed to save visit');
     } finally {
       setLoading(false);
@@ -170,8 +145,8 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
     }
   };
 
-  const handlePairwiseRankingComplete = (category: 'Good' | 'Mid' | 'Bad', eloRating: number) => {
-    setVisit({ ...visit, category, eloRating, rating: eloRating, ratingType: 'elo' });
+  const handlePairwiseRankingComplete = (category: 'Good' | 'Mid' | 'Bad', rating: number) => {
+    setVisit({ ...visit, category, rating });
   };
 
   const handleVisitChange = (updates: Partial<BaseVisit>) => {
@@ -207,7 +182,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         />
       </BaseVisitDialog>
 
-      <PairwiseRankingDialog
+      <NewPairwiseRankingDialog
         open={showPairwiseRanking}
         onClose={() => setShowPairwiseRanking(false)}
         entity={entity}

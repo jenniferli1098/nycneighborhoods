@@ -234,7 +234,8 @@ router.post('/create-visit', auth, async (req, res) => {
         visitId: finalVisit._id.toString(),
         visitType: visitData.visitType,
         category: finalVisit.category,
-        rating: finalVisit.rating
+        rating: finalVisit.rating,
+        finalVisitObject: finalVisit
       });
       
       const globalRanking = await getGlobalRankingPosition(
@@ -333,6 +334,225 @@ router.get('/session/:sessionId', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ GET /pairwise/session: Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// NEW CLIENT-SIDE ENDPOINTS
+
+// Get visits filtered by metropolitan area for client-side comparison
+router.post('/get-metro-visits', auth, async (req, res) => {
+  try {
+    const { visitType, category, neighborhoodName, boroughName, excludeVisitId } = req.body;
+    
+    console.log('📊 POST /pairwise/get-metro-visits: Fetching metro visits');
+
+    // Use the same filtering logic as initializePairwiseSession for neighborhoods
+    let parentAreaQuery = {};
+    
+    if (boroughName) {
+      // Find borough-based neighborhoods
+      const Borough = require('../models/Borough');
+      const borough = await Borough.findOne({ name: boroughName });
+      if (borough) {
+        const neighborhoodsInBorough = await require('../models/Neighborhood').find({ 
+          boroughId: borough._id.toString() 
+        });
+        const neighborhoodIds = neighborhoodsInBorough.map(n => n._id.toString());
+        parentAreaQuery = { neighborhoodId: { $in: neighborhoodIds } };
+      } else {
+        // Try city-based neighborhoods  
+        const City = require('../models/City');
+        const city = await City.findOne({ name: boroughName });
+        if (city) {
+          if (city.metropolitanArea) {
+            const citiesInMetroArea = await City.find({ 
+              metropolitanArea: city.metropolitanArea 
+            });
+            const metroAreaCityIds = citiesInMetroArea.map(c => c._id.toString());
+            const neighborhoodsInMetroArea = await require('../models/Neighborhood').find({ 
+              cityId: { $in: metroAreaCityIds }
+            });
+            const neighborhoodIds = neighborhoodsInMetroArea.map(n => n._id.toString());
+            parentAreaQuery = { neighborhoodId: { $in: neighborhoodIds } };
+          } else {
+            const neighborhoodsInCity = await require('../models/Neighborhood').find({ 
+              cityId: city._id.toString() 
+            });
+            const neighborhoodIds = neighborhoodsInCity.map(n => n._id.toString());
+            parentAreaQuery = { neighborhoodId: { $in: neighborhoodIds } };
+          }
+        }
+      }
+    }
+    
+    const query = {
+      userId: req.user._id.toString(),
+      visitType: visitType,
+      category: category,
+      rating: { $exists: true, $ne: null },
+      ...parentAreaQuery
+    };
+    
+    if (excludeVisitId) {
+      query._id = { $ne: excludeVisitId };
+    }
+    
+    const visits = await Visit.find(query).sort({ rating: -1 });
+    
+    res.json({ visits });
+  } catch (error) {
+    console.error('❌ POST /pairwise/get-metro-visits: Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get visits filtered by continent for client-side comparison  
+router.post('/get-continent-visits', auth, async (req, res) => {
+  try {
+    const { visitType, category, countryName, excludeVisitId } = req.body;
+    
+    console.log('📊 POST /pairwise/get-continent-visits: Fetching continent visits');
+
+    // Use the same filtering logic as initializePairwiseSession for countries
+    let continentQuery = {};
+    
+    if (countryName) {
+      const Country = require('../models/Country');
+      const newCountry = await Country.findOne({ name: countryName });
+      
+      if (newCountry && newCountry.continent) {
+        const countriesInContinent = await Country.find({ 
+          continent: newCountry.continent 
+        });
+        const countryIds = countriesInContinent.map(c => c._id.toString());
+        continentQuery = { countryId: { $in: countryIds } };
+      }
+    }
+    
+    const query = {
+      userId: req.user._id.toString(),
+      visitType: visitType,
+      category: category,
+      rating: { $exists: true, $ne: null },
+      ...continentQuery
+    };
+    
+    if (excludeVisitId) {
+      query._id = { $ne: excludeVisitId };
+    }
+    
+    const visits = await Visit.find(query).sort({ rating: -1 });
+    
+    res.json({ visits });
+  } catch (error) {
+    console.error('❌ POST /pairwise/get-continent-visits: Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Save pairwise ranking result
+router.post('/save-result', auth, async (req, res) => {
+  try {
+    const visitData = req.body;
+    
+    console.log('💾 POST /pairwise/save-result: Saving pairwise result');
+
+    // Use the same visit creation logic as the existing create-visit endpoint
+    let locationId, existingVisit, finalVisit;
+
+    if (visitData.visitType === 'neighborhood') {
+      // Borough lookup logic (copied from existing create-visit logic)
+      const borough = await mongoose.model('Borough').findOne({ name: visitData.boroughName });
+      if (borough) {
+        const Neighborhood = require('../models/Neighborhood');
+        const neighborhood = await Neighborhood.findOne({ 
+          name: visitData.neighborhoodName,
+          boroughId: borough._id.toString()
+        });
+        if (!neighborhood) {
+          return res.status(404).json({ error: 'Neighborhood not found' });
+        }
+        locationId = neighborhood._id.toString();
+        visitData.neighborhoodId = locationId;
+      } else {
+        // City lookup logic
+        const city = await mongoose.model('City').findOne({ name: visitData.boroughName });
+        if (city) {
+          const Neighborhood = require('../models/Neighborhood');
+          const neighborhood = await Neighborhood.findOne({ 
+            name: visitData.neighborhoodName,
+            cityId: city._id.toString()
+          });
+          if (!neighborhood) {
+            return res.status(404).json({ error: 'Neighborhood not found' });
+          }
+          locationId = neighborhood._id.toString();
+          visitData.neighborhoodId = locationId;
+        } else {
+          return res.status(404).json({ error: 'Borough or city not found' });
+        }
+      }
+
+      existingVisit = await Visit.findOne({ 
+        userId: req.user._id.toString(), 
+        neighborhoodId: locationId,
+        visitType: 'neighborhood'
+      });
+    } else if (visitData.visitType === 'country') {
+      const Country = require('../models/Country');
+      const country = await Country.findOne({ name: visitData.countryName });
+      if (!country) {
+        return res.status(404).json({ error: 'Country not found' });
+      }
+      locationId = country._id.toString();
+      visitData.countryId = locationId;
+
+      existingVisit = await Visit.findOne({ 
+        userId: req.user._id.toString(), 
+        countryId: locationId,
+        visitType: 'country'
+      });
+    }
+
+    // Update existing visit or create new one
+    if (existingVisit) {
+      console.log('🔄 POST /pairwise/save-result: Updating existing visit');
+      existingVisit.visited = visitData.visited;
+      existingVisit.notes = visitData.notes;
+      existingVisit.visitDate = visitData.visitDate;
+      existingVisit.rating = visitData.rating;
+      existingVisit.category = visitData.category;
+      await existingVisit.save();
+      finalVisit = existingVisit;
+    } else {
+      console.log('🆕 POST /pairwise/save-result: Creating new visit');
+      const visit = new Visit({
+        userId: req.user._id.toString(),
+        ...visitData
+      });
+      await visit.save();
+      finalVisit = visit;
+    }
+
+    // Get global ranking position
+    try {
+      const globalRanking = await getGlobalRankingPosition(
+        req.user._id.toString(),
+        finalVisit._id,
+        visitData.visitType
+      );
+      
+      res.status(existingVisit ? 200 : 201).json({
+        visit: finalVisit.toObject(),
+        globalRanking: globalRanking
+      });
+    } catch (rankingError) {
+      console.warn('⚠️ POST /pairwise/save-result: Could not calculate global ranking:', rankingError.message);
+      res.status(existingVisit ? 200 : 201).json({ visit: finalVisit });
+    }
+  } catch (error) {
+    console.error('❌ POST /pairwise/save-result: Error:', error);
     res.status(500).json({ error: error.message });
   }
 });

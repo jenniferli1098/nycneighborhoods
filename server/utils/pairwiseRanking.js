@@ -336,6 +336,16 @@ const getGlobalRankingPosition = async (userId, visitId, visitType, metropolitan
     throw new Error('Visit not found');
   }
 
+  console.log('🎯 getGlobalRankingPosition: Target visit found:', {
+    id: targetVisit._id.toString(),
+    category: targetVisit.category,
+    visitType: targetVisit.visitType,
+    rating: targetVisit.rating,
+    ratingType: targetVisit.ratingType,
+    neighborhoodId: targetVisit.neighborhoodId?._id?.toString(),
+    countryId: targetVisit.countryId?._id?.toString()
+  });
+
   // Build query for comparable visits (same category and metropolitan area)
   const query = {
     userId: userId,
@@ -398,10 +408,32 @@ const getGlobalRankingPosition = async (userId, visitId, visitType, metropolitan
   }
 
   // Get all visits in category, sorted by rating (highest first)
-  const allVisits = await Visit.find(query).sort({ rating: -1 });
+  // Note: For ranking position calculation, we want to include ALL visits including the target
+  const rankingQuery = { ...query };
+  delete rankingQuery._id; // Remove any exclusion of the target visit for accurate total count
+  
+  console.log('🔍 getGlobalRankingPosition: Target visit details:', {
+    visitId: visitId.toString(),
+    category: targetVisit.category,
+    visitType: visitType,
+    rating: targetVisit.rating
+  });
+  console.log('🔍 getGlobalRankingPosition: Final ranking query:', JSON.stringify(rankingQuery, null, 2));
+  
+  const allVisits = await Visit.find(rankingQuery).sort({ rating: -1 });
+  
+  console.log('📊 getGlobalRankingPosition: Found', allVisits.length, 'total visits in category');
+  console.log('📋 getGlobalRankingPosition: Visit details:', allVisits.map(v => ({
+    id: v._id.toString(),
+    rating: v.rating,
+    category: v.category,
+    visitType: v.visitType
+  })));
   
   // Find position of target visit
   const position = allVisits.findIndex(visit => visit._id.toString() === visitId.toString()) + 1;
+  
+  console.log('📍 getGlobalRankingPosition: Found position:', position, 'out of', allVisits.length);
   
   return {
     position: position || 1, // Default to 1 if not found (shouldn't happen but safety net)

@@ -3,7 +3,7 @@ import { visitsApi, type Visit } from '../services/visitsApi';
 import { type Country } from '../services/countriesApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import PairwiseRankingDialog, { type RankableEntity } from './PairwiseRankingDialog';
+import NewPairwiseRankingDialog, { type RankableEntity } from './NewPairwiseRankingDialog';
 
 interface CountryDialogProps {
   open: boolean;
@@ -18,7 +18,6 @@ interface CountryVisit extends BaseVisit {
   countryId?: string;
   countryName?: string; // For form display only
   continent?: string; // For form display only
-  ratingType?: string;
 }
 
 const CountryDialog: React.FC<CountryDialogProps> = ({
@@ -49,18 +48,11 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
 
   const fetchVisit = async () => {
     try {
-      console.log('🔍 CountryDialog: Fetching visits for', country.name, 'with ID:', country._id);
       const visits = await visitsApi.getAllVisits();
-      console.log('📝 CountryDialog: Received visits data:', visits);
       
       const existingVisit = visits.find(
-        (v: Visit) => {
-          console.log('🔍 CountryDialog: Comparing visit countryId:', v.countryId, 'with:', country._id);
-          return v.countryId === country._id;
-        }
+        (v: Visit) => v.countryId === country._id
       );
-      
-      console.log('📍 CountryDialog: Found existing visit:', existingVisit);
       
       if (existingVisit) {
         const updatedVisit = {
@@ -69,7 +61,6 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           continent: country.continent,
           visitDate: existingVisit.visitDate ? new Date(existingVisit.visitDate) : null
         };
-        console.log('✅ CountryDialog: Setting existing visit:', updatedVisit);
         setVisit(updatedVisit);
       } else {
         const newVisit = {
@@ -82,11 +73,9 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           rating: null,
           category: null,
         };
-        console.log('🆕 CountryDialog: Setting new visit:', newVisit);
         setVisit(newVisit);
       }
     } catch (err: any) {
-      console.error('❌ CountryDialog: Error fetching visit data:', err);
       setError('Failed to load visit data');
     }
   };
@@ -94,9 +83,6 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
   const handleSave = async () => {
     setLoading(true);
     setError('');
-    
-    console.log('💾 CountryDialog: Starting save for', country.name);
-    console.log('💾 CountryDialog: Visit data:', visit);
 
     try {
       if (visit._id) {
@@ -106,11 +92,8 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate ? visit.visitDate.toISOString() : undefined,
           rating: visit.rating,
-          eloRating: visit.eloRating,
           category: visit.category,
         };
-        console.log('📤 CountryDialog: Sending update data:', updateData);
-        console.log('🔄 CountryDialog: Updating existing visit with ID:', visit._id);
         await visitsApi.updateVisit(visit._id, updateData);
       } else {
         // Create new visit
@@ -120,20 +103,14 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
           notes: visit.notes,
           visitDate: visit.visitDate || undefined,
           rating: visit.rating,
-          eloRating: visit.eloRating,
           category: visit.category,
         };
-        console.log('📤 CountryDialog: Sending create data:', createData);
-        console.log('🆕 CountryDialog: Creating new visit');
         await visitsApi.createCountryVisit(createData);
       }
       
-      console.log('✅ CountryDialog: Save successful, calling onSave callback');
       onSave();
-      console.log('✅ CountryDialog: Closing dialog');
       onClose();
     } catch (err: any) {
-      console.error('❌ CountryDialog: Error saving visit:', err);
       setError('Failed to save visit data');
     } finally {
       setLoading(false);
@@ -144,8 +121,8 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
     setVisit({ ...visit, ...updates });
   };
 
-  const handlePairwiseRankingComplete = (category: 'Good' | 'Mid' | 'Bad', eloRating: number) => {
-    setVisit({ ...visit, category, eloRating, rating: eloRating, ratingType: 'elo' });
+  const handlePairwiseRankingComplete = (category: 'Good' | 'Mid' | 'Bad', rating: number) => {
+    setVisit({ ...visit, category, rating });
   };
 
   const entity: RankableEntity = {
@@ -175,7 +152,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
         />
       </BaseVisitDialog>
 
-      <PairwiseRankingDialog
+      <NewPairwiseRankingDialog
         open={showPairwiseRanking}
         onClose={() => setShowPairwiseRanking(false)}
         entity={entity}

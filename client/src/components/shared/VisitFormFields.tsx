@@ -27,7 +27,6 @@ export interface BaseVisit {
   notes: string;
   visitDate: Date | null;
   rating: number | null;
-  eloRating?: number | null;
   category?: 'Bad' | 'Mid' | 'Good' | null;
 }
 

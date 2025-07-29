@@ -178,10 +178,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
   };
 
   const handleComplete = async () => {
-    console.log('handleComplete called', { sessionId, finalResult });
-    
     if (!sessionId || !finalResult) {
-      console.error('Missing sessionId or finalResult', { sessionId, finalResult });
       setError('Missing session data. Please try ranking again.');
       return;
     }
@@ -190,17 +187,13 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     setError(null);
 
     try {
-      console.log('Calling create-visit API with sessionId:', sessionId);
       const response = await api.post('/api/pairwise/create-visit', { sessionId });
-      console.log('Create-visit response:', response.data);
       
       // Check if global ranking data is available in the response
       if (response.data.globalRanking) {
         setGlobalRanking(response.data.globalRanking);
-        console.log('Global ranking received:', response.data.globalRanking);
       }
       
-      console.log('Calling onRankingComplete with:', finalResult.category, finalResult.score);
       onRankingComplete(finalResult.category, finalResult.score);
       
       // Don't close immediately if we have global ranking to show
@@ -208,7 +201,6 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
         handleClose();
       }
     } catch (err: any) {
-      console.error('Failed to save ranking:', err);
       setError(err.response?.data?.error || 'Failed to save ranking');
     } finally {
       setLoading(false);
