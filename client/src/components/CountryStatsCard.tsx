@@ -11,8 +11,13 @@ import { TrendingUp, LocationOn, Star } from '@mui/icons-material';
 import type { Visit } from '../services/visitsApi';
 import type { Country } from '../services/countriesApi';
 
+// Extended Visit type for populated data
+interface PopulatedVisit extends Omit<Visit, 'countryId'> {
+  countryId?: string | { name: string; continent: string; [key: string]: any };
+}
+
 interface CountryStatsCardProps {
-  visits: Visit[];
+  visits: PopulatedVisit[];
   countries: Country[];
   continents: string[];
 }
@@ -32,7 +37,10 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
   visits
     .filter(v => v.visited && v.rating != null && v.countryId)
     .forEach(visit => {
-      const country = countryMap.get(visit.countryId!);
+      // Handle both populated and non-populated countryId
+      const country = typeof visit.countryId === 'string' 
+        ? countryMap.get(visit.countryId)
+        : visit.countryId;
       if (country && visit.rating !== null) {
         const continentName = country.continent;
         const current = continentStats.get(continentName) || { totalRating: 0, count: 0, name: continentName };
@@ -58,7 +66,10 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
   const ratedVisits = visits.filter(v => v.visited && v.rating != null && v.countryId);
   const topCountries = ratedVisits
     .map(visit => {
-      const country = countryMap.get(visit.countryId!);
+      // Handle both populated and non-populated countryId
+      const country = typeof visit.countryId === 'string' 
+        ? countryMap.get(visit.countryId)
+        : visit.countryId;
       return {
         name: country?.name || 'Unknown',
         continent: country?.continent || 'Unknown',
@@ -79,7 +90,10 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
   
   // Count visited countries per continent
   visits.filter(v => v.visited && v.countryId).forEach(visit => {
-    const country = countryMap.get(visit.countryId!);
+    // Handle both populated and non-populated countryId
+    const country = typeof visit.countryId === 'string' 
+      ? countryMap.get(visit.countryId)
+      : visit.countryId;
     if (country) {
       visitedByContinent[country.continent] = (visitedByContinent[country.continent] || 0) + 1;
     }

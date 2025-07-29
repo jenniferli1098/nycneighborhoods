@@ -3,7 +3,7 @@ import { visitsApi, type Visit } from '../services/visitsApi';
 import { type Country } from '../services/countriesApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import NewPairwiseRankingDialog, { type RankableEntity } from './NewPairwiseRankingDialog';
+import PairwiseRankingDialog, { type RankableEntity } from './PairwiseRankingDialog';
 
 interface CountryDialogProps {
   open: boolean;
@@ -152,7 +152,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
         />
       </BaseVisitDialog>
 
-      <NewPairwiseRankingDialog
+      <PairwiseRankingDialog
         open={showPairwiseRanking}
         onClose={() => setShowPairwiseRanking(false)}
         entity={entity}

@@ -12,9 +12,13 @@ import type { Visit } from '../services/visitsApi';
 import type { CachedNeighborhood, CachedBorough, CachedCity } from '../services/neighborhoodCache';
 import type { CategoryType } from '../config/mapConfigs';
 
+// Extended Visit type for populated data
+interface PopulatedVisit extends Omit<Visit, 'neighborhoodId'> {
+  neighborhoodId?: string | { name: string; boroughId?: string; cityId?: string; [key: string]: any };
+}
 
 interface StatsCardProps {
-  visits: Visit[];
+  visits: PopulatedVisit[];
   neighborhoods: CachedNeighborhood[];
   categories: (CachedBorough | CachedCity)[];
   categoryType: CategoryType;
@@ -29,7 +33,10 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories
   // Filter visits to only include those for neighborhoods in the current context
   const relevantVisits = visits.filter(visit => {
     if (!visit.neighborhoodId) return false;
-    const neighborhood = neighborhoodMap.get(visit.neighborhoodId);
+    // Handle both populated and non-populated neighborhoodId
+    const neighborhood = typeof visit.neighborhoodId === 'string' 
+      ? neighborhoodMap.get(visit.neighborhoodId)
+      : visit.neighborhoodId;
     if (!neighborhood) return false;
     
     // Check if neighborhood belongs to current area's categories
@@ -53,7 +60,10 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories
   relevantVisits
     .filter(v => v.visited && v.rating != null && v.neighborhoodId)
     .forEach(visit => {
-      const neighborhood = neighborhoodMap.get(visit.neighborhoodId!);
+      // Handle both populated and non-populated neighborhoodId
+      const neighborhood = typeof visit.neighborhoodId === 'string' 
+        ? neighborhoodMap.get(visit.neighborhoodId)
+        : visit.neighborhoodId;
       if (neighborhood) {
         // Use appropriate ID field based on category type
         const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
@@ -83,7 +93,10 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, categories
   const ratedVisits = relevantVisits.filter(v => v.visited && v.rating != null && v.neighborhoodId);
   const topNeighborhoods = ratedVisits
     .map(visit => {
-      const neighborhood = neighborhoodMap.get(visit.neighborhoodId!);
+      // Handle both populated and non-populated neighborhoodId
+      const neighborhood = typeof visit.neighborhoodId === 'string' 
+        ? neighborhoodMap.get(visit.neighborhoodId)
+        : visit.neighborhoodId;
       const categoryId = categoryType === 'borough' ? neighborhood?.boroughId : neighborhood?.cityId;
       const categoryName = categoryId ? categoryMap.get(categoryId) : undefined;
       return {

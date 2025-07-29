@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { visitsApi } from '../services/visitsApi';
 import BaseVisitDialog from './shared/BaseVisitDialog';
 import VisitFormFields, { type BaseVisit } from './shared/VisitFormFields';
-import NewPairwiseRankingDialog, { type RankableEntity } from './NewPairwiseRankingDialog';
+import PairwiseRankingDialog, { type RankableEntity } from './PairwiseRankingDialog';
 
 interface NeighborhoodDialogProps {
   open: boolean;
@@ -182,7 +182,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         />
       </BaseVisitDialog>
 
-      <NewPairwiseRankingDialog
+      <PairwiseRankingDialog
         open={showPairwiseRanking}
         onClose={() => setShowPairwiseRanking(false)}
         entity={entity}

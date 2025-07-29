@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../config/api';
+import { SimplePairwiseRanking } from '../services/SimplePairwiseRanking';
 import {
   Dialog,
   DialogTitle,
@@ -11,9 +12,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Stepper,
-  Step,
-  StepLabel,
   LinearProgress,
   Fade,
   IconButton,
@@ -30,40 +28,6 @@ import {
 export interface RankableEntity {
   name: string;
   location: string;
-}
-
-interface PairwiseComparison {
-  sessionId: string;
-  newLocation: {
-    visitType: string;
-    neighborhoodName?: string;
-    boroughName?: string;
-    countryName?: string;
-  };
-  compareVisit: {
-    _id: string;
-    neighborhoodId?: string;
-    countryId?: string;
-    rating: number;
-    category: string;
-    notes?: string;
-  };
-  progress: {
-    current: number;
-    total: number;
-  };
-}
-
-interface PairwiseResult {
-  score: number;
-  category: 'Good' | 'Mid' | 'Bad';
-}
-
-interface GlobalRanking {
-  position: number;
-  total: number;
-  category: string;
-  rating: number;
 }
 
 interface PairwiseRankingDialogProps {
@@ -96,112 +60,110 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
   onRankingComplete,
   existingRating
 }) => {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(0); // 0: category, 1: compare, 2: result
   const [selectedCategory, setSelectedCategory] = useState<'Good' | 'Mid' | 'Bad' | null>(null);
-  const [currentComparison, setCurrentComparison] = useState<PairwiseComparison | null>(null);
-  const [finalResult, setFinalResult] = useState<PairwiseResult | null>(null);
-  const [globalRanking, setGlobalRanking] = useState<GlobalRanking | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [ranking, setRanking] = useState<SimplePairwiseRanking | null>(null);
+  const [currentComparison, setCurrentComparison] = useState<{ 
+    compareVisit: { 
+      neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } }; 
+      countryId?: { name: string; continent: string };
+      rating: number;
+      category: string;
+    }; 
+    progress: { current: number; total: number } 
+  } | null>(null);
+  const [finalResult, setFinalResult] = useState<{ rating: number; category: string; insertionPosition: number; totalVisits: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const steps = ['Choose Category', 'Compare Places', 'Final Rating'];
 
-  const handleCategorySelect = (category: 'Good' | 'Mid' | 'Bad') => {
+  const handleCategorySelect = async (category: 'Good' | 'Mid' | 'Bad') => {
     setSelectedCategory(category);
-    setStep(1);
-    handleStartRanking(category);
-  };
-
-  const handleStartRanking = async (category?: 'Good' | 'Mid' | 'Bad') => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const requestBody: any = {
-        visitType,
-        category: category || selectedCategory,
-        ...locationData
-      };
+      // Fetch existing visits in this category
+      const response = await api.get(`/api/visits`);
+      const allVisits = response.data;
+      
+      // Filter visits for this category and type
+      const relevantVisits = allVisits.filter((visit: { 
+        visitType: string; 
+        category: string; 
+        rating: number; 
+        _id: string;
+        neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } };
+        countryId?: { name: string; continent: string };
+      }) => 
+        visit.visitType === visitType &&
+        visit.category === category &&
+        visit.rating != null &&
+        // Exclude existing visit if re-ranking
+        (!existingRating || visit._id !== existingRating.visitId)
+      );
 
-      // Add re-ranking parameters if this is a re-rank
-      if (existingRating) {
-        requestBody.isReranking = true;
-        requestBody.existingVisitId = existingRating.visitId;
-      }
+      // Initialize ranking system
+      const newRanking = new SimplePairwiseRanking(relevantVisits, category);
+      setRanking(newRanking);
 
-      const response = await api.post('/api/pairwise/start', requestBody);
-
-      if (response.data.isComplete) {
-        // No existing visits, auto-completed
-        setFinalResult(response.data.result);
-        setSessionId(response.data.sessionId);
+      if (newRanking.isComplete()) {
+        // No comparisons needed
+        const result = newRanking.getFinalResult();
+        setFinalResult(result);
         setStep(2);
       } else {
-        // Start pairwise comparisons
-        setCurrentComparison(response.data.comparison);
-        setSessionId(response.data.comparison.sessionId);
-        // Stay on step 1 for comparisons (step 0 is now category selection)
+        // Start comparisons
+        const comparison = newRanking.getCurrentComparison();
+        setCurrentComparison(comparison);
+        setStep(1);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to start ranking');
+    } catch {
+      setError('Failed to load existing visits');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleComparison = async (newLocationBetter: boolean) => {
-    if (!sessionId) return;
-    
-    setLoading(true);
-    setError(null);
+  const handleComparison = (newLocationBetter: boolean) => {
+    if (!ranking) return;
 
-    try {
-      const response = await api.post('/api/pairwise/compare', {
-        sessionId,
-        newLocationBetter
-      });
+    ranking.processComparison(newLocationBetter);
 
-      if (response.data.isComplete) {
-        // Comparison complete
-        setFinalResult(response.data.result);
-        setStep(2);
-      } else {
-        // Continue with next comparison
-        setCurrentComparison(response.data.comparison);
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to process comparison');
-    } finally {
-      setLoading(false);
+    if (ranking.isComplete()) {
+      // Done with comparisons
+      const result = ranking.getFinalResult();
+      setFinalResult(result);
+      setStep(2);
+    } else {
+      // Next comparison
+      const comparison = ranking.getCurrentComparison();
+      setCurrentComparison(comparison);
     }
   };
 
   const handleComplete = async () => {
-    if (!sessionId || !finalResult) {
-      setError('Missing session data. Please try ranking again.');
-      return;
-    }
+    if (!finalResult || !selectedCategory) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.post('/api/pairwise/create-visit', { sessionId });
-      
-      // Check if global ranking data is available in the response
-      if (response.data.globalRanking) {
-        setGlobalRanking(response.data.globalRanking);
-      }
-      
-      onRankingComplete(finalResult.category, finalResult.score);
-      
-      // Don't close immediately if we have global ranking to show
-      if (!response.data.globalRanking) {
-        handleClose();
-      }
+      // Save the visit with the calculated rating
+      const visitData = {
+        visitType,
+        ...locationData,
+        rating: finalResult.rating,
+        category: selectedCategory
+      };
+
+      await api.post('/api/visits', visitData);
+
+      onRankingComplete(selectedCategory, finalResult.rating);
+      onClose();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save ranking');
+      console.error('Save ranking error:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to save ranking');
     } finally {
       setLoading(false);
     }
@@ -210,25 +172,20 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
   const handleClose = () => {
     setStep(0);
     setSelectedCategory(null);
+    setRanking(null);
     setCurrentComparison(null);
     setFinalResult(null);
-    setGlobalRanking(null);
-    setSessionId(null);
     setError(null);
     onClose();
   };
 
-  const getLocationName = (visit: any) => {
-    if (visit.neighborhoodId && visit.neighborhoodId.name) {
-      return visit.neighborhoodId.name;
-    }
-    if (visit.countryId && visit.countryId.name) {
-      return visit.countryId.name;
-    }
+  const getLocationName = (visit: { neighborhoodId?: { name: string }; countryId?: { name: string } }) => {
+    if (visit.neighborhoodId?.name) return visit.neighborhoodId.name;
+    if (visit.countryId?.name) return visit.countryId.name;
     return 'Unknown Location';
   };
 
-  const getLocationDetails = (visit: any) => {
+  const getLocationDetails = (visit: { neighborhoodId?: { boroughId?: { name: string }; cityId?: { name: string } }; countryId?: { continent: string } }) => {
     if (visit.neighborhoodId) {
       return visit.neighborhoodId.boroughId?.name || visit.neighborhoodId.cityId?.name || 'Unknown Area';
     }
@@ -290,17 +247,6 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
             <Close fontSize="small" />
           </IconButton>
         </Box>
-        
-        {/* Stepper */}
-        <Box sx={{ px: 3, pb: 2 }}>
-          <Stepper activeStep={step} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Box>
         <Divider />
       </DialogTitle>
       
@@ -322,42 +268,21 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                   : `How would you categorize ${entity.name}?`
                 }
               </Typography>
-              {existingRating ? (
+              {existingRating && (
                 <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
                   Currently rated <strong>{existingRating.rating.toFixed(1)}</strong> in <em>{existingRating.category}</em> category
                 </Typography>
-              ) : null}
+              )}
               <Typography variant="body2" sx={{ color: '#6b7280', mb: 4 }}>
-                {existingRating 
-                  ? 'Choose a category to re-rank this location. We\'ll compare it with other places in that category.'
-                  : 'First, choose a category. Then we\'ll compare it only with places in that same category for faster, more relevant rankings.'
-                }
+                Choose a category to start ranking this location.
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 4 }}>
                 {[
-                  { 
-                    category: 'Good' as const, 
-                    label: 'Amazing Places', 
-                    color: '#22c55e', 
-                    bgColor: '#dcfce7',
-                    description: 'Places you love and would definitely recommend'
-                  },
-                  { 
-                    category: 'Mid' as const, 
-                    label: 'Decent Places', 
-                    color: '#f59e0b', 
-                    bgColor: '#fef3c7',
-                    description: 'Places that are okay but nothing special'
-                  },
-                  { 
-                    category: 'Bad' as const, 
-                    label: 'Disappointing', 
-                    color: '#ef4444', 
-                    bgColor: '#fee2e2',
-                    description: 'Places you would not recommend to others'
-                  }
-                ].map(({ category, label, color, bgColor, description }) => (
+                  { category: 'Good' as const, label: 'Amazing Places', emoji: '😍' },
+                  { category: 'Mid' as const, label: 'Decent Places', emoji: '😐' },
+                  { category: 'Bad' as const, label: 'Disappointing', emoji: '😔' }
+                ].map(({ category, label, emoji }) => (
                   <Card 
                     key={category}
                     sx={{ 
@@ -373,28 +298,15 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                     onClick={() => !loading && handleCategorySelect(category)}
                   >
                     <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                      <Box 
-                        sx={{ 
-                          width: 48, 
-                          height: 48, 
-                          borderRadius: '50%', 
-                          backgroundColor: bgColor,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mx: 'auto',
-                          mb: 2
-                        }}
-                      >
-                        <Typography variant="h6" sx={{ color, fontWeight: 600 }}>
-                          {category === 'Good' ? '😍' : category === 'Mid' ? '😐' : '😔'}
-                        </Typography>
-                      </Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color }}>
-                        {label}
+                      <Typography variant="h4" sx={{ mb: 1 }}>
+                        {emoji}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#6b7280', lineHeight: 1.3 }}>
-                        {description}
+                      <Typography variant="subtitle1" sx={{ 
+                        fontWeight: 600, 
+                        mb: 1, 
+                        color: getCategoryColor(category) 
+                      }}>
+                        {label}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -405,7 +317,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                 <Box sx={{ mt: 3 }}>
                   <LinearProgress />
                   <Typography variant="body2" sx={{ mt: 1, color: '#6b7280' }}>
-                    Setting up comparisons...
+                    Loading comparisons...
                   </Typography>
                 </Box>
               )}
@@ -414,19 +326,19 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
         )}
 
         {/* Step 1: Comparison */}
-        {step === 1 && currentComparison && (
+        {step === 1 && currentComparison && ranking && (
           <Fade in timeout={300}>
             <Box>
               <Typography variant="h6" sx={{ mb: 1, textAlign: 'center' }}>
                 Which place do you prefer?
               </Typography>
               <Typography variant="body2" sx={{ mb: 3, textAlign: 'center', color: '#6b7280' }}>
-                Comparison {currentComparison.progress.current + 1} of {currentComparison.progress.total}
+                Comparison {ranking.getProgress().current + 1} of {ranking.getProgress().total}
               </Typography>
 
               <LinearProgress 
                 variant="determinate" 
-                value={((currentComparison.progress.current) / currentComparison.progress.total) * 100}
+                value={ranking.getProgress().percentage}
                 sx={{ mb: 4, height: 8, borderRadius: 4 }}
               />
               
@@ -439,15 +351,14 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                 {/* New Item */}
                 <Card 
                   sx={{ 
-                    cursor: loading ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     transition: 'all 0.2s',
-                    opacity: loading ? 0.6 : 1,
-                    '&:hover': !loading ? { 
+                    '&:hover': { 
                       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
                       transform: 'translateY(-2px)' 
-                    } : {}
+                    }
                   }}
-                  onClick={() => !loading && handleComparison(true)}
+                  onClick={() => handleComparison(true)}
                 >
                   <CardContent sx={{ textAlign: 'center', p: 3 }}>
                     <Typography variant="h6" sx={{ mb: 1 }}>
@@ -456,14 +367,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                     <Typography variant="body2" sx={{ mb: 2, color: '#6b7280' }}>
                       {entity.location}
                     </Typography>
-                    <Chip 
-                      label="NEW"
-                      color="primary"
-                      size="small"
-                    />
-                    <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6b7280' }}>
-                      Click if you prefer this place
-                    </Typography>
+                    <Chip label="NEW" color="primary" size="small" />
                   </CardContent>
                 </Card>
 
@@ -474,15 +378,14 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                 {/* Existing Item */}
                 <Card 
                   sx={{ 
-                    cursor: loading ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     transition: 'all 0.2s',
-                    opacity: loading ? 0.6 : 1,
-                    '&:hover': !loading ? { 
+                    '&:hover': { 
                       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
                       transform: 'translateY(-2px)' 
-                    } : {}
+                    }
                   }}
-                  onClick={() => !loading && handleComparison(false)}
+                  onClick={() => handleComparison(false)}
                 >
                   <CardContent sx={{ textAlign: 'center', p: 3 }}>
                     <Typography variant="h6" sx={{ mb: 1 }}>
@@ -499,31 +402,9 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                       }}
                       size="small"
                     />
-                    {currentComparison.compareVisit.notes && (
-                      <Typography variant="caption" sx={{ 
-                        display: 'block', 
-                        mt: 1, 
-                        fontStyle: 'italic',
-                        color: '#6b7280'
-                      }}>
-                        "{currentComparison.compareVisit.notes}"
-                      </Typography>
-                    )}
-                    <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6b7280' }}>
-                      Click if you prefer this place
-                    </Typography>
                   </CardContent>
                 </Card>
               </Box>
-
-              {loading && (
-                <Box sx={{ mt: 3, textAlign: 'center' }}>
-                  <LinearProgress sx={{ mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                    Processing comparison...
-                  </Typography>
-                </Box>
-              )}
             </Box>
           </Fade>
         )}
@@ -531,61 +412,30 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
         {/* Step 2: Results */}
         {step === 2 && finalResult && (
           <Fade in timeout={300}>
-            <Box>
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <EmojiEvents sx={{ fontSize: 48, color: '#f59e0b', mb: 2 }} />
-                <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
-                  {finalResult.score.toFixed(1)}
+            <Box sx={{ textAlign: 'center' }}>
+              <EmojiEvents sx={{ fontSize: 48, color: '#f59e0b', mb: 2 }} />
+              <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
+                {finalResult.rating.toFixed(1)}
+              </Typography>
+              <Typography variant="h6" sx={{ mb: 1 }}>
+                {entity.name}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                {entity.location}
+              </Typography>
+              <Chip 
+                label={finalResult.category}
+                sx={{ 
+                  backgroundColor: getCategoryBg(finalResult.category),
+                  color: getCategoryColor(finalResult.category),
+                  fontWeight: 600
+                }}
+              />
+              
+              {finalResult.totalVisits > 0 && (
+                <Typography variant="body2" sx={{ mt: 2, color: '#6b7280' }}>
+                  Ranked against {finalResult.totalVisits} other places in {finalResult.category} category
                 </Typography>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  {entity.name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
-                  {entity.location}
-                </Typography>
-                <Chip 
-                  label={finalResult.category}
-                  sx={{ 
-                    backgroundColor: getCategoryBg(finalResult.category),
-                    color: getCategoryColor(finalResult.category),
-                    fontWeight: 600
-                  }}
-                />
-                
-                {/* Global Ranking Display */}
-                {globalRanking && (
-                  <Box sx={{ mt: 3, p: 2, backgroundColor: '#f8fafc', borderRadius: 2 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: '#374151' }}>
-                      🏆 Your Ranking
-                    </Typography>
-                    <Typography variant="body1" sx={{ color: '#6b7280' }}>
-                      <strong>#{globalRanking.position}</strong> out of <strong>{globalRanking.total}</strong> places
-                      {globalRanking.category && (
-                        <span> in your <em>{globalRanking.category}</em> category</span>
-                      )}
-                    </Typography>
-                    {globalRanking.total > 1 && (
-                      <Typography variant="caption" sx={{ color: '#9ca3af', display: 'block', mt: 0.5 }}>
-                        {globalRanking.position === 1 
-                          ? "🥇 This is your top-rated place!" 
-                          : globalRanking.position <= 3 
-                          ? "🥉 One of your favorites!" 
-                          : `Better than ${globalRanking.total - globalRanking.position} other places`
-                        }
-                      </Typography>
-                    )}
-                  </Box>
-                )}
-              </Box>
-
-
-              {loading && (
-                <Box sx={{ mt: 3, textAlign: 'center' }}>
-                  <LinearProgress sx={{ mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                    Saving your ranking...
-                  </Typography>
-                </Box>
               )}
             </Box>
           </Fade>
@@ -597,7 +447,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
           Cancel
         </Button>
         
-        {step === 2 && finalResult && !globalRanking && (
+        {step === 2 && finalResult && (
           <Button 
             onClick={handleComplete} 
             variant="contained"
@@ -605,17 +455,6 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
             disabled={loading}
           >
             Save Ranking ✨
-          </Button>
-        )}
-        
-        {step === 2 && globalRanking && (
-          <Button 
-            onClick={handleClose} 
-            variant="contained"
-            sx={{ backgroundColor: '#22c55e' }}
-            disabled={loading}
-          >
-            Done 🎉
           </Button>
         )}
       </DialogActions>
