@@ -63,7 +63,15 @@ const NewPairwiseRankingDialog: React.FC<NewPairwiseRankingDialogProps> = ({
   const [step, setStep] = useState(0); // 0: category, 1: compare, 2: result
   const [selectedCategory, setSelectedCategory] = useState<'Good' | 'Mid' | 'Bad' | null>(null);
   const [ranking, setRanking] = useState<SimplePairwiseRanking | null>(null);
-  const [currentComparison, setCurrentComparison] = useState<{ compareVisit: any; progress: { current: number; total: number } } | null>(null);
+  const [currentComparison, setCurrentComparison] = useState<{ 
+    compareVisit: { 
+      neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } }; 
+      countryId?: { name: string; continent: string };
+      rating: number;
+      category: string;
+    }; 
+    progress: { current: number; total: number } 
+  } | null>(null);
   const [finalResult, setFinalResult] = useState<{ rating: number; category: string; insertionPosition: number; totalVisits: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +88,14 @@ const NewPairwiseRankingDialog: React.FC<NewPairwiseRankingDialogProps> = ({
       const allVisits = response.data;
       
       // Filter visits for this category and type
-      const relevantVisits = allVisits.filter((visit: { visitType: string; category: string; rating: number; _id: string }) => 
+      const relevantVisits = allVisits.filter((visit: { 
+        visitType: string; 
+        category: string; 
+        rating: number; 
+        _id: string;
+        neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } };
+        countryId?: { name: string; continent: string };
+      }) => 
         visit.visitType === visitType &&
         visit.category === category &&
         visit.rating != null &&
@@ -142,16 +157,13 @@ const NewPairwiseRankingDialog: React.FC<NewPairwiseRankingDialogProps> = ({
         category: selectedCategory
       };
 
-      if (visitType === 'neighborhood') {
-        await api.post('/api/visits/neighborhood', visitData);
-      } else {
-        await api.post('/api/visits/country', visitData);
-      }
+      await api.post('/api/visits', visitData);
 
       onRankingComplete(selectedCategory, finalResult.rating);
       onClose();
-    } catch {
-      setError('Failed to save ranking');
+    } catch (err: any) {
+      console.error('Save ranking error:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to save ranking');
     } finally {
       setLoading(false);
     }

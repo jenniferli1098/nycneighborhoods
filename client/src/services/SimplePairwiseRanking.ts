@@ -2,8 +2,8 @@ interface Visit {
   _id: string;
   rating: number;
   category: 'Good' | 'Mid' | 'Bad';
-  neighborhoodId?: string;
-  countryId?: string;
+  neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } };
+  countryId?: { name: string; continent: string };
   notes?: string;
 }
 

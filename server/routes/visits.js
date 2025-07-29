@@ -11,6 +11,14 @@ router.get('/', auth, async (req, res) => {
   try {
     console.log('📡 GET /visits: Fetching visits for user:', req.user._id.toString());
     const visits = await Visit.find({ userId: req.user._id.toString() })
+      .populate({
+        path: 'neighborhoodId',
+        populate: [
+          { path: 'boroughId', select: 'name' },
+          { path: 'cityId', select: 'name' }
+        ]
+      })
+      .populate('countryId', 'name continent')
       .sort({ updatedAt: -1 });
     console.log('📝 GET /visits: Found', visits.length, 'visits');
     console.log('📊 GET /visits: Visit details:', visits.map(v => ({ id: v._id, neighborhoodId: v.neighborhoodId, visited: v.visited })));
