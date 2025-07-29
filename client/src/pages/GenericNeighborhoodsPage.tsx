@@ -134,10 +134,10 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   const fetchVisits = async () => {
     try {
-      console.log(`📡 ${mapConfig.name}: Fetching visits from API`);
-      const visits = await visitsApi.getAllVisits();
-      console.log(`📝 ${mapConfig.name}: Received visits data:`, visits);
-      console.log(`📊 ${mapConfig.name}: Number of visits:`, visits.length);
+      console.log(`📡 ${mapConfig.name}: Fetching neighborhood visits from API`);
+      const visits = await visitsApi.getVisitsByType('neighborhood');
+      console.log(`📝 ${mapConfig.name}: Received neighborhood visits data:`, visits);
+      console.log(`📊 ${mapConfig.name}: Number of neighborhood visits:`, visits.length);
       
       // Log visited neighborhood IDs
       const visitedIds = visits.filter((v: Visit) => v.visited && v.neighborhoodId).map((v: Visit) => v.neighborhoodId);
@@ -146,7 +146,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       setVisits(visits);
       console.log(`✅ ${mapConfig.name}: Visits state updated`);
     } catch (err) {
-      console.error(`❌ ${mapConfig.name}: Failed to fetch visits:`, err);
+      console.error(`❌ ${mapConfig.name}: Failed to fetch neighborhood visits:`, err);
     }
   };
 
@@ -337,6 +337,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   // For visits with neighborhoodId, use cache lookup
   for (const visitId of visitedNeighborhoodIds) {
     const cachedNeighborhood = neighborhoodCache.getNeighborhoodById(visitId);
+    console.log(cachedNeighborhood);
     if (cachedNeighborhood) {
       visitedNeighborhoodNames.add(cachedNeighborhood.name);
     }

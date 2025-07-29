@@ -74,8 +74,7 @@ const CountriesPage: React.FC = () => {
   const fetchCountryVisits = async () => {
     try {
       console.log('📡 CountriesPage: Fetching country visits from API');
-      const allVisits = await visitsApi.getAllVisits();
-      const countryVisits = allVisits.filter(visit => visit.visitType === 'country');
+      const countryVisits = await visitsApi.getVisitsByType('country');
       console.log('📝 CountriesPage: Received country visits data:', countryVisits.length, 'visits');
       setVisits(countryVisits);
     } catch (err) {
