@@ -23,20 +23,6 @@ const neighborhoodSchema = new mongoose.Schema({
     enum: ['borough', 'city'],
     trim: true
   },
-  description: {
-    type: String,
-    trim: true
-  },
-  averageVisitRating: {
-    type: Number,
-    min: 0,
-    max: 10,
-    default: null
-  },
-  totalVisits: {
-    type: Number,
-    default: 0
-  },
 }, {
   timestamps: true
 });
@@ -78,25 +64,6 @@ neighborhoodSchema.methods.getVisitStats = async function() {
   return await Visit.find({ neighborhoodId: this._id });
 };
 
-// Method to calculate average rating from visits
-neighborhoodSchema.methods.calculateAverageRating = async function() {
-  const Visit = mongoose.model('Visit');
-  const result = await Visit.aggregate([
-    { $match: { neighborhoodId: this._id, rating: { $exists: true, $ne: null } } },
-    { $group: { _id: null, avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
-  ]);
-  
-  if (result.length > 0) {
-    // Always use display rating for consistent 0-10 scale averages
-    this.averageVisitRating = Math.round(result[0].avgRating * 10) / 10;
-    this.totalVisits = result[0].count;
-  } else {
-    this.averageVisitRating = null;
-    this.totalVisits = 0;
-  }
-  
-  return this.save();
-};
 
 // Static method to find neighborhoods by borough
 neighborhoodSchema.statics.findByBorough = function(boroughId) {

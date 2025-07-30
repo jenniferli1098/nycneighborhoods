@@ -41,13 +41,12 @@ router.get('/:id', async (req, res) => {
 // Create country (admin only - for future use)
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, code, continent, description } = req.body;
+    const { name, code, continent } = req.body;
     
     const country = new Country({
       name,
       code,
-      continent,
-      description
+      continent
     });
     
     await country.save();
@@ -61,11 +60,11 @@ router.post('/', auth, async (req, res) => {
 // Update country (admin only - for future use)
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { name, code, continent, description } = req.body;
+    const { name, code, continent } = req.body;
     
     const country = await Country.findByIdAndUpdate(
       req.params.id,
-      { name, code, continent, description },
+      { name, code, continent },
       { new: true, runValidators: true }
     );
     
@@ -103,8 +102,7 @@ router.get('/search/:query', async (req, res) => {
       $or: [
         { name: { $regex: query, $options: 'i' } },
         { code: { $regex: query, $options: 'i' } },
-        { continent: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } }
+        { continent: { $regex: query, $options: 'i' } }
       ]
     })
     .sort({ name: 1 });

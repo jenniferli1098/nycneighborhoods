@@ -5,9 +5,6 @@ export interface Country {
   name: string;
   code: string;
   continent: string;
-  description: string;
-  averageVisitRating?: number | null;
-  totalVisits: number;
   createdAt: string;
   updatedAt: string;
 }

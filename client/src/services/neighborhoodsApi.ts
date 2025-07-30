@@ -6,9 +6,6 @@ export interface Neighborhood {
   boroughId?: string;
   cityId?: string;
   categoryType: 'borough' | 'city';
-  description?: string;
-  averageVisitRating?: number;
-  totalVisits?: number;
   // Populated fields when using populate()
   borough?: {
     _id: string;

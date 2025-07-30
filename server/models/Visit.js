@@ -66,41 +66,7 @@ visitSchema.index({ neighborhoodId: 1 });
 visitSchema.index({ countryId: 1 });
 visitSchema.index({ userId: 1 });
 
-// Pre-save middleware to update location's average rating
-visitSchema.post('save', async function() {
-  if (this.visitType === 'neighborhood' && this.neighborhoodId) {
-    const Neighborhood = mongoose.model('Neighborhood');
-    const neighborhood = await Neighborhood.findById(this.neighborhoodId);
-    if (neighborhood) {
-      await neighborhood.calculateAverageRating();
-    }
-  } else if (this.visitType === 'country' && this.countryId) {
-    const Country = mongoose.model('Country');
-    const country = await Country.findById(this.countryId);
-    if (country) {
-      await country.calculateAverageRating();
-    }
-  }
-});
 
-// Pre-remove middleware to update location's average rating
-visitSchema.post('findOneAndDelete', async function(doc) {
-  if (doc) {
-    if (doc.visitType === 'neighborhood' && doc.neighborhoodId) {
-      const Neighborhood = mongoose.model('Neighborhood');
-      const neighborhood = await Neighborhood.findById(doc.neighborhoodId);
-      if (neighborhood) {
-        await neighborhood.calculateAverageRating();
-      }
-    } else if (doc.visitType === 'country' && doc.countryId) {
-      const Country = mongoose.model('Country');
-      const country = await Country.findById(doc.countryId);
-      if (country) {
-        await country.calculateAverageRating();
-      }
-    }
-  }
-});
 
 // Method to get full location details
 visitSchema.methods.getFullDetails = async function() {

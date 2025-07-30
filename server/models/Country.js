@@ -19,20 +19,6 @@ const countrySchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  description: {
-    type: String,
-    trim: true
-  },
-  averageVisitRating: {
-    type: Number,
-    min: 0,
-    max: 10,
-    default: null
-  },
-  totalVisits: {
-    type: Number,
-    default: 0
-  },
 }, {
   timestamps: true
 });
@@ -48,24 +34,6 @@ countrySchema.methods.getVisitStats = async function() {
   return await Visit.find({ countryId: this._id });
 };
 
-// Method to calculate average rating from visits
-countrySchema.methods.calculateAverageRating = async function() {
-  const Visit = mongoose.model('Visit');
-  const result = await Visit.aggregate([
-    { $match: { countryId: this._id, rating: { $exists: true, $ne: null } } },
-    { $group: { _id: null, avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
-  ]);
-  
-  if (result.length > 0) {
-    this.averageVisitRating = Math.round(result[0].avgRating * 10) / 10;
-    this.totalVisits = result[0].count;
-  } else {
-    this.averageVisitRating = null;
-    this.totalVisits = 0;
-  }
-  
-  return this.save();
-};
 
 // Static method to find countries by continent
 countrySchema.statics.findByContinent = function(continent) {

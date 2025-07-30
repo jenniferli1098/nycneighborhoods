@@ -57,7 +57,7 @@ router.get('/:id', async (req, res) => {
 // Create neighborhood (admin only - for future use)
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, boroughName, cityName, categoryType, description } = req.body;
+    const { name, boroughName, cityName, categoryType } = req.body;
     
     let neighborhood;
     if (categoryType === 'borough' && boroughName) {
@@ -70,8 +70,7 @@ router.post('/', auth, async (req, res) => {
       neighborhood = new Neighborhood({
         name,
         boroughId: borough._id,
-        categoryType: 'borough',
-        description
+        categoryType: 'borough'
       });
     } else if (categoryType === 'city' && cityName) {
       // Find the city
@@ -83,8 +82,7 @@ router.post('/', auth, async (req, res) => {
       neighborhood = new Neighborhood({
         name,
         cityId: city._id,
-        categoryType: 'city',
-        description
+        categoryType: 'city'
       });
     } else {
       return res.status(400).json({ error: 'Invalid categoryType or missing parent location' });
@@ -124,10 +122,7 @@ router.get('/search/:query', async (req, res) => {
     const { city, categoryType } = req.query;
     
     let searchQuery = {
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } }
-      ]
+      name: { $regex: query, $options: 'i' }
     };
     
     if (categoryType) {
