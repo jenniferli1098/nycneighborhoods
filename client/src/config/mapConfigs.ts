@@ -4,7 +4,7 @@ export type CategoryType = 'borough' | 'city';
 
 export interface MapConfig {
   name: string;
-  geoJsonEndpoint: () => Promise<any>;
+  slug: string;
   mapComponent: 'NYC' | 'Boston';
   center: [number, number];
   zoom: number;
@@ -12,28 +12,22 @@ export interface MapConfig {
   apiFilters?: {
     city?: string;
   };
-  // How to extract category from GeoJSON features
-  getCategoryFromFeature: (feature: any) => string;
-  // How to extract neighborhood name from GeoJSON features  
-  getNeighborhoodFromFeature: (feature: any) => string;
-  // Whether neighborhoods exist in database or are GeoJSON-only
-  hasDbNeighborhoods: boolean;
   // Map visualization config
   categoryColors: { [key: string]: string };
   defaultColor?: string;
 }
 
+// Standard neighborhood extractor function (same for all maps)
+export const getNeighborhoodFromFeature = (feature: any) => feature.properties.neighborhood;
+
 export const mapConfigs: { [key: string]: MapConfig } = {
   'New York': {
     name: 'New York',
-    geoJsonEndpoint: neighborhoodsApi.getGeoJsonNeighborhoods,
+    slug: 'nyc',
     mapComponent: 'NYC',
     center: [40.8, -73.9],
     zoom: 11,
     categoryType: 'borough',
-    getCategoryFromFeature: (feature) => feature.properties.borough,
-    getNeighborhoodFromFeature: (feature) => feature.properties.neighborhood,
-    hasDbNeighborhoods: true, // NYC neighborhoods exist in database
     categoryColors: {
       'Manhattan': '#FF6B6B',      // Red
       'Brooklyn': '#4ECDC4',       // Teal
@@ -46,15 +40,11 @@ export const mapConfigs: { [key: string]: MapConfig } = {
   },
   'Boston Greater Area': {
     name: 'Boston Greater Area',
-    geoJsonEndpoint: neighborhoodsApi.getBostonGeoJsonNeighborhoods,
+    slug: 'boston',
     mapComponent: 'Boston',
     center: [42.3601, -71.0589],
     zoom: 12,
     categoryType: 'city',
-    // No apiFilters - load all neighborhoods for Greater Boston Area
-    getCategoryFromFeature: (feature) => feature.properties.city,
-    getNeighborhoodFromFeature: (feature) => feature.properties.neighborhood,
-    hasDbNeighborhoods: true, // Boston neighborhoods exist in database
     categoryColors: {
       'Boston': '#FF6B6B',         // Red
       'Cambridge': '#4ECDC4',      // Teal

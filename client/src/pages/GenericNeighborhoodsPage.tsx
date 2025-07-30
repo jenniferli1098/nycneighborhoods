@@ -15,6 +15,7 @@ import StatsCard from '../components/StatsCard';
 import MapLegend from '../components/MapLegend';
 import { visitsApi } from '../services/visitsApi';
 import type { Visit } from '../services/visitsApi';
+import {neighborhoodsApi} from '../services/neighborhoodsApi';
 import { neighborhoodCache, type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
 import type { MapConfig } from '../config/mapConfigs';
 
@@ -88,12 +89,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       console.log(`📡 ${mapConfig.name}: Loading neighborhoods from cache`);
       let neighborhoods: CachedNeighborhood[] = [];
       
-      if (mapConfig.hasDbNeighborhoods) {
         const cityFilter = mapConfig.apiFilters?.city;
         neighborhoods = await neighborhoodCache.getNeighborhoods(cityFilter);
-      } else {
-        console.log(`📝 ${mapConfig.name}: Using GeoJSON-only mode, no database neighborhoods`);
-      }
       
       console.log(`📝 ${mapConfig.name}: Received neighborhoods data:`, neighborhoods.length, 'neighborhoods');
       setNeighborhoods(neighborhoods);
@@ -112,7 +109,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const loadGeoJsonNeighborhoods = async () => {
     try {
       console.log(`📡 ${mapConfig.name}: Loading GeoJSON neighborhoods for map`);
-      const data = await mapConfig.geoJsonEndpoint();
+      const data = await neighborhoodsApi.getGeoJsonNeighborhoods(mapConfig.slug);
       console.log(`📝 ${mapConfig.name}: Received GeoJSON data:`, data.features?.length || 0, 'features');
       console.log(`📝 ${mapConfig.name}: Sample feature:`, data.features?.[0]?.properties);
       setGeoJsonNeighborhoods(data.features || []);
@@ -198,7 +195,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       return;
     }
     
-    if (mapConfig.hasDbNeighborhoods) {
       // For maps with database neighborhoods, find actual neighborhood ID
       console.log(`🔍 ${mapConfig.name}: Available neighborhoods count:`, neighborhoods.length);
       console.log(`🔍 ${mapConfig.name}: ${mapConfig.categoryType} mapping size:`, categoryIdToName.size);
@@ -225,14 +221,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         }));
         console.log(`📋 ${mapConfig.name}: Available ${mapConfig.categoryType}s:`, Array.from(categoryIdToName.values()));
       }
-    } else {
-      // For GeoJSON-only maps, create placeholder ID
-      setSelectedNeighborhood({ 
-        id: `${neighborhood}-${category}`, // Placeholder ID
-        name: neighborhood, 
-        borough: category // Use category as borough for API compatibility
-      });
-    }
   };
 
   // ============================================================================
@@ -250,7 +238,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     let neighborhoodObj: CachedNeighborhood | null = null;
     let existingVisit: Visit | undefined = undefined;
     
-    if (mapConfig.hasDbNeighborhoods) {
       const category_obj = boroughs.find(b => b.name === category);
       if (!category_obj) {
         console.error(`❌ ${mapConfig.name}: ${mapConfig.categoryType} not found:`, category);
@@ -269,12 +256,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       }
 
       existingVisit = visits.find(v => v.neighborhoodId === neighborhoodObj!.id);
-    } else {
-      existingVisit = visits.find(v => 
-        v.neighborhoodId === neighborhood || 
-        (v.neighborhoodId && neighborhoods.find(n => n.id === v.neighborhoodId && n.name === neighborhood))
-      );
-    }
+    
     
     return { neighborhoodObj, existingVisit };
   };
@@ -382,7 +364,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     
     // Find neighborhood and existing visit data
     const { neighborhoodObj, existingVisit } = await findNeighborhoodData(neighborhood, category);
-    if (!neighborhoodObj && mapConfig.hasDbNeighborhoods) {
+    if (!neighborhoodObj) {
       return; // Error already logged in findNeighborhoodData
     }
     
@@ -584,8 +566,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           mapConfig={{
             center: mapConfig.center || [40.8, -73.9],
             zoom: mapConfig.zoom || 11,
-            getCategoryFromFeature: mapConfig.getCategoryFromFeature,
-            getNeighborhoodFromFeature: mapConfig.getNeighborhoodFromFeature,
+            categoryType: mapConfig.categoryType,
             categoryColors: mapConfig.categoryColors || {},
             defaultColor: mapConfig.defaultColor
           }}

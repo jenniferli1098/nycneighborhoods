@@ -54,14 +54,8 @@ export const neighborhoodsApi = {
   },
 
   // Get GeoJSON neighborhoods for map
-  getGeoJsonNeighborhoods: async () => {
-    const response = await api.get('/api/maps/geojson/nyc');
+  getGeoJsonNeighborhoods: async (slug: string) => {
+    const response = await api.get(`/api/maps/geojson/${slug}`);
     return response.data;
   },
-
-  // Get Boston/Cambridge GeoJSON neighborhoods for map
-  getBostonGeoJsonNeighborhoods: async () => {
-    const response = await api.get('/api/maps/geojson/boston');
-    return response.data;
-  }
 };

@@ -204,10 +204,7 @@ const UserDashboard: React.FC = () => {
         
         // Fallback to hardcoded configurations if Maps API fails
         for (const [mapName, config] of Object.entries(mapConfigs)) {
-          if (!config.hasDbNeighborhoods) {
-            console.log(`📝 UserDashboard: Skipping ${mapName} - no DB neighborhoods`);
-            continue;
-          }
+        
 
           try {
             const city = getCityFromMapConfig(config);

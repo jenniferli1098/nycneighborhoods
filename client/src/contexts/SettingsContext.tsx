@@ -36,8 +36,8 @@ const defaultSettings: UserSettings = {
 };
 
 const availableMaps: MapConfig[] = [
-  { id: 'nyc', name: 'NYC Neighborhoods', route: '/neighborhoods', category: 'neighborhood' },
-  { id: 'boston', name: 'Boston Neighborhoods', route: '/boston', category: 'neighborhood' },
+  { id: 'nyc', name: 'NYC Neighborhoods', route: '/neighborhoods/newyork', category: 'neighborhood' },
+  { id: 'boston', name: 'Boston Neighborhoods', route: '/neighborhoods/boston', category: 'neighborhood' },
   { id: 'countries', name: 'Countries', route: '/countries', category: 'other' }
 ];
 

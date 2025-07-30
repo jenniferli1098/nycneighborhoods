@@ -20,8 +20,7 @@ interface Neighborhood {
 interface MapConfig {
   center: [number, number];
   zoom: number;
-  getCategoryFromFeature: (feature: any) => string;
-  getNeighborhoodFromFeature: (feature: any) => string;
+  categoryType: string;
   categoryColors: { [key: string]: string };
   defaultColor?: string;
 }
@@ -77,9 +76,9 @@ const GenericMap: React.FC<GenericMapProps> = ({
   };
 
   const getColor = (feature: any): string => {
-    const neighborhoodName = mapConfig.getNeighborhoodFromFeature(feature);
-    const categoryName = mapConfig.getCategoryFromFeature(feature);
-    
+    const neighborhoodName = feature.properties.neighborhood;
+    const categoryName = feature.properties[mapConfig.categoryType];
+        
     if (visitedNeighborhoods.has(neighborhoodName)) {
       return getCategoryColor(categoryName);
     }
@@ -112,8 +111,8 @@ const GenericMap: React.FC<GenericMapProps> = ({
   });
 
   const onEachFeature = (feature: any, layer: any) => {
-    const neighborhoodName = mapConfig.getNeighborhoodFromFeature(feature);
-    const categoryName = mapConfig.getCategoryFromFeature(feature);
+    const neighborhoodName = feature.properties.neighborhood;
+    const categoryName = feature.properties[mapConfig.categoryType];
     const isVisited = visitedNeighborhoods.has(neighborhoodName);
     
     

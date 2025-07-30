@@ -32,7 +32,6 @@ import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import NeighborhoodsPage from './pages/NeighborhoodsPage';
-import BostonNeighborhoodsPage from './pages/BostonNeighborhoodsPage';
 import CountriesPage from './pages/CountriesPage';
 import UserDashboard from './pages/UserDashboard';
 import SettingsPage from './pages/SettingsPage';
@@ -370,8 +369,7 @@ const MainApp: React.FC = () => {
         }}>
           <Routes>
             <Route path="/" element={<UserDashboard />} />
-            <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
-            <Route path="/boston" element={<BostonNeighborhoodsPage />} />
+            <Route path="/neighborhoods/:mapName" element={<NeighborhoodsPage />} />
             <Route path="/countries" element={<CountriesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
