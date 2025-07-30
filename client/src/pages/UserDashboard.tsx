@@ -62,8 +62,12 @@ const UserDashboard: React.FC = () => {
       setLoading(true);
       console.log('📊 UserDashboard: Loading user statistics');
       
-      // Fetch all visits
-      const visits = await visitsApi.getAllVisits();
+      // Fetch all visits (optimized: get both neighborhood and country visits)
+      const [neighborhoodVisits, countryVisits] = await Promise.all([
+        visitsApi.getVisitsByType('neighborhood'),
+        visitsApi.getVisitsByType('country')
+      ]);
+      const visits = [...neighborhoodVisits, ...countryVisits];
       console.log('📝 UserDashboard: Received visits:', visits.length);
       console.log('📝 UserDashboard: Sample visit:', visits[0]);
       setAllVisits(visits);
@@ -98,16 +102,16 @@ const UserDashboard: React.FC = () => {
             categories = city ? 
               await neighborhoodCache.getBoroughs(city) : 
               await neighborhoodCache.getBoroughs();
-          } else {
-            // For city-based configs, get relevant cities
-            if (mapName === 'Boston Greater Area') {
-              const allCities = await neighborhoodCache.getCities('Massachusetts');
-              categories = allCities.filter(city => 
-                ['Boston', 'Cambridge', 'Somerville'].includes(city.name)
-              );
-            } else {
-              categories = await neighborhoodCache.getCities();
-            }
+          } else if (config.categoryType === 'city') {
+            // For city-based maps, load cities but map them to borough-compatible structure
+            console.log(`📝 UserDashboard: Loading cities for city-based categorization`);
+            const cities = await neighborhoodCache.getCities('Massachusetts');
+            categories = cities.map(city => ({
+              id: city.id,
+              name: city.name,
+              cityId: city.id,
+              city: city.name // Required field for CachedBorough compatibility
+            } as CachedBorough));
           }
           
           areasData[mapName] = {
@@ -118,9 +122,11 @@ const UserDashboard: React.FC = () => {
           };
           
           console.log(`📝 UserDashboard: ${mapName} - neighborhoods: ${neighborhoods.length}, categories: ${categories.length}`);
+          console.log(`📝 UserDashboard: ${mapName} - sample neighborhood:`, neighborhoods[0]);
+          console.log(`📝 UserDashboard: ${mapName} - sample category:`, categories[0]);
           
         } catch (error) {
-          console.log(`📝 UserDashboard: ${mapName} data not available:`, error);
+          console.error(`❌ UserDashboard: ${mapName} data loading failed:`, error);
           areasData[mapName] = {
             config,
             neighborhoods: [],
@@ -503,18 +509,30 @@ const UserDashboard: React.FC = () => {
 
         {/* Dynamic Neighborhood StatsCards for all configured maps */}
         {Object.entries(mapAreas)
-          .filter(([, areaData]) => areaData.isLoaded && areaData.neighborhoods.length > 0 && areaData.categories.length > 0)
-          .map(([mapName, areaData]) => (
-            <Box key={mapName} sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
-              <StatsCard
-                visits={allVisits}
-                neighborhoods={areaData.neighborhoods}
-                categories={areaData.categories}
-                categoryType={areaData.config.categoryType}
-                areaName={areaData.config.name === 'Boston Greater Area' ? 'Boston Greater Area' : areaData.config.name}
-              />
-            </Box>
-          ))
+          .filter(([mapName, areaData]) => {
+            const isValid = areaData.isLoaded && areaData.neighborhoods.length > 0 && areaData.categories.length > 0;
+            console.log(`📊 UserDashboard: ${mapName} StatsCard filter - isLoaded: ${areaData.isLoaded}, neighborhoods: ${areaData.neighborhoods.length}, categories: ${areaData.categories.length}, showing: ${isValid}`);
+            return isValid;
+          })
+          .map(([mapName, areaData]) => {
+            console.log(`📊 UserDashboard: Rendering StatsCard for ${mapName}`, {
+              visits: allVisits.length,
+              neighborhoods: areaData.neighborhoods.length,
+              categories: areaData.categories.length,
+              categoryType: areaData.config.categoryType
+            });
+            return (
+              <Box key={mapName} sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
+                <StatsCard
+                  visits={allVisits}
+                  neighborhoods={areaData.neighborhoods}
+                  categories={areaData.categories}
+                  categoryType={areaData.config.categoryType}
+                  areaName={areaData.config.name === 'Boston Greater Area' ? 'Boston Greater Area' : areaData.config.name}
+                />
+              </Box>
+            );
+          })
         }
       </Box>
     </Box>
