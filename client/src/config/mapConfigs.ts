@@ -53,7 +53,7 @@ export const mapConfigs: { [key: string]: MapConfig } = {
     categoryType: 'city',
     // No apiFilters - load all neighborhoods for Greater Boston Area
     getCategoryFromFeature: (feature) => feature.properties.city,
-    getNeighborhoodFromFeature: (feature) => feature.properties.name,
+    getNeighborhoodFromFeature: (feature) => feature.properties.neighborhood,
     hasDbNeighborhoods: true, // Boston neighborhoods exist in database
     categoryColors: {
       'Boston': '#FF6B6B',         // Red

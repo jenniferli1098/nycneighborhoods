@@ -3502,6 +3502,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Roslindale",
         "original": {
           "OBJECTID": 1,
           "acres": 1605.5682375,
@@ -3510,8 +3511,7 @@
           "Shape_Length": 0.16912020020897905,
           "Shape_Area": 0.0007092176146077519,
           "shape_wkt": null
-        },
-        "neighborhood": "Roslindale"
+        }
       },
       "id": 1
     },
@@ -8054,6 +8054,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Jamaica Plain",
         "original": {
           "OBJECTID": 2,
           "acres": 2519.24539377,
@@ -8062,8 +8063,7 @@
           "Shape_Length": 0.17957822787896363,
           "Shape_Area": 0.0011132479247480882,
           "shape_wkt": null
-        },
-        "neighborhood": "Jamaica Plain"
+        }
       },
       "id": 2
     },
@@ -9122,6 +9122,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Mission Hill",
         "original": {
           "OBJECTID": 3,
           "acres": 350.8535636,
@@ -9130,8 +9131,7 @@
           "Shape_Length": 0.059235047063125185,
           "Shape_Area": 0.0001550992937976038,
           "shape_wkt": null
-        },
-        "neighborhood": "Mission Hill"
+        }
       },
       "id": 3
     },
@@ -9866,6 +9866,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Longwood",
         "original": {
           "OBJECTID": 4,
           "acres": 188.61194672,
@@ -9874,8 +9875,7 @@
           "Shape_Length": 0.038816302840219044,
           "Shape_Area": 0.00008338723302836679,
           "shape_wkt": null
-        },
-        "neighborhood": "Longwood"
+        }
       },
       "id": 4
     },
@@ -10330,6 +10330,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Bay Village",
         "original": {
           "OBJECTID": 5,
           "acres": 26.53983916,
@@ -10338,8 +10339,7 @@
           "Shape_Length": 0.015625047520758488,
           "Shape_Area": 0.000011735455818687125,
           "shape_wkt": null
-        },
-        "neighborhood": "Bay Village"
+        }
       },
       "id": 5
     },
@@ -10554,6 +10554,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Leather District",
         "original": {
           "OBJECTID": 6,
           "acres": 15.63990811,
@@ -10562,8 +10563,7 @@
           "Shape_Length": 0.010477927094291474,
           "Shape_Area": 0.000006915894398219599,
           "shape_wkt": null
-        },
-        "neighborhood": "Leather District"
+        }
       },
       "id": 6
     },
@@ -11358,6 +11358,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Chinatown",
         "original": {
           "OBJECTID": 7,
           "acres": 76.32440999,
@@ -11366,8 +11367,7 @@
           "Shape_Length": 0.032740522863703804,
           "Shape_Area": 0.0000337492763063791,
           "shape_wkt": null
-        },
-        "neighborhood": "Chinatown"
+        }
       },
       "id": 7
     },
@@ -13070,6 +13070,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "North End",
         "original": {
           "OBJECTID": 8,
           "acres": 126.91043901,
@@ -13078,8 +13079,7 @@
           "Shape_Length": 0.05280704852663726,
           "Shape_Area": 0.000056124859204119006,
           "shape_wkt": null
-        },
-        "neighborhood": "North End"
+        }
       },
       "id": 8
     },
@@ -15974,6 +15974,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Roxbury",
         "original": {
           "OBJECTID": 9,
           "acres": 2108.46907176,
@@ -15982,8 +15983,7 @@
           "Shape_Length": 0.1532694108088115,
           "Shape_Area": 0.0009318834459990109,
           "shape_wkt": null
-        },
-        "neighborhood": "Roxbury"
+        }
       },
       "id": 9
     },
@@ -16830,6 +16830,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "South End",
         "original": {
           "OBJECTID": 10,
           "acres": 471.53535561,
@@ -16838,8 +16839,7 @@
           "Shape_Length": 0.058464505283652456,
           "Shape_Area": 0.0002084794546182847,
           "shape_wkt": null
-        },
-        "neighborhood": "South End"
+        }
       },
       "id": 10
     },
@@ -20506,6 +20506,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Back Bay",
         "original": {
           "OBJECTID": 11,
           "acres": 399.31441106,
@@ -20514,8 +20515,7 @@
           "Shape_Length": 0.06337444202225552,
           "Shape_Area": 0.00017657181955497194,
           "shape_wkt": null
-        },
-        "neighborhood": "Back Bay"
+        }
       },
       "id": 11
     },
@@ -46774,6 +46774,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "East Boston",
         "original": {
           "OBJECTID": 12,
           "acres": 3012.05959319,
@@ -46782,8 +46783,7 @@
           "Shape_Length": 0.39469211809833615,
           "Shape_Area": 0.0013341945755020038,
           "shape_wkt": null
-        },
-        "neighborhood": "East Boston"
+        }
       },
       "id": 12
     },
@@ -52880,6 +52880,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Charlestown",
         "original": {
           "OBJECTID": 13,
           "acres": 871.54122286,
@@ -52888,8 +52889,7 @@
           "Shape_Length": 0.18646159521377462,
           "Shape_Area": 0.0003855616994489882,
           "shape_wkt": null
-        },
-        "neighborhood": "Charlestown"
+        }
       },
       "id": 13
     },
@@ -56186,6 +56186,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "West End",
         "original": {
           "OBJECTID": 14,
           "acres": 190.4907324,
@@ -56194,8 +56195,7 @@
           "Shape_Length": 0.05914329817563796,
           "Shape_Area": 0.00008425207723180613,
           "shape_wkt": null
-        },
-        "neighborhood": "West End"
+        }
       },
       "id": 14
     },
@@ -57890,6 +57890,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Beacon Hill",
         "original": {
           "OBJECTID": 15,
           "acres": 200.15690397,
@@ -57898,8 +57899,7 @@
           "Shape_Length": 0.04589526773632509,
           "Shape_Area": 0.00008851687062378756,
           "shape_wkt": null
-        },
-        "neighborhood": "Beacon Hill"
+        }
       },
       "id": 15
     },
@@ -60666,6 +60666,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Downtown",
         "original": {
           "OBJECTID": 16,
           "acres": 397.47284644,
@@ -60674,8 +60675,7 @@
           "Shape_Length": 0.11237359109537333,
           "Shape_Area": 0.00017577330211321083,
           "shape_wkt": null
-        },
-        "neighborhood": "Downtown"
+        }
       },
       "id": 16
     },
@@ -65426,6 +65426,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Fenway",
         "original": {
           "OBJECTID": 17,
           "acres": 560.61846143,
@@ -65434,8 +65435,7 @@
           "Shape_Length": 0.0813849365626023,
           "Shape_Area": 0.0002478789508837332,
           "shape_wkt": null
-        },
-        "neighborhood": "Fenway"
+        }
       },
       "id": 17
     },
@@ -71574,6 +71574,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Brighton",
         "original": {
           "OBJECTID": 18,
           "acres": 1840.40859627,
@@ -71582,8 +71583,7 @@
           "Shape_Length": 0.15817201106158804,
           "Shape_Area": 0.0008137896661981567,
           "shape_wkt": null
-        },
-        "neighborhood": "Brighton"
+        }
       },
       "id": 18
     },
@@ -75170,6 +75170,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "West Roxbury",
         "original": {
           "OBJECTID": 19,
           "acres": 3516.42178618,
@@ -75178,8 +75179,7 @@
           "Shape_Length": 0.21254325397244883,
           "Shape_Area": 0.0015532267957729887,
           "shape_wkt": null
-        },
-        "neighborhood": "West Roxbury"
+        }
       },
       "id": 19
     },
@@ -80618,6 +80618,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Hyde Park",
         "original": {
           "OBJECTID": 20,
           "acres": 2927.22116773,
@@ -80626,8 +80627,7 @@
           "Shape_Length": 0.2090051872355342,
           "Shape_Area": 0.0012924791001002478,
           "shape_wkt": null
-        },
-        "neighborhood": "Hyde Park"
+        }
       },
       "id": 20
     },
@@ -84094,6 +84094,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Mattapan",
         "original": {
           "OBJECTID": 21,
           "acres": 1352.09835365,
@@ -84102,8 +84103,7 @@
           "Shape_Length": 0.13757905049369762,
           "Shape_Area": 0.0005972025061404652,
           "shape_wkt": null
-        },
-        "neighborhood": "Mattapan"
+        }
       },
       "id": 21
     },
@@ -101680,6 +101680,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Dorchester",
         "original": {
           "OBJECTID": 22,
           "acres": 4662.8794573,
@@ -101688,8 +101689,7 @@
           "Shape_Length": 0.3335812685397367,
           "Shape_Area": 0.0020602159426449758,
           "shape_wkt": null
-        },
-        "neighborhood": "Dorchester"
+        }
       },
       "id": 22
     },
@@ -103780,6 +103780,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "South Boston Waterfront",
         "original": {
           "OBJECTID": 23,
           "acres": 621.84352373,
@@ -103788,8 +103789,7 @@
           "Shape_Length": 0.1259512702586727,
           "Shape_Area": 0.0002749566438596278,
           "shape_wkt": null
-        },
-        "neighborhood": "South Boston Waterfront"
+        }
       },
       "id": 23
     },
@@ -112818,6 +112818,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "South Boston",
         "original": {
           "OBJECTID": 24,
           "acres": 1439.88880731,
@@ -112826,8 +112827,7 @@
           "Shape_Length": 0.21239870070636765,
           "Shape_Area": 0.0006365523052080889,
           "shape_wkt": null
-        },
-        "neighborhood": "South Boston"
+        }
       },
       "id": 24
     },
@@ -120990,6 +120990,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Allston",
         "original": {
           "OBJECTID": 25,
           "acres": 998.53447869,
@@ -120998,8 +120999,7 @@
           "Shape_Length": 0.12231095045445142,
           "Shape_Area": 0.000441599797147611,
           "shape_wkt": null
-        },
-        "neighborhood": "Allston"
+        }
       },
       "id": 25
     },
@@ -129132,6 +129132,7 @@
       },
       "properties": {
         "city": "Boston",
+        "name": "Harbor Islands",
         "original": {
           "OBJECTID": 26,
           "acres": 824.88865794,
@@ -129140,8 +129141,7 @@
           "Shape_Length": 0.2979309349512513,
           "Shape_Area": 0.0003646308716588336,
           "shape_wkt": null
-        },
-        "neighborhood": "Harbor Islands"
+        }
       },
       "id": 26
     },
@@ -130268,12 +130268,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "The Port",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/4",
           "N_HOOD": "4",
           "GlobalID": "{C8B959CD-73DF-4428-AC34-3FA51C5D8797}"
-        },
-        "neighborhood": "The Port"
+        }
       },
       "id": 1
     },
@@ -132248,12 +132248,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Neighborhood Nine",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/9",
           "N_HOOD": "9",
           "GlobalID": "{D88737C1-9D81-4B18-BCE6-110F410AFF43}"
-        },
-        "neighborhood": "Neighborhood Nine"
+        }
       },
       "id": 2
     },
@@ -133368,12 +133368,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Wellington-Harrington",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/3",
           "N_HOOD": "3",
           "GlobalID": "{5061DEA8-62B5-4A92-BD28-82C5F1ABCF43}"
-        },
-        "neighborhood": "Wellington-Harrington"
+        }
       },
       "id": 3
     },
@@ -134436,12 +134436,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Mid-Cambridge",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/6",
           "N_HOOD": "6",
           "GlobalID": "{0F453EAF-A3BA-4A39-96F8-DC8236986FBF}"
-        },
-        "neighborhood": "Mid-Cambridge"
+        }
       },
       "id": 4
     },
@@ -138148,12 +138148,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "North Cambridge",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/11",
           "N_HOOD": "11",
           "GlobalID": "{C0E75281-7DE2-44BC-B5D6-62E1C76A2D71}"
-        },
-        "neighborhood": "North Cambridge"
+        }
       },
       "id": 5
     },
@@ -140916,12 +140916,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Cambridge Highlands",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/12",
           "N_HOOD": "12",
           "GlobalID": "{FAA404BB-E756-4B72-BC0D-09398D97DBFA}"
-        },
-        "neighborhood": "Cambridge Highlands"
+        }
       },
       "id": 6
     },
@@ -142280,12 +142280,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Strawberry Hill",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/13",
           "N_HOOD": "13",
           "GlobalID": "{97DF663D-9733-4DCB-92BB-1518EFE7DAB8}"
-        },
-        "neighborhood": "Strawberry Hill"
+        }
       },
       "id": 7
     },
@@ -144392,12 +144392,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "West Cambridge",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/10",
           "N_HOOD": "10",
           "GlobalID": "{6764648E-4C08-404E-B480-C6B208CAD059}"
-        },
-        "neighborhood": "West Cambridge"
+        }
       },
       "id": 8
     },
@@ -145236,12 +145236,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Riverside",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/7",
           "N_HOOD": "7",
           "GlobalID": "{21BBDEFC-7A43-40F1-A6AC-5371C5EB989B}"
-        },
-        "neighborhood": "Riverside"
+        }
       },
       "id": 9
     },
@@ -146132,12 +146132,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Cambridgeport",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/5",
           "N_HOOD": "5",
           "GlobalID": "{3D33C465-EC90-4CCE-BC49-DE172E4D6F26}"
-        },
-        "neighborhood": "Cambridgeport"
+        }
       },
       "id": 10
     },
@@ -147500,12 +147500,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Area 2/MIT",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/2",
           "N_HOOD": "2",
           "GlobalID": "{DFB5E06A-FF1C-4A29-80B2-6EDF4A9E4F42}"
-        },
-        "neighborhood": "Area 2/MIT"
+        }
       },
       "id": 11
     },
@@ -153276,12 +153276,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "East Cambridge",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/1",
           "N_HOOD": "1",
           "GlobalID": "{10CBE33E-0307-4218-A9EC-9D12FDA32FC9}"
-        },
-        "neighborhood": "East Cambridge"
+        }
       },
       "id": 12
     },
@@ -154320,12 +154320,12 @@
       },
       "properties": {
         "city": "Cambridge",
+        "name": "Baldwin",
         "original": {
           "Webpage": "https://www.cambridgema.gov/CDD/planud/neighplan/neighs/8",
           "N_HOOD": "8",
           "GlobalID": "{9C09C269-A34F-4CA4-92BC-057B65B464AE}"
-        },
-        "neighborhood": "Baldwin"
+        }
       },
       "id": 13
     },
@@ -154333,12 +154333,12 @@
       "type": "Feature",
       "properties": {
         "city": "Somerville",
+        "name": "Ward 2",
         "original": {
           "Ward": "2",
           "SHAPE_Leng": 27498.8315795,
           "SHAPE_Area": 18925902.9912
-        },
-        "neighborhood": "Ward 2"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -156132,12 +156132,12 @@
       "type": "Feature",
       "properties": {
         "city": "Somerville",
+        "name": "Ward 3",
         "original": {
           "Ward": "3",
           "SHAPE_Leng": 19910.5034009,
           "SHAPE_Area": 13014755.08
-        },
-        "neighborhood": "Ward 3"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -157183,12 +157183,12 @@
       "type": "Feature",
       "properties": {
         "city": "Somerville",
+        "name": "Ward 1",
         "original": {
           "Ward": "1",
           "SHAPE_Leng": 30659.5184272,
           "SHAPE_Area": 28002670.5153
-        },
-        "neighborhood": "Ward 1"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -159962,12 +159962,12 @@
       "type": "Feature",
       "properties": {
         "city": "Somerville",
+        "name": "Ward 5",
         "original": {
           "Ward": "5",
           "SHAPE_Leng": 22449.4005274,
           "SHAPE_Area": 13783689.9874
-        },
-        "neighborhood": "Ward 5"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -160897,12 +160897,12 @@
       "type": "Feature",
       "properties": {
         "city": "Somerville",
+        "name": "Ward 4",
         "original": {
           "Ward": "4",
           "SHAPE_Leng": 17076.794507,
           "SHAPE_Area": 12894005.6439
-        },
-        "neighborhood": "Ward 4"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -162252,12 +162252,12 @@
       "type": "Feature",
       "properties": {
         "city": "Somerville",
+        "name": "Ward 6",
         "original": {
           "Ward": "6",
           "SHAPE_Leng": 20483.7919291,
           "SHAPE_Area": 13910452.7912
-        },
-        "neighborhood": "Ward 6"
+        }
       },
       "geometry": {
         "type": "Polygon",
@@ -163331,12 +163331,12 @@
       "type": "Feature",
       "properties": {
         "city": "Somerville",
+        "name": "Ward 7",
         "original": {
           "Ward": "7",
           "SHAPE_Leng": 21200.2399435,
           "SHAPE_Area": 14609271.4751
-        },
-        "neighborhood": "Ward 7"
+        }
       },
       "geometry": {
         "type": "Polygon",
