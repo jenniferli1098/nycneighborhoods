@@ -207,112 +207,103 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       return;
     }
     
+    let neighborhood_obj: any = null;
+    let existingVisit: any = null;
+    
+    // Pre-validation and data lookup
+    if (mapConfig.hasDbNeighborhoods) {
+      const category_obj = boroughs.find(b => b.name === category);
+      if (!category_obj) {
+        console.error(`❌ ${mapConfig.name}: ${mapConfig.categoryType} not found:`, category);
+        return;
+      }
+
+      neighborhood_obj = neighborhoods.find(n => {
+        return mapConfig.categoryType === 'borough' 
+          ? n.name === neighborhood && n.boroughId === category_obj.id
+          : n.name === neighborhood && n.cityId === category_obj.id;
+      });
+      
+      if (!neighborhood_obj) {
+        console.error(`❌ ${mapConfig.name}: Neighborhood not found:`, neighborhood);
+        return;
+      }
+
+      existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj.id);
+    } else {
+      existingVisit = visits.find(v => 
+        v.neighborhoodId === neighborhood || 
+        (v.neighborhoodId && neighborhoods.find(n => n.id === v.neighborhoodId && n.name === neighborhood))
+      );
+    }
+    
+    // Determine action (create or delete)
+    const shouldDelete = existingVisit && !existingVisit.notes && !existingVisit.rating && !existingVisit.category;
+    const shouldSkip = existingVisit && !shouldDelete;
+    
+    if (shouldSkip) {
+      console.log(`⚡ ${mapConfig.name}: Visit already exists with user data, skipping to prevent data loss:`, existingVisit);
+      return;
+    }
+    
     try {
-      if (!mapConfig.hasDbNeighborhoods) {
-        // For GeoJSON-only maps, create visits directly
-        const existingVisit = visits.find(v => 
-          v.neighborhoodId === neighborhood || 
-          (v.neighborhoodId && neighborhoods.find(n => n.id === v.neighborhoodId && n.name === neighborhood))
-        );
-        
-        if (existingVisit) {
-          // Check if visit has user data (notes, rating, category) - if not, toggle to unvisited
-          if (!existingVisit.notes && !existingVisit.rating && !existingVisit.category) {
-            console.log(`⚡ ${mapConfig.name}: Toggling visit to unvisited (no user data):`, existingVisit);
-            await visitsApi.deleteVisit(existingVisit._id);
-            await fetchVisits();
-            return;
-          }
-          console.log(`⚡ ${mapConfig.name}: Visit already exists with user data, skipping to prevent data loss:`, existingVisit);
-          return;
-        }
-
-        const visitData = {
-          neighborhoodName: neighborhood,
-          boroughName: category,
-          visited: true,
-          notes: '',
-          visitDate: new Date(),
-          rating: null,
-          category: null
-        };
-        
-        console.log(`📤 ${mapConfig.name}: Creating quick visit:`, visitData);
-        const newVisit = await visitsApi.createNeighborhoodVisit(visitData);
-        console.log(`✅ ${mapConfig.name}: Quick visit created successfully:`, newVisit);
+      // OPTIMISTIC UPDATE: Update UI immediately
+      if (shouldDelete) {
+        console.log(`⚡ ${mapConfig.name}: Optimistically removing visit for:`, neighborhood);
+        setVisits(prevVisits => prevVisits.filter(v => v._id !== existingVisit._id));
       } else {
-        // For database-backed maps, lookup neighborhood ID
-        console.log(`🔍 ${mapConfig.name}: Looking for ${mapConfig.categoryType} "${category}" in:`, boroughs.map(b => b.name));
-        const category_obj = boroughs.find(b => b.name === category);
-        if (!category_obj) {
-          console.error(`❌ ${mapConfig.name}: ${mapConfig.categoryType} not found:`, category);
-          console.log(`📋 ${mapConfig.name}: Available ${mapConfig.categoryType}s:`, boroughs.map(b => b.name));
-          return;
-        }
-        console.log(`✅ ${mapConfig.name}: Found ${mapConfig.categoryType}:`, category_obj);
-
-        console.log(`🔍 ${mapConfig.name}: Looking for neighborhood "${neighborhood}" with ${mapConfig.categoryType}Id "${category_obj.id}"`);
-        const neighborhood_obj = neighborhoods.find(n => {
-          const matches = mapConfig.categoryType === 'borough' 
-            ? n.name === neighborhood && n.boroughId === category_obj.id
-            : n.name === neighborhood && n.cityId === category_obj.id;
-          
-          if (n.name === neighborhood) {
-            console.log(`🔍 ${mapConfig.name}: Found matching name "${n.name}", checking ${mapConfig.categoryType}Id: "${mapConfig.categoryType === 'borough' ? n.boroughId : n.cityId}" === "${category_obj.id}" = ${matches}`);
-          }
-          
-          return matches;
-        });
-        if (!neighborhood_obj) {
-          console.error(`❌ ${mapConfig.name}: Neighborhood not found:`, neighborhood);
-          console.log(`📋 ${mapConfig.name}: Available neighborhoods with name "${neighborhood}":`, 
-            neighborhoods.filter(n => n.name === neighborhood).map(n => ({
-              name: n.name, 
-              boroughId: n.boroughId, 
-              cityId: n.cityId,
-              boroughName: n.boroughName,
-              cityName: n.cityName
-            }))
-          );
-          return;
-        }
-
-        const existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj.id);
-        
-        if (existingVisit) {
-          // Check if visit has user data (notes, rating, category) - if not, toggle to unvisited
-          if (!existingVisit.notes && !existingVisit.rating && !existingVisit.category) {
-            console.log(`⚡ ${mapConfig.name}: Toggling visit to unvisited (no user data):`, existingVisit);
-            await visitsApi.deleteVisit(existingVisit._id);
-            await fetchVisits();
-            return;
-          }
-          console.log(`⚡ ${mapConfig.name}: Visit already exists with user data, skipping to prevent data loss:`, existingVisit);
-          return;
-        }
-
-        const visitData = {
-          neighborhoodName: neighborhood,
-          boroughName: category,
+        console.log(`⚡ ${mapConfig.name}: Optimistically adding visit for:`, neighborhood);
+        const optimisticVisit = {
+          _id: `temp-${Date.now()}`, // Temporary ID
+          userId: user.id,
+          visitType: 'neighborhood' as const,
+          neighborhoodId: neighborhood_obj?.id || neighborhood,
           visited: true,
           notes: '',
-          visitDate: new Date(),
+          visitDate: new Date().toISOString(),
           rating: null,
-          category: null
+          category: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         };
-        
-        console.log(`📤 ${mapConfig.name}: Creating quick visit:`, visitData);
-        const newVisit = await visitsApi.createNeighborhoodVisit(visitData);
-        console.log(`✅ ${mapConfig.name}: Quick visit created successfully:`, newVisit);
+        setVisits(prevVisits => [...prevVisits, optimisticVisit]);
       }
       
-      // Refresh data without page reload
-      console.log(`🔄 ${mapConfig.name}: Refreshing visits data after quick visit...`);
-      await fetchVisits();
-      console.log(`🔄 ${mapConfig.name}: Data refresh complete`);
+      // BACKGROUND SYNC: Sync with server
+      if (shouldDelete) {
+        await visitsApi.deleteVisit(existingVisit._id);
+        console.log(`✅ ${mapConfig.name}: Visit deleted successfully on server`);
+      } else {
+        const visitData = {
+          neighborhoodName: neighborhood,
+          boroughName: category,
+          visited: true,
+          notes: '',
+          visitDate: new Date(),
+          rating: null,
+          category: null
+        };
+        
+        const newVisit = await visitsApi.createNeighborhoodVisit(visitData);
+        console.log(`✅ ${mapConfig.name}: Visit created successfully on server:`, newVisit);
+        
+        // Replace optimistic visit with real visit data
+        setVisits(prevVisits => 
+          prevVisits.map(v => 
+            v._id.startsWith('temp-') && 
+            (v.neighborhoodId === neighborhood_obj?.id || v.neighborhoodId === neighborhood)
+              ? newVisit 
+              : v
+          )
+        );
+      }
       
     } catch (error) {
-      console.error(`❌ ${mapConfig.name}: Failed to create quick visit:`, error);
+      console.error(`❌ ${mapConfig.name}: Failed to sync quick visit with server:`, error);
+      
+      // ROLLBACK: Revert optimistic update on error
+      console.log(`🔄 ${mapConfig.name}: Rolling back optimistic update due to error`);
+      await fetchVisits(); // Refresh from server to get correct state
     }
   };
 
@@ -335,9 +326,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const visitedNeighborhoodNames = new Set<string>();
   
   // For visits with neighborhoodId, use cache lookup
-  for (const visitId of visitedNeighborhoodIds) {
-    const cachedNeighborhood = neighborhoodCache.getNeighborhoodById(visitId);
-    console.log(cachedNeighborhood);
+  for (const neighborhoodId of visitedNeighborhoodIds) {
+    const cachedNeighborhood = neighborhoodCache.getNeighborhoodById(neighborhoodId);
     if (cachedNeighborhood) {
       visitedNeighborhoodNames.add(cachedNeighborhood.name);
     }
