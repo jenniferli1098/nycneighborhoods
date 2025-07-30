@@ -45,10 +45,6 @@ const mapSchema = new mongoose.Schema({
     default: 11,
     min: 1,
     max: 20
-  },
-  isActive: {
-    type: Boolean,
-    default: true
   }
 }, {
   timestamps: true
@@ -56,7 +52,6 @@ const mapSchema = new mongoose.Schema({
 
 // Indexes for performance
 mapSchema.index({ categoryType: 1 });
-mapSchema.index({ isActive: 1 });
 mapSchema.index({ 'coordinates.longitude': 1, 'coordinates.latitude': 1 });
 
 // Virtual for getting center coordinates as array (useful for map libraries)
@@ -138,22 +133,17 @@ mapSchema.methods.getMapStats = async function() {
 
 // Static method to find maps by category type
 mapSchema.statics.findByCategoryType = function(categoryType) {
-  return this.find({ categoryType, isActive: true });
-};
-
-// Static method to find active maps
-mapSchema.statics.findActive = function() {
-  return this.find({ isActive: true });
+  return this.find({ categoryType});
 };
 
 // Static method to find maps containing a specific city
 mapSchema.statics.findByCity = function(cityId) {
-  return this.find({ cityIds: cityId, isActive: true });
+  return this.find({ cityIds: cityId });
 };
 
 // Static method to find maps containing a specific borough
 mapSchema.statics.findByBorough = function(boroughId) {
-  return this.find({ boroughIds: boroughId, isActive: true });
+  return this.find({ boroughIds: boroughId });
 };
 
 // Pre-save validation to ensure appropriate IDs are provided based on category type

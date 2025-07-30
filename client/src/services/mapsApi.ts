@@ -15,7 +15,6 @@ export interface Map {
     latitude: number;
   };
   zoom?: number;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -5,6 +5,7 @@ import { Add as AddIcon, Remove as RemoveIcon, MyLocation as MyLocationIcon } fr
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useTouchInteractions, getDeviceType } from '../utils/deviceDetection';
+import { getNeighborhoodColor } from '../utils/colorPalette';
 
 interface Neighborhood {
   type: string;
@@ -21,8 +22,6 @@ interface MapConfig {
   center: [number, number];
   zoom: number;
   categoryType: string;
-  categoryColors: { [key: string]: string };
-  defaultColor?: string;
 }
 
 interface GenericMapProps {
@@ -71,18 +70,12 @@ const GenericMap: React.FC<GenericMapProps> = ({
     setGeoJsonKey(prev => prev + 1);
   }, [visitedNeighborhoods]);
 
-  const getCategoryColor = (category: string): string => {
-    return mapConfig.categoryColors[category] || mapConfig.defaultColor || '#E8E8E8';
-  };
-
   const getColor = (feature: any): string => {
     const neighborhoodName = feature.properties.neighborhood;
     const categoryName = feature.properties[mapConfig.categoryType];
+    const isVisited = visitedNeighborhoods.has(neighborhoodName);
         
-    if (visitedNeighborhoods.has(neighborhoodName)) {
-      return getCategoryColor(categoryName);
-    }
-    return mapConfig.defaultColor || '#E8E8E8'; // Light gray for unvisited
+    return getNeighborhoodColor(categoryName, isVisited);
   };
 
   const theme = useTheme();

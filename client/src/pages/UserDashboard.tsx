@@ -166,10 +166,6 @@ const UserDashboard: React.FC = () => {
         console.log(`📝 UserDashboard: Received ${maps.length} maps from API:`, maps.map(m => m.name));
         
         for (const map of maps) {
-          if (!map.isActive) {
-            console.log(`📝 UserDashboard: Skipping inactive map: ${map.name}`);
-            continue;
-          }
 
           try {
             console.log(`📝 UserDashboard: Loading data for ${map.name} (category: ${map.categoryType})`);
@@ -245,7 +241,6 @@ const UserDashboard: React.FC = () => {
                 latitude: config.center[0]
               },
               zoom: config.zoom,
-              isActive: true,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
             };

@@ -109,7 +109,6 @@ async function createMaps() {
       categoryType: config.categoryType,
       coordinates: config.coordinates,
       zoom: config.zoom,
-      isActive: true
     };
     
     // Add appropriate IDs based on category type

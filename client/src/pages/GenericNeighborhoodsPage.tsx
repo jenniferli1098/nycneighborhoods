@@ -18,6 +18,7 @@ import type { Visit } from '../services/visitsApi';
 import {neighborhoodsApi} from '../services/neighborhoodsApi';
 import { neighborhoodCache, type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
 import type { MapConfig } from '../config/mapConfigs';
+import { getCategoryColor, DEFAULT_COLOR } from '../utils/colorPalette';
 
 // Type definitions
 export type CategoryType = 'borough' | 'city';
@@ -49,6 +50,18 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const [boroughs, setBoroughs] = useState<CachedBorough[]>([]); // Borough/city categories
   const [cities, setCities] = useState<CachedCity[]>([]); // City data (for Boston-style maps)
   const [visits, setVisits] = useState<Visit[]>([]); // User visit data (optimistically updated)
+  
+  // Compute unique categories from GeoJSON data for legend
+  const uniqueCategories = React.useMemo(() => {
+    const categories = new Set<string>();
+    geoJsonNeighborhoods.forEach(feature => {
+      const category = feature.properties?.[mapConfig.categoryType];
+      if (category) {
+        categories.add(category);
+      }
+    });
+    return categories;
+  }, [geoJsonNeighborhoods, mapConfig.categoryType]);
   
   // UI state
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<SelectedNeighborhood | null>(null);
@@ -547,11 +560,11 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       <Box className="flex-1" sx={{ position: 'relative' }}>
         {/* Map Legend Overlay */}
         <MapLegend
-          legendItems={Object.entries(mapConfig.categoryColors || {}).map(([category, color]) => ({
+          legendItems={Array.from(uniqueCategories).map(category => ({
             label: category,
-            color: color
+            color: getCategoryColor(category)
           }))}
-          unvisitedColor={mapConfig.defaultColor || '#E8E8E8'}
+          unvisitedColor={DEFAULT_COLOR}
           unvisitedLabel="Unvisited"
           showInstructions={true}
           isAuthenticated={!!user}
@@ -566,9 +579,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           mapConfig={{
             center: mapConfig.center || [40.8, -73.9],
             zoom: mapConfig.zoom || 11,
-            categoryType: mapConfig.categoryType,
-            categoryColors: mapConfig.categoryColors || {},
-            defaultColor: mapConfig.defaultColor
+            categoryType: mapConfig.categoryType
           }}
         />
       </Box>
