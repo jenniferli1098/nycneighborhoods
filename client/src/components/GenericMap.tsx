@@ -82,6 +82,14 @@ const GenericMap: React.FC<GenericMapProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const useTouchInteraction = useTouchInteractions();
   const [map, setMap] = useState<L.Map | null>(null);
+
+  // Update map view when mapConfig changes (for switching between cities)
+  useEffect(() => {
+    if (map && mapConfig.center && mapConfig.zoom) {
+      console.log('🗺️ GenericMap: MapConfig changed, updating map view to:', mapConfig.center, 'zoom:', mapConfig.zoom);
+      map.setView(mapConfig.center, mapConfig.zoom);
+    }
+  }, [map, mapConfig.center, mapConfig.zoom]);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
 
   // Log device detection for debugging
