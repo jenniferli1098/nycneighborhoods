@@ -18,26 +18,48 @@ import type { Visit } from '../services/visitsApi';
 import { neighborhoodCache, type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
 import type { MapConfig } from '../config/mapConfigs';
 
+// Type definitions
 export type CategoryType = 'borough' | 'city';
 
 interface GenericNeighborhoodsPageProps {
   mapConfig: MapConfig;
 }
 
+interface SelectedNeighborhood {
+  id: string;
+  name: string;
+  borough: string;
+}
+
+/**
+ * GenericNeighborhoodsPage - A reusable page component for displaying neighborhood maps
+ * Supports both borough-based (NYC) and city-based (Boston) categorization
+ * Features optimistic updates for fast UI interactions
+ */
 const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ mapConfig }) => {
   console.log('🏗️ GenericNeighborhoodsPage: Component rendering with mapConfig:', mapConfig.name);
   
+  // Authentication context
   const { user } = useAuth();
-  const [neighborhoods, setNeighborhoods] = useState<CachedNeighborhood[]>([]);
-  const [geoJsonNeighborhoods, setGeoJsonNeighborhoods] = useState<any[]>([]);
-  const [boroughs, setBoroughs] = useState<CachedBorough[]>([]);
-  const [cities, setCities] = useState<CachedCity[]>([]);
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<{ id: string; name: string; borough: string } | null>(null);
+  
+  // Data state - split by source and purpose for clarity
+  const [neighborhoods, setNeighborhoods] = useState<CachedNeighborhood[]>([]); // Database neighborhoods
+  const [geoJsonNeighborhoods, setGeoJsonNeighborhoods] = useState<any[]>([]); // GeoJSON for map rendering
+  const [boroughs, setBoroughs] = useState<CachedBorough[]>([]); // Borough/city categories
+  const [cities, setCities] = useState<CachedCity[]>([]); // City data (for Boston-style maps)
+  const [visits, setVisits] = useState<Visit[]>([]); // User visit data (optimistically updated)
+  
+  // UI state
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<SelectedNeighborhood | null>(null);
   const [activeTab, setActiveTab] = useState(0); // 0 = Stats, 1 = List
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // ============================================================================
+  // DATA LOADING EFFECTS
+  // ============================================================================
+  
+  // Load all static data when map config changes
   useEffect(() => {
     loadNeighborhoods();
     loadGeoJsonNeighborhoods();
@@ -45,23 +67,31 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     loadCities();
   }, [mapConfig]);
 
+  // Load user visits when authentication state changes
   useEffect(() => {
     if (user) {
       fetchVisits();
     }
   }, [user]);
 
+  // ============================================================================
+  // DATA LOADING FUNCTIONS
+  // ============================================================================
+  
+  /**
+   * Load neighborhood data from cache
+   * - For DB-backed maps: loads from neighborhood cache with city filter
+   * - For GeoJSON-only maps: uses empty array (data comes from GeoJSON)
+   */
   const loadNeighborhoods = async () => {
     try {
       console.log(`📡 ${mapConfig.name}: Loading neighborhoods from cache`);
       let neighborhoods: CachedNeighborhood[] = [];
       
       if (mapConfig.hasDbNeighborhoods) {
-        // Load from cache for maps that have neighborhood data
         const cityFilter = mapConfig.apiFilters?.city;
         neighborhoods = await neighborhoodCache.getNeighborhoods(cityFilter);
       } else {
-        // For GeoJSON-only maps, we'll create empty array and handle in-memory
         console.log(`📝 ${mapConfig.name}: Using GeoJSON-only mode, no database neighborhoods`);
       }
       
@@ -75,6 +105,10 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     }
   };
 
+  /**
+   * Load GeoJSON data for map rendering
+   * This contains the actual geographic boundaries and properties for visualization
+   */
   const loadGeoJsonNeighborhoods = async () => {
     try {
       console.log(`📡 ${mapConfig.name}: Loading GeoJSON neighborhoods for map`);
@@ -132,6 +166,10 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     }
   };
 
+  /**
+   * Fetch user's neighborhood visits from server
+   * Uses optimized getVisitsByType to only fetch neighborhood visits
+   */
   const fetchVisits = async () => {
     try {
       console.log(`📡 ${mapConfig.name}: Fetching neighborhood visits from API`);
@@ -139,7 +177,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       console.log(`📝 ${mapConfig.name}: Received neighborhood visits data:`, visits);
       console.log(`📊 ${mapConfig.name}: Number of neighborhood visits:`, visits.length);
       
-      // Log visited neighborhood IDs
       const visitedIds = visits.filter((v: Visit) => v.visited && v.neighborhoodId).map((v: Visit) => v.neighborhoodId);
       console.log(`🎯 ${mapConfig.name}: Visited neighborhood IDs:`, visitedIds);
       
@@ -198,38 +235,40 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     }
   };
 
-  const handleQuickVisit = async (neighborhood: string, category: string) => {
-    console.log(`⚡ ${mapConfig.name}: handleQuickVisit called with:`, { neighborhood, category, user: !!user });
+  // ============================================================================
+  // USER INTERACTION HANDLERS
+  // ============================================================================
+  
+  // ============================================================================
+  // HELPER FUNCTIONS FOR QUICK VISIT
+  // ============================================================================
+  
+  /**
+   * Find neighborhood data and existing visit
+   */
+  const findNeighborhoodData = async (neighborhood: string, category: string) => {
+    let neighborhoodObj: CachedNeighborhood | null = null;
+    let existingVisit: Visit | undefined = undefined;
     
-    if (!user) {
-      console.log(`⚠️ ${mapConfig.name}: User not authenticated, skipping quick visit`);
-      alert('Please log in to mark neighborhoods as visited');
-      return;
-    }
-    
-    let neighborhood_obj: any = null;
-    let existingVisit: any = null;
-    
-    // Pre-validation and data lookup
     if (mapConfig.hasDbNeighborhoods) {
       const category_obj = boroughs.find(b => b.name === category);
       if (!category_obj) {
         console.error(`❌ ${mapConfig.name}: ${mapConfig.categoryType} not found:`, category);
-        return;
+        return { neighborhoodObj: null, existingVisit: undefined };
       }
 
-      neighborhood_obj = neighborhoods.find(n => {
+      neighborhoodObj = neighborhoods.find(n => {
         return mapConfig.categoryType === 'borough' 
           ? n.name === neighborhood && n.boroughId === category_obj.id
           : n.name === neighborhood && n.cityId === category_obj.id;
-      });
+      }) || null;
       
-      if (!neighborhood_obj) {
+      if (!neighborhoodObj) {
         console.error(`❌ ${mapConfig.name}: Neighborhood not found:`, neighborhood);
-        return;
+        return { neighborhoodObj: null, existingVisit: undefined };
       }
 
-      existingVisit = visits.find(v => v.neighborhoodId === neighborhood_obj.id);
+      existingVisit = visits.find(v => v.neighborhoodId === neighborhoodObj!.id);
     } else {
       existingVisit = visits.find(v => 
         v.neighborhoodId === neighborhood || 
@@ -237,8 +276,118 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       );
     }
     
-    // Determine action (create or delete)
-    const shouldDelete = existingVisit && !existingVisit.notes && !existingVisit.rating && !existingVisit.category;
+    return { neighborhoodObj, existingVisit };
+  };
+  
+  /**
+   * Check if visit has user-entered data (notes, rating, category)
+   */
+  const hasUserData = (visit: Visit): boolean => {
+    return !!(visit.notes || visit.rating || visit.category);
+  };
+  
+  /**
+   * Apply optimistic update to local state
+   */
+  const applyOptimisticUpdate = async (
+    shouldDelete: boolean, 
+    existingVisit: Visit | undefined, 
+    neighborhoodObj: CachedNeighborhood | null, 
+    neighborhood: string, 
+    _category: string
+  ) => {
+    if (shouldDelete && existingVisit) {
+      console.log(`⚡ ${mapConfig.name}: Optimistically removing visit for:`, neighborhood);
+      setVisits(prevVisits => prevVisits.filter(v => v._id !== existingVisit._id));
+    } else {
+      console.log(`⚡ ${mapConfig.name}: Optimistically adding visit for:`, neighborhood);
+      const optimisticVisit: Visit = {
+        _id: `temp-${Date.now()}`,
+        userId: user!.id,
+        visitType: 'neighborhood',
+        neighborhoodId: neighborhoodObj?.id || neighborhood,
+        visited: true,
+        notes: '',
+        visitDate: new Date().toISOString(),
+        rating: null,
+        category: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setVisits(prevVisits => [...prevVisits, optimisticVisit]);
+    }
+  };
+  
+  /**
+   * Sync changes with server
+   */
+  const syncWithServer = async (
+    shouldDelete: boolean, 
+    existingVisit: Visit | undefined, 
+    neighborhood: string, 
+    _category: string, 
+    neighborhoodObj: CachedNeighborhood | null
+  ) => {
+    if (shouldDelete && existingVisit) {
+      await visitsApi.deleteVisit(existingVisit._id);
+      console.log(`✅ ${mapConfig.name}: Visit deleted successfully on server`);
+    } else {
+      const visitData = {
+        neighborhoodName: neighborhood,
+        boroughName: _category,
+        visited: true,
+        notes: '',
+        visitDate: new Date(),
+        rating: null,
+        category: null
+      };
+      
+      const newVisit = await visitsApi.createNeighborhoodVisit(visitData);
+      console.log(`✅ ${mapConfig.name}: Visit created successfully on server:`, newVisit);
+      
+      // Replace optimistic visit with real server data
+      setVisits(prevVisits => 
+        prevVisits.map(v => 
+          v._id.startsWith('temp-') && 
+          (v.neighborhoodId === neighborhoodObj?.id || v.neighborhoodId === neighborhood)
+            ? newVisit 
+            : v
+        )
+      );
+    }
+  };
+  
+  /**
+   * Rollback optimistic update on error
+   */
+  const rollbackOptimisticUpdate = async () => {
+    console.log(`🔄 ${mapConfig.name}: Rolling back optimistic update due to error`);
+    await fetchVisits();
+  };
+  
+  /**
+   * Handle quick neighborhood visit (left-click or tap)
+   * Uses optimistic updates for instant UI feedback
+   * Supports both create and delete operations
+   */
+  const handleQuickVisit = async (neighborhood: string, category: string) => {
+    console.log(`⚡ ${mapConfig.name}: handleQuickVisit called with:`, { neighborhood, category, user: !!user });
+    
+    // Authentication check
+    if (!user) {
+      console.log(`⚠️ ${mapConfig.name}: User not authenticated, skipping quick visit`);
+      alert('Please log in to mark neighborhoods as visited');
+      return;
+    }
+    
+    // Find neighborhood and existing visit data
+    const { neighborhoodObj, existingVisit } = await findNeighborhoodData(neighborhood, category);
+    if (!neighborhoodObj && mapConfig.hasDbNeighborhoods) {
+      return; // Error already logged in findNeighborhoodData
+    }
+    
+    // Determine what action to take
+    const shouldDelete = existingVisit && !hasUserData(existingVisit);
     const shouldSkip = existingVisit && !shouldDelete;
     
     if (shouldSkip) {
@@ -247,105 +396,90 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     }
     
     try {
-      // OPTIMISTIC UPDATE: Update UI immediately
-      if (shouldDelete) {
-        console.log(`⚡ ${mapConfig.name}: Optimistically removing visit for:`, neighborhood);
-        setVisits(prevVisits => prevVisits.filter(v => v._id !== existingVisit._id));
-      } else {
-        console.log(`⚡ ${mapConfig.name}: Optimistically adding visit for:`, neighborhood);
-        const optimisticVisit = {
-          _id: `temp-${Date.now()}`, // Temporary ID
-          userId: user.id,
-          visitType: 'neighborhood' as const,
-          neighborhoodId: neighborhood_obj?.id || neighborhood,
-          visited: true,
-          notes: '',
-          visitDate: new Date().toISOString(),
-          rating: null,
-          category: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        setVisits(prevVisits => [...prevVisits, optimisticVisit]);
-      }
+      // Step 1: OPTIMISTIC UPDATE - Update UI immediately
+      await applyOptimisticUpdate(!!shouldDelete, existingVisit, neighborhoodObj, neighborhood, category);
       
-      // BACKGROUND SYNC: Sync with server
-      if (shouldDelete) {
-        await visitsApi.deleteVisit(existingVisit._id);
-        console.log(`✅ ${mapConfig.name}: Visit deleted successfully on server`);
-      } else {
-        const visitData = {
-          neighborhoodName: neighborhood,
-          boroughName: category,
-          visited: true,
-          notes: '',
-          visitDate: new Date(),
-          rating: null,
-          category: null
-        };
-        
-        const newVisit = await visitsApi.createNeighborhoodVisit(visitData);
-        console.log(`✅ ${mapConfig.name}: Visit created successfully on server:`, newVisit);
-        
-        // Replace optimistic visit with real visit data
-        setVisits(prevVisits => 
-          prevVisits.map(v => 
-            v._id.startsWith('temp-') && 
-            (v.neighborhoodId === neighborhood_obj?.id || v.neighborhoodId === neighborhood)
-              ? newVisit 
-              : v
-          )
-        );
-      }
+      // Step 2: BACKGROUND SYNC - Sync with server
+      await syncWithServer(!!shouldDelete, existingVisit, neighborhood, category, neighborhoodObj);
       
     } catch (error) {
       console.error(`❌ ${mapConfig.name}: Failed to sync quick visit with server:`, error);
-      
-      // ROLLBACK: Revert optimistic update on error
-      console.log(`🔄 ${mapConfig.name}: Rolling back optimistic update due to error`);
-      await fetchVisits(); // Refresh from server to get correct state
+      await rollbackOptimisticUpdate();
     }
   };
 
+  /**
+   * Handle dialog close
+   */
   const handleCloseDialog = () => {
     console.log(`❌ ${mapConfig.name}: Dialog closed`);
     setSelectedNeighborhood(null);
   };
 
-  const handleSaveVisit = () => {
-    console.log(`💾 ${mapConfig.name}: Visit saved, refetching visits`);
-    fetchVisits();
+  /**
+   * Handle visit save from dialog
+   * Uses optimistic update when visit data is provided
+   */
+  const handleSaveVisit = async (updatedVisit?: Visit) => {
+    console.log(`💾 ${mapConfig.name}: Visit saved, optimistically updating local state`);
+    
+    if (updatedVisit) {
+      setVisits(prevVisits => 
+        prevVisits.map(v => 
+          v._id === updatedVisit._id ? updatedVisit : v
+        )
+      );
+    } else {
+      console.log(`🔄 ${mapConfig.name}: No visit data provided, refetching from server`);
+      await fetchVisits();
+    }
   };
 
-  const visitedNeighborhoodIds = new Set(visits.filter(v => v.visited && v.neighborhoodId).map(v => v.neighborhoodId!));
+  // ============================================================================
+  // DATA PROCESSING FOR MAP RENDERING
+  // ============================================================================
+  
+  /**
+   * Extract visited neighborhood IDs from visits
+   * Only includes visits that are marked as visited and have a neighborhoodId
+   */
+  const visitedNeighborhoodIds = new Set(
+    visits
+      .filter(v => v.visited && v.neighborhoodId)
+      .map(v => v.neighborhoodId!)
+  );
   console.log(`🏠 ${mapConfig.name}: Visited neighborhood IDs:`, visitedNeighborhoodIds.size, Array.from(visitedNeighborhoodIds));
 
-  // Create a set of visited neighborhood names for the map using cache for fast lookups
+  /**
+   * Convert visited neighborhood IDs to names for map rendering
+   * The map component works with neighborhood names, not database IDs
+   */
+  const visitedNeighborhoodNames = new Set<string>();
   console.log(`🔄 ${mapConfig.name}: Creating visited neighborhood names mapping using cache...`);
   
-  const visitedNeighborhoodNames = new Set<string>();
-  
-  // For visits with neighborhoodId, use cache lookup
   for (const neighborhoodId of visitedNeighborhoodIds) {
     const cachedNeighborhood = neighborhoodCache.getNeighborhoodById(neighborhoodId);
     if (cachedNeighborhood) {
       visitedNeighborhoodNames.add(cachedNeighborhood.name);
     }
   }
-
-
   console.log(`🏠 ${mapConfig.name}: Final visited neighborhood names for map:`, visitedNeighborhoodNames.size, Array.from(visitedNeighborhoodNames));
 
+  /**
+   * Create category ID to name mapping for neighborhood lookup
+   * Used to match neighborhood clicks to the correct category
+   */
   const categoryIdToName = new Map<string, string>();
-
   for (const borough of boroughs) {
     categoryIdToName.set(borough.id, borough.name);
   }
   
   console.log(`🏘️ ${mapConfig.name}: ${mapConfig.categoryType} mapping complete:`, categoryIdToName.size, `${mapConfig.categoryType}s loaded`);
-  console.log(`🏘️ ${mapConfig.name}: categoryIdToName contents:`, Array.from(categoryIdToName.entries()));
-  console.log(`🏘️ ${mapConfig.name}: neighborhoods sample:`, neighborhoods.slice(0, 5).map(n => ({name: n.name, boroughId: n.boroughId, boroughName: n.boroughName})));
 
+  // ============================================================================
+  // LOADING AND ERROR STATES
+  // ============================================================================
+  
   if (loading) {
     return (
       <Box className="flex justify-center items-center h-full">
@@ -362,8 +496,10 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     );
   }
 
-  // Use GenericMap with configuration from mapConfig
-
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+  
   return (
     <Box className="flex-1 flex">
       {/* Left Sidebar - Stats and Neighborhood List */}

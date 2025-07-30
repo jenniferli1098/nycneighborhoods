@@ -13,28 +13,51 @@ import CountryDialog from '../components/CountryDialog';
 import CountryStatsCard from '../components/CountryStatsCard';
 import MapLegend from '../components/MapLegend';
 
+/**
+ * CountriesPage - Main page for country tracking and world map interaction
+ * Features optimistic updates for fast user interactions
+ * Uses country IDs throughout (unlike neighborhoods which use names)
+ */
 const CountriesPage: React.FC = () => {
+  // Authentication context
   const { user } = useAuth();
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [geoJsonCountries, setGeoJsonCountries] = useState<any[]>([]);
-  const [continents, setContinents] = useState<string[]>([]);
-  const [visits, setVisits] = useState<Visit[]>([]);
+  
+  // Data state
+  const [countries, setCountries] = useState<Country[]>([]); // Database countries
+  const [geoJsonCountries, setGeoJsonCountries] = useState<any[]>([]); // GeoJSON for map rendering
+  const [continents, setContinents] = useState<string[]>([]); // List of continents
+  const [visits, setVisits] = useState<Visit[]>([]); // User visit data (optimistically updated)
+  
+  // UI state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
 
+  // ============================================================================
+  // DATA LOADING EFFECTS
+  // ============================================================================
+  
+  // Load all static data on component mount
   useEffect(() => {
     loadCountries();
     loadContinents();
     loadGeoJsonCountries();
   }, []);
 
+  // Load user visits when authentication state changes
   useEffect(() => {
     if (user) {
       fetchCountryVisits();
     }
   }, [user]);
 
+  // ============================================================================
+  // DATA LOADING FUNCTIONS
+  // ============================================================================
+  
+  /**
+   * Load country data from API
+   */
   const loadCountries = async () => {
     try {
       console.log('📡 CountriesPage: Loading countries from API');
@@ -49,6 +72,9 @@ const CountriesPage: React.FC = () => {
     }
   };
 
+  /**
+   * Load continent list for statistics
+   */
   const loadContinents = async () => {
     try {
       console.log('📡 CountriesPage: Loading continents from API');
@@ -60,6 +86,9 @@ const CountriesPage: React.FC = () => {
     }
   };
 
+  /**
+   * Load GeoJSON data for world map rendering
+   */
   const loadGeoJsonCountries = async () => {
     try {
       console.log('📡 CountriesPage: Loading GeoJSON countries for map');
@@ -71,6 +100,10 @@ const CountriesPage: React.FC = () => {
     }
   };
 
+  /**
+   * Fetch user's country visits from server
+   * Uses optimized getVisitsByType to only fetch country visits
+   */
   const fetchCountryVisits = async () => {
     try {
       console.log('📡 CountriesPage: Fetching country visits from API');
@@ -84,10 +117,22 @@ const CountriesPage: React.FC = () => {
 
 
 
+  // ============================================================================
+  // DATA PROCESSING FUNCTIONS
+  // ============================================================================
+  
+  /**
+   * Get set of visited country IDs
+   * Countries use IDs directly (unlike neighborhoods which convert to names)
+   */
   const getVisitedCountryIds = () => {
     return new Set(visits.filter(v => v.visited && v.countryId).map(v => v.countryId!));
   };
 
+  /**
+   * Calculate country visit statistics
+   * Groups visits by continent for stats display
+   */
   const getCountryStats = () => {
     const visitedIds = getVisitedCountryIds();
     const visitedByContinent: Record<string, number> = {};
@@ -106,31 +151,59 @@ const CountriesPage: React.FC = () => {
     };
   };
 
+  // ============================================================================
+  // USER INTERACTION HANDLERS
+  // ============================================================================
+  
+  /**
+   * Handle country click (right-click for dialog)
+   */
   const handleCountryClick = (country: Country) => {
     console.log('🖱️ CountriesPage: Country clicked (right-click for dialog):', country.name);
     setSelectedCountry(country);
   };
-
-  const handleCountryQuickVisit = async (country: Country) => {
-    console.log('⚡ CountriesPage: Quick visit (left-click) for:', country.name);
-    
-    try {
-      // Check if visit already exists
-      const existingVisit = visits.find(v => v.countryId === country._id);
-      
-      if (existingVisit) {
-        // Check if visit has user data (notes, rating, category) - if not, toggle to unvisited
-        if (!existingVisit.notes && !existingVisit.rating && !existingVisit.category) {
-          console.log('⚡ CountriesPage: Toggling visit to unvisited (no user data):', existingVisit);
-          await visitsApi.deleteVisit(existingVisit._id);
-          await fetchCountryVisits();
-          return;
-        }
-        console.log('⚡ CountriesPage: Visit already exists with user data, skipping to prevent data loss:', existingVisit);
-        return;
-      }
-
-      // Only create new visit if none exists
+  
+  /**
+   * Check if visit has user-entered data (notes, rating, category)
+   */
+  const hasUserData = (visit: Visit): boolean => {
+    return !!(visit.notes || visit.rating || visit.category);
+  };
+  
+  /**
+   * Apply optimistic update to local state
+   */
+  const applyOptimisticUpdate = (shouldDelete: boolean, existingVisit: Visit | undefined, country: Country) => {
+    if (shouldDelete && existingVisit) {
+      console.log('⚡ CountriesPage: Optimistically removing visit for:', country.name);
+      setVisits(prevVisits => prevVisits.filter(v => v._id !== existingVisit._id));
+    } else {
+      console.log('⚡ CountriesPage: Optimistically adding visit for:', country.name);
+      const optimisticVisit: Visit = {
+        _id: `temp-${Date.now()}`,
+        userId: user?.id || '',
+        visitType: 'country',
+        countryId: country._id,
+        visited: true,
+        notes: '',
+        visitDate: new Date().toISOString(),
+        rating: null,
+        category: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setVisits(prevVisits => [...prevVisits, optimisticVisit]);
+    }
+  };
+  
+  /**
+   * Sync changes with server
+   */
+  const syncWithServer = async (shouldDelete: boolean, existingVisit: Visit | undefined, country: Country) => {
+    if (shouldDelete && existingVisit) {
+      await visitsApi.deleteVisit(existingVisit._id);
+      console.log('✅ CountriesPage: Visit deleted successfully on server');
+    } else {
       const visitData = {
         countryName: country.name,
         visited: true,
@@ -140,33 +213,94 @@ const CountriesPage: React.FC = () => {
         category: null
       };
       
-      console.log('📤 CountriesPage: Creating quick visit for:', country.name);
       const newVisit = await visitsApi.createCountryVisit(visitData);
-      console.log('✅ CountriesPage: Quick visit created successfully:', newVisit);
+      console.log('✅ CountriesPage: Visit created successfully on server:', newVisit);
       
-      // Refresh visits data
-      console.log('🔄 CountriesPage: Refreshing visits data after quick visit...');
-      await fetchCountryVisits();
-      console.log('🔄 CountriesPage: Data refresh complete');
+      // Replace optimistic visit with real server data
+      setVisits(prevVisits => 
+        prevVisits.map(v => 
+          v._id.startsWith('temp-') && v.countryId === country._id
+            ? newVisit 
+            : v
+        )
+      );
+    }
+  };
+  
+  /**
+   * Handle quick country visit (left-click or tap)
+   * Uses optimistic updates for instant UI feedback
+   * Supports both create and delete operations
+   */
+  const handleCountryQuickVisit = async (country: Country) => {
+    console.log('⚡ CountriesPage: Quick visit (left-click) for:', country.name);
+    
+    // Find existing visit
+    const existingVisit = visits.find(v => v.countryId === country._id);
+    
+    // Determine what action to take
+    const shouldDelete = existingVisit && !hasUserData(existingVisit);
+    const shouldSkip = existingVisit && !shouldDelete;
+    
+    if (shouldSkip) {
+      console.log('⚡ CountriesPage: Visit already exists with user data, skipping to prevent data loss:', existingVisit);
+      return;
+    }
+    
+    try {
+      // Step 1: OPTIMISTIC UPDATE - Update UI immediately
+      applyOptimisticUpdate(!!shouldDelete, existingVisit, country);
+      
+      // Step 2: BACKGROUND SYNC - Sync with server
+      await syncWithServer(!!shouldDelete, existingVisit, country);
       
     } catch (error) {
-      console.error('❌ CountriesPage: Failed to create quick visit:', error);
+      console.error('❌ CountriesPage: Failed to sync quick visit with server:', error);
+      
+      // ROLLBACK: Revert optimistic update on error
+      console.log('🔄 CountriesPage: Rolling back optimistic update due to error');
+      await fetchCountryVisits();
     }
   };
 
+  /**
+   * Handle dialog close
+   */
   const handleCloseDialog = () => {
     console.log('❌ CountriesPage: Dialog closed');
     setSelectedCountry(null);
   };
 
-  const handleSaveVisit = () => {
-    console.log('💾 CountriesPage: Visit saved, refetching visits');
-    fetchCountryVisits();
+  /**
+   * Handle visit save from dialog
+   * Uses optimistic update when visit data is provided
+   */
+  const handleSaveVisit = async (updatedVisit?: Visit) => {
+    console.log('💾 CountriesPage: Visit saved, optimistically updating local state');
+    
+    if (updatedVisit) {
+      setVisits(prevVisits => 
+        prevVisits.map(v => 
+          v._id === updatedVisit._id ? updatedVisit : v
+        )
+      );
+    } else {
+      console.log('🔄 CountriesPage: No visit data provided, refetching from server');
+      await fetchCountryVisits();
+    }
   };
 
+  // ============================================================================
+  // DATA FOR RENDERING
+  // ============================================================================
+  
   const stats = getCountryStats();
   const visitedCountryIds = getVisitedCountryIds();
 
+  // ============================================================================
+  // LOADING AND ERROR STATES
+  // ============================================================================
+  
   if (loading) {
     return (
       <Box className="flex justify-center items-center h-full">
@@ -183,9 +317,13 @@ const CountriesPage: React.FC = () => {
     );
   }
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+  
   return (
     <Box className="flex-1 flex">
-      {/* Left Sidebar - Stats and Filters */}
+      {/* Left Sidebar - Stats and country information */}
       <Box className="w-80 border-r bg-white" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ p: 2, flexShrink: 0 }}>
           <CountryStatsCard 
