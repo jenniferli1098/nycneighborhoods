@@ -237,8 +237,8 @@ const UserDashboard: React.FC = () => {
               cityIds: [],
               boroughIds: [],
               coordinates: {
-                longitude: config.center[1],
-                latitude: config.center[0]
+                longitude: config.coordinates.longitude,
+                latitude: config.coordinates.latitude
               },
               zoom: config.zoom,
               createdAt: new Date().toISOString(),

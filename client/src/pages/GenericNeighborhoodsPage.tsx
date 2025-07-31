@@ -577,7 +577,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           onNeighborhoodQuickVisit={handleQuickVisit}
           isAuthenticated={!!user}
           mapConfig={{
-            center: mapConfig.center || [40.8, -73.9],
+            center: [mapConfig.coordinates.latitude, mapConfig.coordinates.longitude],
             zoom: mapConfig.zoom || 11,
             categoryType: mapConfig.categoryType
           }}

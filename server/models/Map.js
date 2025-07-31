@@ -7,6 +7,14 @@ const mapSchema = new mongoose.Schema({
     trim: true,
     unique: true
   },
+  slug: {
+    type: String,
+    required: true,
+    trim: true,
+    unique: true,
+    lowercase: true,
+    index: true
+  },
   description: {
     type: String,
     trim: true
@@ -37,7 +45,7 @@ const mapSchema = new mongoose.Schema({
       required: true,
       min: -90,
       max: 90
-    }
+    },
   },
   // Additional map configuration
   zoom: {
@@ -51,7 +59,6 @@ const mapSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-mapSchema.index({ categoryType: 1 });
 mapSchema.index({ 'coordinates.longitude': 1, 'coordinates.latitude': 1 });
 
 // Virtual for getting center coordinates as array (useful for map libraries)
@@ -134,6 +141,11 @@ mapSchema.methods.getMapStats = async function() {
 // Static method to find maps by category type
 mapSchema.statics.findByCategoryType = function(categoryType) {
   return this.find({ categoryType});
+};
+
+// Static method to find map by slug
+mapSchema.statics.findBySlug = function(slug) {
+  return this.findOne({ slug: slug.toLowerCase() });
 };
 
 // Static method to find maps containing a specific city
