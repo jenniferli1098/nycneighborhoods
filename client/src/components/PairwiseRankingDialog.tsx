@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../config/api';
+import { visitsApi, type Visit } from '../services/visitsApi';
 import { SimplePairwiseRanking } from '../services/SimplePairwiseRanking';
 import {
   Dialog,
@@ -64,12 +64,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'Good' | 'Mid' | 'Bad' | null>(null);
   const [ranking, setRanking] = useState<SimplePairwiseRanking | null>(null);
   const [currentComparison, setCurrentComparison] = useState<{ 
-    compareVisit: { 
-      neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } }; 
-      countryId?: { name: string; continent: string };
-      rating: number;
-      category: string;
-    }; 
+    compareVisit: Visit; 
     progress: { current: number; total: number } 
   } | null>(null);
   const [finalResult, setFinalResult] = useState<{ rating: number; category: string; insertionPosition: number; totalVisits: number } | null>(null);
@@ -84,18 +79,10 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
 
     try {
       // Fetch existing visits in this category
-      const response = await api.get(`/api/visits`);
-      const allVisits = response.data;
+      const allVisits = await visitsApi.getAllVisits();
       
       // Filter visits for this category and type
-      const relevantVisits = allVisits.filter((visit: { 
-        visitType: string; 
-        category: string; 
-        rating: number; 
-        _id: string;
-        neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } };
-        countryId?: { name: string; continent: string };
-      }) => 
+      const relevantVisits = allVisits.filter((visit) => 
         visit.visitType === visitType &&
         visit.category === category &&
         visit.rating != null &&
@@ -149,7 +136,6 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     setError(null);
 
     try {
-      // Save the visit with the calculated rating
       const visitData = {
         visitType,
         ...locationData,
@@ -157,7 +143,32 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
         category: selectedCategory
       };
 
-      await api.post('/api/visits', visitData);
+      if (existingRating?.visitId) {
+        // Update existing visit when reranking
+        await visitsApi.updateVisit(existingRating.visitId, visitData);
+      } else {
+        // Create new visit when ranking for first time
+        if (visitType === 'neighborhood') {
+          await visitsApi.createNeighborhoodVisit({
+            neighborhoodName: locationData.neighborhoodName!,
+            boroughName: locationData.boroughName!,
+            visited: locationData.visited || true,
+            notes: locationData.notes,
+            visitDate: locationData.visitDate ? new Date(locationData.visitDate) : undefined,
+            rating: finalResult.rating,
+            category: selectedCategory
+          });
+        } else {
+          await visitsApi.createCountryVisit({
+            countryName: locationData.countryName!,
+            visited: locationData.visited || true,
+            notes: locationData.notes,
+            visitDate: locationData.visitDate ? new Date(locationData.visitDate) : undefined,
+            rating: finalResult.rating,
+            category: selectedCategory
+          });
+        }
+      }
 
       onRankingComplete(selectedCategory, finalResult.rating);
       onClose();
@@ -179,18 +190,30 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     onClose();
   };
 
-  const getLocationName = (visit: { neighborhoodId?: { name: string }; countryId?: { name: string } }) => {
-    if (visit.neighborhoodId?.name) return visit.neighborhoodId.name;
-    if (visit.countryId?.name) return visit.countryId.name;
+  const getLocationName = (visit: Visit) => {
+    // Handle populated neighborhoodId (object) vs string ID
+    if (visit.neighborhoodId && typeof visit.neighborhoodId === 'object' && 'name' in visit.neighborhoodId) {
+      return (visit.neighborhoodId as any).name;
+    }
+    // Handle populated countryId (object) vs string ID  
+    if (visit.countryId && typeof visit.countryId === 'object' && 'name' in visit.countryId) {
+      return (visit.countryId as any).name;
+    }
     return 'Unknown Location';
   };
 
-  const getLocationDetails = (visit: { neighborhoodId?: { boroughId?: { name: string }; cityId?: { name: string } }; countryId?: { continent: string } }) => {
-    if (visit.neighborhoodId) {
-      return visit.neighborhoodId.boroughId?.name || visit.neighborhoodId.cityId?.name || 'Unknown Area';
+  const getLocationDetails = (visit: Visit) => {
+    // Handle populated neighborhoodId (object)
+    if (visit.neighborhoodId && typeof visit.neighborhoodId === 'object') {
+      const neighborhood = visit.neighborhoodId as any;
+      const borough = neighborhood.boroughId?.name;
+      const city = neighborhood.cityId?.name;
+      return borough || city || 'Unknown Area';
     }
-    if (visit.countryId) {
-      return visit.countryId.continent || 'Unknown Continent';
+    // Handle populated countryId (object)
+    if (visit.countryId && typeof visit.countryId === 'object') {
+      const country = visit.countryId as any;
+      return country.continent || 'Unknown Continent';
     }
     return 'Unknown';
   };
@@ -395,10 +418,10 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
                       {getLocationDetails(currentComparison.compareVisit)}
                     </Typography>
                     <Chip 
-                      label={`${currentComparison.compareVisit.rating.toFixed(1)} • ${currentComparison.compareVisit.category}`}
+                      label={`${(currentComparison.compareVisit.rating || 0).toFixed(1)} • ${currentComparison.compareVisit.category || 'Unknown'}`}
                       sx={{
-                        backgroundColor: getCategoryBg(currentComparison.compareVisit.category),
-                        color: getCategoryColor(currentComparison.compareVisit.category)
+                        backgroundColor: getCategoryBg(currentComparison.compareVisit.category || 'Unknown'),
+                        color: getCategoryColor(currentComparison.compareVisit.category || 'Unknown')
                       }}
                       size="small"
                     />

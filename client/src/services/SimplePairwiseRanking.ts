@@ -1,11 +1,4 @@
-interface Visit {
-  _id: string;
-  rating: number;
-  category: 'Good' | 'Mid' | 'Bad';
-  neighborhoodId?: { name: string; boroughId?: { name: string }; cityId?: { name: string } };
-  countryId?: { name: string; continent: string };
-  notes?: string;
-}
+import { type Visit } from './visitsApi';
 
 interface ComparisonState {
   visits: Visit[];
@@ -21,8 +14,11 @@ export class SimplePairwiseRanking {
   private category: 'Good' | 'Mid' | 'Bad';
 
   constructor(visits: Visit[], category: 'Good' | 'Mid' | 'Bad') {
-    // Sort visits by rating (highest first)
-    const sortedVisits = visits.sort((a, b) => b.rating - a.rating);
+    // Filter out visits with null ratings and sort by rating (highest first)
+    const validVisits = visits.filter((v): v is Visit & { rating: number; category: 'Good' | 'Mid' | 'Bad' } => 
+      v.rating !== null && v.category !== null
+    );
+    const sortedVisits = validVisits.sort((a, b) => b.rating - a.rating);
     
     this.category = category;
     this.state = {
@@ -108,19 +104,19 @@ export class SimplePairwiseRanking {
 
     if (insertionPosition === 0) {
       // Better than all existing items
-      const bestRating = visits[0].rating;
+      const bestRating = visits[0].rating!;
       return Math.min(bestRating + 0.5, bounds.max);
     }
 
     if (insertionPosition >= visits.length) {
       // Worse than all existing items
-      const worstRating = visits[visits.length - 1].rating;
+      const worstRating = visits[visits.length - 1].rating!;
       return Math.max(worstRating - 0.5, bounds.min);
     }
 
     // Between two items
-    const upperRating = visits[insertionPosition - 1].rating;
-    const lowerRating = visits[insertionPosition].rating;
+    const upperRating = visits[insertionPosition - 1].rating!;
+    const lowerRating = visits[insertionPosition].rating!;
     
     return (upperRating + lowerRating) / 2;
   }
