@@ -14,8 +14,7 @@ import { visitsApi, type Visit } from '../services/visitsApi';
 import { countriesApi, type Country } from '../services/countriesApi';
 import { mapsApi, type Map } from '../services/mapsApi';
 import StatsCard from '../components/StatsCard';
-import { neighborhoodCache, type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
-import { mapConfigs, type MapConfig } from '../config/mapConfigs'; // Fallback only
+import { type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
 
 interface UserStats {
   totalVisits: number;
@@ -51,24 +50,17 @@ const UserDashboard: React.FC = () => {
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [mapAreas, setMapAreas] = useState<{ [key: string]: MapAreaData }>({});
 
-  /**
-   * Convert database Map to city filter for neighborhood cache
-   */
-  const getCityFilterFromMap = (map: Map): string | undefined => {
-    // For now, maintain compatibility with existing logic
-    if (map.name === 'New York') return 'NYC';
-    if (map.name === 'Boston Greater Area') return 'Boston';
-    // For future maps, we could use map.cityIds to determine the primary city
-    return undefined;
-  };
 
   /**
    * Load neighborhoods for a specific map using Maps API
    */
   const loadMapNeighborhoods = useCallback(async (map: Map): Promise<CachedNeighborhood[]> => {
     try {
-      // First try the map-specific API endpoint
+      // First try the map-specific API endpoint - this should be the primary method
+      console.log(`📝 UserDashboard: Loading neighborhoods for ${map.name} via Maps API`);
       const neighborhoods = await mapsApi.getMapNeighborhoods(map._id);
+      console.log(`📝 UserDashboard: Maps API returned ${neighborhoods.length} neighborhoods for ${map.name}`);
+      
       // Convert to CachedNeighborhood format
       return neighborhoods.map(n => ({
         id: n._id,
@@ -81,12 +73,11 @@ const UserDashboard: React.FC = () => {
         city: n.city?.name || 'Unknown'
       }));
     } catch (err) {
-      console.log(`📝 UserDashboard: Map API failed for ${map.name}, falling back to cache`, err);
-      // Fallback to existing cache method
-      const cityFilter = getCityFilterFromMap(map);
-      return cityFilter ? 
-        await neighborhoodCache.getNeighborhoods(cityFilter) : 
-        await neighborhoodCache.getNeighborhoods();
+      console.error(`❌ UserDashboard: Map API failed for ${map.name}, this indicates a data loading issue:`, err);
+      
+      // Return empty array when Maps API fails
+      console.warn(`⚠️ UserDashboard: Returning empty neighborhoods for ${map.name} due to API failure`);
+      return [];
     }
   }, []);
 
@@ -116,23 +107,11 @@ const UserDashboard: React.FC = () => {
         } as CachedBorough)); // Map to borough-compatible structure
       }
     } catch (err) {
-      console.log(`📝 UserDashboard: Map API failed for ${map.name}, falling back to cache`, err);
-      // Fallback to existing cache method
-      const cityFilter = getCityFilterFromMap(map);
-      if (map.categoryType === 'borough') {
-        return cityFilter ? 
-          await neighborhoodCache.getBoroughs(cityFilter) : 
-          await neighborhoodCache.getBoroughs();
-      } else {
-        // For city-based maps, load cities but map to borough-compatible structure
-        const cities = await neighborhoodCache.getCities('Massachusetts');
-        return cities.map(city => ({
-          id: city.id,
-          name: city.name,
-          cityId: city.id,
-          city: city.name
-        } as CachedBorough));
-      }
+      console.error(`❌ UserDashboard: Map categories API failed for ${map.name}, this indicates a data loading issue:`, err);
+      
+      // Return empty array when Maps API fails
+      console.warn(`⚠️ UserDashboard: Returning empty categories for ${map.name} due to API failure`);
+      return [];
     }
   }, []);
 
@@ -196,68 +175,7 @@ const UserDashboard: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error(`❌ UserDashboard: Failed to load maps from API, falling back to static configs:`, error);
-        
-        // Fallback to hardcoded configurations if Maps API fails
-        for (const [mapName, config] of Object.entries(mapConfigs)) {
-        
-
-          try {
-            const city = getCityFromMapConfig(config);
-            console.log(`📝 UserDashboard: Loading fallback data for ${mapName} (city: ${city})`);
-            
-            // Fetch neighborhoods for this area
-            const neighborhoods = city ? 
-              await neighborhoodCache.getNeighborhoods(city) : 
-              await neighborhoodCache.getNeighborhoods();
-            
-            // Fetch categories (boroughs or cities) for this area
-            let categories: (CachedBorough | CachedCity)[] = [];
-            if (config.categoryType === 'borough') {
-              categories = city ? 
-                await neighborhoodCache.getBoroughs(city) : 
-                await neighborhoodCache.getBoroughs();
-            } else if (config.categoryType === 'city') {
-              // For city-based maps, load cities but map them to borough-compatible structure
-              console.log(`📝 UserDashboard: Loading cities for city-based categorization`);
-              const cities = await neighborhoodCache.getCities('Massachusetts');
-              categories = cities.map(city => ({
-                id: city.id,
-                name: city.name,
-                cityId: city.id,
-                city: city.name // Required field for CachedBorough compatibility
-              } as CachedBorough));
-            }
-            
-            // Create mock map object for compatibility
-            const mockMap: Map = {
-              _id: `fallback-${mapName}`,
-              name: config.name,
-              categoryType: config.categoryType,
-              cityIds: [],
-              boroughIds: [],
-              coordinates: {
-                longitude: config.coordinates.longitude,
-                latitude: config.coordinates.latitude
-              },
-              zoom: config.zoom,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-            
-            areasData[mapName] = {
-              map: mockMap,
-              neighborhoods,
-              categories,
-              isLoaded: true
-            };
-            
-            console.log(`📝 UserDashboard: ${mapName} fallback - neighborhoods: ${neighborhoods.length}, categories: ${categories.length}`);
-            
-          } catch (fallbackError) {
-            console.error(`❌ UserDashboard: ${mapName} fallback data loading failed:`, fallbackError);
-          }
-        }
+        console.error(`❌ UserDashboard: Failed to load maps from API:`, error);
       }
       
       setMapAreas(areasData);
@@ -341,10 +259,6 @@ const UserDashboard: React.FC = () => {
     };
   };
 
-  // Helper function for fallback compatibility with static configs
-  const getCityFromMapConfig = (config: MapConfig): string | undefined => {
-    return config.apiFilters?.city;
-  };
 
   const formatVisitName = (visit: Visit, countries: Country[] = []) => {
     if (visit.visitType === 'neighborhood') {

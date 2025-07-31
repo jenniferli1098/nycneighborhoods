@@ -119,7 +119,7 @@ class NeighborhoodCache {
           name: borough.name,
           cityId: borough.cityId,
           cityName: cityInfo?.name,
-          city: cityInfo?.name || 'NYC'
+          city: cityInfo?.name || 'Unknown'
         });
       });
 
@@ -147,7 +147,7 @@ class NeighborhoodCache {
             boroughId: neighborhood.boroughId,
             boroughName: borough?.name || 'Unknown',
             categoryType: 'borough',
-            city: city?.name || 'NYC'
+            city: city?.name || 'Unknown'
           };
         } else if (neighborhood.categoryType === 'city' && neighborhood.cityId) {
           // City-based neighborhood (Boston, etc.)
@@ -235,7 +235,7 @@ class NeighborhoodCache {
           name: borough.name,
           cityId: borough.cityId,
           cityName: city?.name,
-          city: city?.name || 'NYC'
+          city: city?.name || 'Unknown'
         };
         
         // Update borough ID map

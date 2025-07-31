@@ -102,8 +102,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       console.log(`📡 ${mapConfig.name}: Loading neighborhoods from cache`);
       let neighborhoods: CachedNeighborhood[] = [];
       
-        const cityFilter = mapConfig.apiFilters?.city;
-        neighborhoods = await neighborhoodCache.getNeighborhoods(cityFilter);
+        // Load all neighborhoods since we no longer use static city filters
+        neighborhoods = await neighborhoodCache.getNeighborhoods();
       
       console.log(`📝 ${mapConfig.name}: Received neighborhoods data:`, neighborhoods.length, 'neighborhoods');
       setNeighborhoods(neighborhoods);
@@ -138,8 +138,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       
       if (mapConfig.categoryType === 'borough') {
         // Load boroughs from cache
-        const cityFilter = mapConfig.apiFilters?.city;
-        boroughs = await neighborhoodCache.getBoroughs(cityFilter);
+        // Load all boroughs since we no longer use static city filters
+        boroughs = await neighborhoodCache.getBoroughs();
       } else if (mapConfig.categoryType === 'city') {
         // For city-based maps, load cities but put them in boroughs array for compatibility
         console.log(`📝 ${mapConfig.name}: Loading cities for city-based categorization`);
