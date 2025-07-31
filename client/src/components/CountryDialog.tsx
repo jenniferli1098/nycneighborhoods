@@ -51,7 +51,15 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
       const visits = await visitsApi.getAllVisits();
       
       const existingVisit = visits.find(
-        (v: Visit) => v.countryId === country._id
+        (v: Visit) => {
+          // Handle both populated (object) and non-populated (string) countryId
+          if (typeof v.countryId === 'string') {
+            return v.countryId === country._id;
+          } else if (v.countryId && typeof v.countryId === 'object') {
+            return (v.countryId as any)._id === country._id;
+          }
+          return false;
+        }
       );
       
       if (existingVisit) {

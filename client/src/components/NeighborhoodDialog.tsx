@@ -53,10 +53,31 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   const fetchVisit = async () => {
     try {
       const visits = await visitsApi.getAllVisits();
+      console.log(`🔍 NeighborhoodDialog: Looking for existing visit with neighborhoodId: ${neighborhoodId}`);
+      console.log(`📋 NeighborhoodDialog: Found ${visits.length} total visits`);
+      console.log(`📋 NeighborhoodDialog: Sample visit neighborhoodId types:`, visits.slice(0, 3).map(v => ({
+        id: typeof v.neighborhoodId === 'object' ? (v.neighborhoodId as any)?._id : v.neighborhoodId,
+        type: typeof v.neighborhoodId,
+        isObject: typeof v.neighborhoodId === 'object'
+      })));
       
       const existingVisit = visits.find(
-        (v: any) => v.neighborhoodId === neighborhoodId
+        (v: any) => {
+          // Handle both populated (object) and non-populated (string) neighborhoodId
+          if (typeof v.neighborhoodId === 'string') {
+            return v.neighborhoodId === neighborhoodId;
+          } else if (v.neighborhoodId && typeof v.neighborhoodId === 'object') {
+            return (v.neighborhoodId as any)._id === neighborhoodId;
+          }
+          return false;
+        }
       );
+      
+      if (existingVisit) {
+        console.log(`✅ NeighborhoodDialog: Found existing visit:`, existingVisit);
+      } else {
+        console.log(`❌ NeighborhoodDialog: No existing visit found for neighborhoodId: ${neighborhoodId}`);
+      }
       
       if (existingVisit) {
         const updatedVisit = {
