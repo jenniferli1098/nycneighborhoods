@@ -38,6 +38,25 @@ router.get('/category/:categoryType', async (req, res) => {
   }
 });
 
+// Get a specific map by slug
+router.get('/slug/:slug', async (req, res) => {
+  try {
+    console.log('📡 GET /maps/slug/:slug: Fetching map with slug:', req.params.slug);
+    const map = await Map.findBySlug(req.params.slug);
+    
+    if (!map) {
+      console.error('❌ GET /maps/slug/:slug: Map not found for slug:', req.params.slug);
+      return res.status(404).json({ error: 'Map not found' });
+    }
+    
+    console.log('✅ GET /maps/slug/:slug: Found map:', map.name);
+    res.json(map);
+  } catch (error) {
+    console.error('❌ GET /maps/slug/:slug: Error fetching map:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get a specific map by ID
 router.get('/:id', async (req, res) => {
   try {

@@ -6,6 +6,7 @@ import { type Borough } from './boroughsApi';
 export interface Map {
   _id: string;
   name: string;
+  slug: string;
   description?: string;
   categoryType: 'borough' | 'city';
   cityIds: string[];
@@ -44,6 +45,12 @@ export const mapsApi = {
   // Get a specific map by ID
   getMapById: async (id: string): Promise<Map> => {
     const response = await api.get(`/api/maps/${id}`);
+    return response.data;
+  },
+
+  // Get a specific map by slug
+  getMapBySlug: async (slug: string): Promise<Map> => {
+    const response = await api.get(`/api/maps/slug/${slug}`);
     return response.data;
   },
 

@@ -148,6 +148,11 @@ mapSchema.statics.findBySlug = function(slug) {
   return this.findOne({ slug: slug.toLowerCase() });
 };
 
+// Static method to find all active maps (all maps are active by default)
+mapSchema.statics.findActive = function() {
+  return this.find({});
+};
+
 // Static method to find maps containing a specific city
 mapSchema.statics.findByCity = function(cityId) {
   return this.find({ cityIds: cityId });
