@@ -27,11 +27,8 @@ export interface DistrictStats {
 
 export const districtsApi = {
   // Get all districts
-  getAllDistricts: async (params?: {
-    type?: 'borough' | 'city';
-    map?: string;
-  }): Promise<District[]> => {
-    const response = await api.get('/api/districts', { params });
+  getAllDistricts: async (): Promise<District[]> => {
+    const response = await api.get('/api/districts');
     return response.data;
   },
 
@@ -44,12 +41,6 @@ export const districtsApi = {
   // Get districts by map
   getDistrictsByMap: async (mapId: string): Promise<District[]> => {
     const response = await api.get(`/api/districts/map/${mapId}`);
-    return response.data;
-  },
-
-  // Get districts by type
-  getDistrictsByType: async (type: 'borough' | 'city'): Promise<District[]> => {
-    const response = await api.get(`/api/districts/type/${type}`);
     return response.data;
   },
 
