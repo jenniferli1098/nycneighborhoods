@@ -14,8 +14,8 @@ import type { District } from '../services/districtsApi';
 import type { CategoryType } from '../config/mapConfigs';
 
 // Extended Visit type for populated data
-interface PopulatedVisit extends Omit<Visit, 'neighborhoodId'> {
-  neighborhoodId?: string | { name: string; districtId?: string; [key: string]: any };
+interface PopulatedVisit extends Omit<Visit, 'neighborhood'> {
+  neighborhood?: string | { name: string; districtId?: string; [key: string]: any };
 }
 
 interface StatsCardProps {
@@ -33,11 +33,11 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
   
   // Filter visits to only include those for neighborhoods in the current context
   const relevantVisits = visits.filter(visit => {
-    if (!visit.neighborhoodId) return false;
-    // Handle both populated and non-populated neighborhoodId
-    const neighborhood = typeof visit.neighborhoodId === 'string' 
-      ? neighborhoodMap.get(visit.neighborhoodId)
-      : visit.neighborhoodId;
+    if (!visit.neighborhood) return false;
+    // Handle both populated and non-populated neighborhood
+    const neighborhood = typeof visit.neighborhood === 'string' 
+      ? neighborhoodMap.get(visit.neighborhood)
+      : visit.neighborhood;
     if (!neighborhood) return false;
     
     // Check if neighborhood belongs to current area's districts
@@ -59,12 +59,12 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
   const districtStats = new Map<string, { totalRating: number; count: number; name: string }>();
   
   relevantVisits
-    .filter(v => v.visited && v.rating != null && v.neighborhoodId)
+    .filter(v => v.visited && v.rating != null && v.neighborhood)
     .forEach(visit => {
-      // Handle both populated and non-populated neighborhoodId
-      const neighborhood = typeof visit.neighborhoodId === 'string' 
-        ? neighborhoodMap.get(visit.neighborhoodId)
-        : visit.neighborhoodId;
+      // Handle both populated and non-populated neighborhood
+      const neighborhood = typeof visit.neighborhood === 'string' 
+        ? neighborhoodMap.get(visit.neighborhood)
+        : visit.neighborhood;
       if (neighborhood) {
         // Use district ID
         const districtId = neighborhood.districtId;
@@ -91,13 +91,13 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
   });
 
   // Calculate top 3 neighborhoods
-  const ratedVisits = relevantVisits.filter(v => v.visited && v.rating != null && v.neighborhoodId);
+  const ratedVisits = relevantVisits.filter(v => v.visited && v.rating != null && v.neighborhood);
   const topNeighborhoods = ratedVisits
     .map(visit => {
-      // Handle both populated and non-populated neighborhoodId
-      const neighborhood = typeof visit.neighborhoodId === 'string' 
-        ? neighborhoodMap.get(visit.neighborhoodId)
-        : visit.neighborhoodId;
+      // Handle both populated and non-populated neighborhood
+      const neighborhood = typeof visit.neighborhood === 'string' 
+        ? neighborhoodMap.get(visit.neighborhood)
+        : visit.neighborhood;
       const districtId = neighborhood?.districtId;
       const districtName = districtId ? districtMap.get(districtId) : undefined;
       return {
