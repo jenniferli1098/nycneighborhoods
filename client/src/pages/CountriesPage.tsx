@@ -126,7 +126,7 @@ const CountriesPage: React.FC = () => {
    * Countries use IDs directly (unlike neighborhoods which convert to names)
    */
   const getVisitedCountryIds = () => {
-    return new Set(visits.filter(v => v.visited && v.countryId).map(v => v.countryId!));
+    return new Set(visits.filter(v => v.visited && v.country).map(v => v.country!));
   };
 
   /**
@@ -181,9 +181,9 @@ const CountriesPage: React.FC = () => {
       console.log('⚡ CountriesPage: Optimistically adding visit for:', country.name);
       const optimisticVisit: Visit = {
         _id: `temp-${Date.now()}`,
-        userId: user?.id || '',
+        user: user?.id || '',
         visitType: 'country',
-        countryId: country._id,
+        country: country._id,
         visited: true,
         notes: '',
         visitDate: new Date().toISOString(),
@@ -219,7 +219,7 @@ const CountriesPage: React.FC = () => {
       // Replace optimistic visit with real server data
       setVisits(prevVisits => 
         prevVisits.map(v => 
-          v._id.startsWith('temp-') && v.countryId === country._id
+          v._id.startsWith('temp-') && v.country === country._id
             ? newVisit 
             : v
         )
@@ -236,7 +236,7 @@ const CountriesPage: React.FC = () => {
     console.log('⚡ CountriesPage: Quick visit (left-click) for:', country.name);
     
     // Find existing visit
-    const existingVisit = visits.find(v => v.countryId === country._id);
+    const existingVisit = visits.find(v => v.country === country._id);
     
     // Determine what action to take
     const shouldDelete = existingVisit && !hasUserData(existingVisit);

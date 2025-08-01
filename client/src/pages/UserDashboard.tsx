@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { visitsApi, type Visit } from '../services/visitsApi';
 import { countriesApi, type Country } from '../services/countriesApi';
 import { mapsApi, type Map } from '../services/mapsApi';
+import { districtsApi } from '../services/districtsApi';
 import StatsCard from '../components/StatsCard';
 import { type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
 
@@ -65,12 +66,12 @@ const UserDashboard: React.FC = () => {
       return neighborhoods.map(n => ({
         id: n._id,
         name: n.name,
-        boroughId: n.boroughId,
-        boroughName: n.borough?.name || 'Unknown',
-        cityId: n.cityId,
-        cityName: n.city?.name || 'Unknown',
-        categoryType: map.categoryType,
-        city: n.city?.name || 'Unknown'
+        boroughId: n.district,
+        districtName: n.districtData?.name || 'Unknown',
+        cityId: n.district,
+        cityName: n.districtData?.name || 'Unknown',
+        categoryType: n.districtData?.type || 'district',
+        city: n.districtData?.name || 'Unknown'
       }));
     } catch (err) {
       console.error(`❌ UserDashboard: Map API failed for ${map.name}, this indicates a data loading issue:`, err);
@@ -92,18 +93,18 @@ const UserDashboard: React.FC = () => {
         return boroughs.map(b => ({
           id: b._id,
           name: b.name,
-          cityId: b.cityId,
+          cityId: b.city,
           cityName: b.city?.name || 'Unknown',
           city: b.city?.name || 'Unknown'
         } as CachedBorough));
       } else {
-        // Load cities for this map
-        const cities = await mapsApi.getMapCities(map._id);
-        return cities.map(c => ({
-          id: c._id,
-          name: c.name,
-          cityId: c._id,
-          city: c.name
+        // Load districts for this map
+        const districts = await districtsApi.getDistrictsByMap(map._id);
+        return districts.map(d => ({
+          id: d._id,
+          name: d.name,
+          cityId: d._id,
+          city: d.name
         } as CachedBorough)); // Map to borough-compatible structure
       }
     } catch (err) {
@@ -217,7 +218,7 @@ const UserDashboard: React.FC = () => {
     };
     
     // Calculate unique continents
-    const visitedCountryIds = countryVisits.map(v => v.countryId).filter(Boolean);
+    const visitedCountryIds = countryVisits.map(v => v.country).filter(Boolean);
     const visitedCountries = countries.filter(c => visitedCountryIds.includes(c._id));
     const continentsVisited = new Set(visitedCountries.map(c => c.continent)).size;
     
@@ -264,10 +265,10 @@ const UserDashboard: React.FC = () => {
     if (visit.visitType === 'neighborhood') {
       // For neighborhoods, we'll need to look up the name by ID from the cache
       // For now, just return a placeholder
-      return `Neighborhood ${visit.neighborhoodId || 'Unknown'}`;
+      return `Neighborhood ${visit.neighborhood || 'Unknown'}`;
     } else {
       // Lookup country by ID
-      const country = countries.find(c => c._id === visit.countryId);
+      const country = countries.find(c => c._id === visit.country);
       return country ? `${country.name}, ${country.continent}` : 'Unknown Country';
     }
   };
@@ -559,7 +560,7 @@ const UserDashboard: React.FC = () => {
                 <StatsCard
                   visits={allVisits}
                   neighborhoods={areaData.neighborhoods}
-                  categories={areaData.categories}
+                  districts={areaData.categories}
                   categoryType={areaData.map.categoryType}
                   areaName={areaData.map.name}
                 />

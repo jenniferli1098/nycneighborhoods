@@ -55,31 +55,31 @@ async function fixBronxMapping() {
     }
 
     console.log('📍 New York map ID:', newYorkMap._id);
-    console.log('🏘️ Current borough IDs:', newYorkMap.boroughIds);
+    console.log('🏘️ Current district IDs:', newYorkMap.districts);
 
-    // Get all boroughs to check which Bronx we should use
-    const boroughs = await makeRequest('/api/boroughs');
-    const originalBronx = boroughs.find(b => b.name === 'Bronx');
-    const newBronx = boroughs.find(b => b.name === 'The Bronx');
+    // Get all districts to check which Bronx we should use
+    const districts = await makeRequest('/api/districts');
+    const originalBronx = districts.find(b => b.name === 'Bronx');
+    const newBronx = districts.find(b => b.name === 'The Bronx');
 
     console.log('🔍 Original Bronx ID:', originalBronx?._id);
     console.log('🔍 New Bronx ID:', newBronx?._id);
 
     // Check neighborhoods for each
     const allNeighborhoods = await makeRequest('/api/neighborhoods');
-    const originalBronxNeighborhoods = allNeighborhoods.filter(n => n.boroughId === originalBronx?._id);
-    const newBronxNeighborhoods = allNeighborhoods.filter(n => n.boroughId === newBronx?._id);
+    const originalBronxNeighborhoods = allNeighborhoods.filter(n => n.district === originalBronx?._id);
+    const newBronxNeighborhoods = allNeighborhoods.filter(n => n.district === newBronx?._id);
 
     console.log(`📊 Original Bronx has ${originalBronxNeighborhoods.length} neighborhoods`);
     console.log(`📊 New Bronx has ${newBronxNeighborhoods.length} neighborhoods`);
 
     console.log('\n🎯 DIAGNOSIS:');
-    console.log(`- New York map uses: ${newYorkMap.boroughIds.join(', ')}`);
+    console.log(`- New York map uses: ${newYorkMap.districts.join(', ')}`);
     console.log(`- Original Bronx ID: ${originalBronx?._id} (${originalBronxNeighborhoods.length} neighborhoods)`);
     console.log(`- New Bronx ID: ${newBronx?._id} (${newBronxNeighborhoods.length} neighborhoods)`);
     
-    const hasBadBronx = newYorkMap.boroughIds.includes(newBronx?._id);
-    const hasGoodBronx = newYorkMap.boroughIds.includes(originalBronx?._id);
+    const hasBadBronx = newYorkMap.districts.includes(newBronx?._id);
+    const hasGoodBronx = newYorkMap.districts.includes(originalBronx?._id);
     
     console.log(`- Map includes bad Bronx: ${hasBadBronx}`);
     console.log(`- Map includes good Bronx: ${hasGoodBronx}`);

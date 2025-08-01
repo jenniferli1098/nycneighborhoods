@@ -15,33 +15,34 @@ import {
 } from '@mui/material';
 import { CheckCircle, RadioButtonUnchecked, Search } from '@mui/icons-material';
 import type { Visit } from '../services/visitsApi';
-import type { CachedNeighborhood, CachedBorough, CachedCity } from '../services/neighborhoodCache';
+import type { CachedNeighborhood } from '../services/neighborhoodCache';
+import type { District } from '../services/districtsApi';
 import type { CategoryType } from '../config/mapConfigs';
 
 interface NeighborhoodListProps {
   neighborhoods: CachedNeighborhood[];
-  categories: (CachedBorough | CachedCity)[];
+  districts: District[];
   categoryType: CategoryType;
   visits: Visit[];
   onNeighborhoodClick: (neighborhood: string, category: string) => void;
 }
 
-const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, categories, categoryType, visits, onNeighborhoodClick }) => {
+const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, districts, categoryType, visits, onNeighborhoodClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [filterVisited, setFilterVisited] = useState('all');
 
-  const visitedSet = new Set(visits.filter(v => v.visited && v.neighborhoodId).map(v => v.neighborhoodId!));
+  const visitedSet = new Set(visits.filter(v => v.visited && v.neighborhood).map(v => v.neighborhood!));
   
-  // Create a mapping from category ID to category name (works for both boroughs and cities)
-  const categoryIdToName = new Map(categories.map(c => [c.id, c.name]));
+  // Create a mapping from district ID to district name
+  const districtIdToName = new Map(districts.map(d => [d._id, d.name]));
 
   const filteredNeighborhoods = neighborhoods.filter(neighborhood => {
     const name = neighborhood.name;
-    const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
-    const categoryName = categoryId ? categoryIdToName.get(categoryId) || '' : '';
+    const districtId = neighborhood.districtId;
+    const districtName = districtId ? districtIdToName.get(districtId) || '' : '';
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === '' || categoryName === selectedCategory;
+    const matchesCategory = selectedCategory === '' || districtName === selectedCategory;
     
     let matchesVisited = true;
     if (filterVisited === 'visited') {
@@ -95,9 +96,9 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, cate
                 label={categoryType === 'borough' ? 'Borough' : 'City'}
               >
                 <MenuItem value="">All</MenuItem>
-                {categories.map(category => (
-                  <MenuItem key={category.id} value={category.name}>
-                    {category.name}
+                {districts.map(district => (
+                  <MenuItem key={district._id} value={district.name}>
+                    {district.name}
                   </MenuItem>
                 ))}
               </Select>
@@ -143,14 +144,14 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, cate
         <List dense>
           {filteredNeighborhoods.map((neighborhood) => {
             const name = neighborhood.name;
-            const categoryId = categoryType === 'borough' ? neighborhood.boroughId : neighborhood.cityId;
-            const categoryName = categoryId ? categoryIdToName.get(categoryId) || '' : '';
+            const districtId = neighborhood.districtId;
+            const districtName = districtId ? districtIdToName.get(districtId) || '' : '';
             const isVisited = visitedSet.has(neighborhood.id);
             
             return (
               <ListItem
                 key={neighborhood.id}
-                onClick={() => onNeighborhoodClick(name, categoryName)}
+                onClick={() => onNeighborhoodClick(name, districtName)}
                 className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer py-2"
               >
                 <ListItemIcon className="min-w-0 mr-2">
@@ -169,7 +170,7 @@ const NeighborhoodList: React.FC<NeighborhoodListProps> = ({ neighborhoods, cate
                   }
                   secondary={
                     <Typography variant="caption" color="text.secondary">
-                      {categoryName}
+                      {districtName}
                     </Typography>
                   }
                 />

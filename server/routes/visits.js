@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Visit = require('../models/Visit');
 const Neighborhood = require('../models/Neighborhood');
+const District = require('../models/District');
 const Country = require('../models/Country');
 const auth = require('../middleware/auth');
 
@@ -10,18 +11,18 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
   try {
     console.log('📡 GET /visits: Fetching visits for user:', req.user._id.toString());
-    const visits = await Visit.find({ userId: req.user._id.toString() })
+    const visits = await Visit.find({ user: req.user._id.toString() })
       .populate({
-        path: 'neighborhoodId',
-        populate: [
-          { path: 'boroughId', select: 'name' },
-          { path: 'cityId', select: 'name' }
-        ]
+        path: 'neighborhood',
+        populate: {
+          path: 'district',
+          select: 'name type'
+        }
       })
-      .populate('countryId', 'name continent')
+      .populate('country', 'name continent')
       .sort({ updatedAt: -1 });
     console.log('📝 GET /visits: Found', visits.length, 'visits');
-    console.log('📊 GET /visits: Visit details:', visits.map(v => ({ id: v._id, neighborhoodId: v.neighborhoodId, visited: v.visited })));
+    console.log('📊 GET /visits: Visit details:', visits.map(v => ({ id: v._id, neighborhood: v.neighborhood, visited: v.visited })));
     res.json(visits);
   } catch (error) {
     console.error('❌ GET /visits: Error fetching visits:', error);
@@ -31,10 +32,10 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, rating, category } = req.body;
+    const { visitType, neighborhoodName, districtName, countryName, visited, notes, visitDate, rating, category } = req.body;
 
     console.log('🆕 POST /visits: Creating visit for user:', req.user._id.toString());
-    console.log('📍 POST /visits: Request data:', { visitType, neighborhoodName, boroughName, countryName, visited, notes, visitDate, rating, category });
+    console.log('📍 POST /visits: Request data:', { visitType, neighborhoodName, districtName, countryName, visited, notes, visitDate, rating, category });
 
     if (!visitType || !['neighborhood', 'country'].includes(visitType)) {
       return res.status(400).json({ error: 'visitType must be either "neighborhood" or "country"' });
@@ -43,88 +44,47 @@ router.post('/', auth, async (req, res) => {
     let locationId, existingVisit, visitData;
 
     if (visitType === 'neighborhood') {
-      // Try to find the category (borough/city) first, then the neighborhood
-      console.log('🔍 POST /visits: Looking up category (borough/city):', boroughName);
+      // Find the district first, then the neighborhood
+      console.log('🔍 POST /visits: Looking up district:', districtName);
       
-      // First try to find as a borough
-      const borough = await mongoose.model('Borough').findOne({ name: boroughName });
+      const district = await District.findOne({ name: districtName });
       
-      if (borough) {
-        // Found a borough - use borough-based logic
-        console.log('✅ POST /visits: Found borough:', { id: borough._id, name: borough.name });
-
-        console.log('🔍 POST /visits: Looking up neighborhood:', neighborhoodName, 'in borough:', borough._id);
-        const neighborhood = await Neighborhood.findOne({ 
-          name: neighborhoodName,
-          boroughId: borough._id.toString()
-        });
-
-        if (!neighborhood) {
-          console.error('❌ POST /visits: Neighborhood not found:', neighborhoodName, 'in borough:', boroughName);
-          return res.status(404).json({ error: 'Neighborhood not found' });
-        }
-        console.log('✅ POST /visits: Found neighborhood:', { id: neighborhood._id, name: neighborhood.name, boroughId: neighborhood.boroughId });
-        
-        locationId = neighborhood._id.toString();
-        existingVisit = await Visit.findOne({ 
-          userId: req.user._id.toString(), 
-          neighborhoodId: locationId,
-          visitType: 'neighborhood'
-        });
-        
-        visitData = {
-          userId: req.user._id.toString(),
-          neighborhoodId: locationId,
-          visitType: 'neighborhood',
-          visited,
-          notes,
-          visitDate,
-          rating,
-          category
-        };
-      } else {
-        // No borough found - try to find as a city
-        console.log('🔍 POST /visits: No borough found, looking up city:', boroughName);
-        const city = await mongoose.model('City').findOne({ name: boroughName });
-        
-        if (city) {
-          // Found a city - use city-based logic
-          console.log('✅ POST /visits: Found city:', { id: city._id, name: city.name });
-
-          console.log('🔍 POST /visits: Looking up neighborhood:', neighborhoodName, 'in city:', city._id);
-          const neighborhood = await Neighborhood.findOne({ 
-            name: neighborhoodName,
-            cityId: city._id.toString()
-          });
-
-          if (!neighborhood) {
-            console.error('❌ POST /visits: Neighborhood not found:', neighborhoodName, 'in city:', boroughName);
-            return res.status(404).json({ error: 'Neighborhood not found' });
-          }
-          console.log('✅ POST /visits: Found neighborhood:', { id: neighborhood._id, name: neighborhood.name, cityId: neighborhood.cityId });
-          
-          locationId = neighborhood._id.toString();
-          existingVisit = await Visit.findOne({ 
-            userId: req.user._id.toString(), 
-            neighborhoodId: locationId,
-            visitType: 'neighborhood'
-          });
-          
-          visitData = {
-            userId: req.user._id.toString(),
-            neighborhoodId: locationId,
-            visitType: 'neighborhood',
-            visited,
-            notes,
-            visitDate,
-            rating,
-            category
-          };
-        } else {
-          console.error('❌ POST /visits: Neither borough nor city found:', boroughName);
-          return res.status(404).json({ error: 'Borough or city not found' });
-        }
+      if (!district) {
+        console.error('❌ POST /visits: District not found:', districtName);
+        return res.status(404).json({ error: 'District not found' });
       }
+      
+      console.log('✅ POST /visits: Found district:', { id: district._id, name: district.name, type: district.type });
+
+      console.log('🔍 POST /visits: Looking up neighborhood:', neighborhoodName, 'in district:', district._id);
+      const neighborhood = await Neighborhood.findOne({ 
+        name: neighborhoodName,
+        district: district._id.toString()
+      });
+
+      if (!neighborhood) {
+        console.error('❌ POST /visits: Neighborhood not found:', neighborhoodName, 'in district:', districtName);
+        return res.status(404).json({ error: 'Neighborhood not found' });
+      }
+      console.log('✅ POST /visits: Found neighborhood:', { id: neighborhood._id, name: neighborhood.name, district: neighborhood.district });
+      
+      locationId = neighborhood._id.toString();
+      existingVisit = await Visit.findOne({ 
+        user: req.user._id.toString(), 
+        neighborhood: locationId,
+        visitType: 'neighborhood'
+      });
+      
+      visitData = {
+        user: req.user._id.toString(),
+        neighborhood: locationId,
+        visitType: 'neighborhood',
+        visited,
+        notes,
+        visitDate,
+        rating,
+        category
+      };
     } else if (visitType === 'country') {
       // Find the country
       console.log('🔍 POST /visits: Looking up country:', countryName);
@@ -137,14 +97,14 @@ router.post('/', auth, async (req, res) => {
       
       locationId = country._id.toString();
       existingVisit = await Visit.findOne({ 
-        userId: req.user._id.toString(), 
-        countryId: locationId,
+        user: req.user._id.toString(), 
+        country: locationId,
         visitType: 'country'
       });
       
       visitData = {
-        userId: req.user._id.toString(),
-        countryId: locationId,
+        user: req.user._id.toString(),
+        country: locationId,
         visitType: 'country',
         visited,
         notes,
@@ -216,7 +176,7 @@ router.put('/:id', auth, async (req, res) => {
     
     const visit = await Visit.findOne({ 
       _id: req.params.id, 
-      userId: req.user._id.toString() 
+      user: req.user._id.toString() 
     });
 
     if (!visit) {
@@ -224,14 +184,14 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: 'Visit not found' });
     }
 
-    console.log('✅ PUT /visits: Found visit to update:', { id: visit._id, neighborhoodId: visit.neighborhoodId, currentVisited: visit.visited });
+    console.log('✅ PUT /visits: Found visit to update:', { id: visit._id, neighborhood: visit.neighborhood, currentVisited: visit.visited });
 
     console.log('📋 PUT /visits: Current visit data:', JSON.stringify(visit.toObject(), null, 2));
     
     // Ensure visitType is set for existing visits (in case of old data)
     if (!visit.visitType) {
       console.log('⚠️ PUT /visits: Setting missing visitType for existing visit');
-      visit.visitType = visit.neighborhoodId ? 'neighborhood' : 'country';
+      visit.visitType = visit.neighborhood ? 'neighborhood' : 'country';
     }
     
     visit.visited = visited;
@@ -257,7 +217,7 @@ router.delete('/:id', auth, async (req, res) => {
     
     const visit = await Visit.findOneAndDelete({ 
       _id: req.params.id, 
-      userId: req.user._id.toString() 
+      user: req.user._id.toString() 
     });
 
     if (!visit) {
@@ -265,7 +225,7 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: 'Visit not found' });
     }
 
-    console.log('✅ DELETE /visits: Deleted visit successfully:', { id: visit._id, neighborhoodId: visit.neighborhoodId });
+    console.log('✅ DELETE /visits: Deleted visit successfully:', { id: visit._id, neighborhood: visit.neighborhood });
     res.json({ message: 'Visit deleted successfully' });
   } catch (error) {
     console.error('❌ DELETE /visits: Delete error:', error);
@@ -284,7 +244,7 @@ router.get('/type/:visitType', auth, async (req, res) => {
     
     console.log(`📡 GET /visits/type/${visitType}: Fetching ${visitType} visits for user:`, req.user._id.toString());
     const visits = await Visit.find({ 
-      userId: req.user._id.toString(),
+      user: req.user._id.toString(),
       visitType: visitType
     }).sort({ updatedAt: -1 });
     

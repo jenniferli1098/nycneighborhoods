@@ -12,8 +12,8 @@ import type { Visit } from '../services/visitsApi';
 import type { Country } from '../services/countriesApi';
 
 // Extended Visit type for populated data
-interface PopulatedVisit extends Omit<Visit, 'countryId'> {
-  countryId?: string | { name: string; continent: string; [key: string]: any };
+interface PopulatedVisit extends Omit<Visit, 'country'> {
+  country?: string | { name: string; continent: string; [key: string]: any };
 }
 
 interface CountryStatsCardProps {
@@ -35,12 +35,12 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
   const continentStats = new Map<string, { totalRating: number; count: number; name: string }>();
   
   visits
-    .filter(v => v.visited && v.rating != null && v.countryId)
+    .filter(v => v.visited && v.rating != null && v.country)
     .forEach(visit => {
-      // Handle both populated and non-populated countryId
-      const country = typeof visit.countryId === 'string' 
-        ? countryMap.get(visit.countryId)
-        : visit.countryId;
+      // Handle both populated and non-populated country
+      const country = typeof visit.country === 'string' 
+        ? countryMap.get(visit.country)
+        : visit.country;
       if (country && visit.rating !== null) {
         const continentName = country.continent;
         const current = continentStats.get(continentName) || { totalRating: 0, count: 0, name: continentName };
@@ -63,13 +63,13 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
   });
 
   // Calculate top 3 countries
-  const ratedVisits = visits.filter(v => v.visited && v.rating != null && v.countryId);
+  const ratedVisits = visits.filter(v => v.visited && v.rating != null && v.country);
   const topCountries = ratedVisits
     .map(visit => {
-      // Handle both populated and non-populated countryId
-      const country = typeof visit.countryId === 'string' 
-        ? countryMap.get(visit.countryId)
-        : visit.countryId;
+      // Handle both populated and non-populated country
+      const country = typeof visit.country === 'string' 
+        ? countryMap.get(visit.country)
+        : visit.country;
       return {
         name: country?.name || 'Unknown',
         continent: country?.continent || 'Unknown',
@@ -89,11 +89,11 @@ const CountryStatsCard: React.FC<CountryStatsCardProps> = ({ visits, countries }
   });
   
   // Count visited countries per continent
-  visits.filter(v => v.visited && v.countryId).forEach(visit => {
-    // Handle both populated and non-populated countryId
-    const country = typeof visit.countryId === 'string' 
-      ? countryMap.get(visit.countryId)
-      : visit.countryId;
+  visits.filter(v => v.visited && v.country).forEach(visit => {
+    // Handle both populated and non-populated country
+    const country = typeof visit.country === 'string' 
+      ? countryMap.get(visit.country)
+      : visit.country;
     if (country) {
       visitedByContinent[country.continent] = (visitedByContinent[country.continent] || 0) + 1;
     }

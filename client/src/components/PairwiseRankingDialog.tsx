@@ -37,7 +37,7 @@ interface PairwiseRankingDialogProps {
   visitType: 'neighborhood' | 'country';
   locationData: {
     neighborhoodName?: string;
-    boroughName?: string;
+    districtName?: string;
     countryName?: string;
     visited?: boolean;
     notes?: string;
@@ -151,7 +151,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
         if (visitType === 'neighborhood') {
           await visitsApi.createNeighborhoodVisit({
             neighborhoodName: locationData.neighborhoodName!,
-            boroughName: locationData.boroughName!,
+            districtName: locationData.districtName!,
             visited: locationData.visited || true,
             notes: locationData.notes,
             visitDate: locationData.visitDate ? new Date(locationData.visitDate) : undefined,
@@ -191,28 +191,28 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
   };
 
   const getLocationName = (visit: Visit) => {
-    // Handle populated neighborhoodId (object) vs string ID
-    if (visit.neighborhoodId && typeof visit.neighborhoodId === 'object' && 'name' in visit.neighborhoodId) {
-      return (visit.neighborhoodId as any).name;
+    // Handle populated neighborhood (object) vs string ID
+    if (visit.neighborhood && typeof visit.neighborhood === 'object' && 'name' in visit.neighborhood) {
+      return (visit.neighborhood as any).name;
     }
-    // Handle populated countryId (object) vs string ID  
-    if (visit.countryId && typeof visit.countryId === 'object' && 'name' in visit.countryId) {
-      return (visit.countryId as any).name;
+    // Handle populated country (object) vs string ID  
+    if (visit.country && typeof visit.country === 'object' && 'name' in visit.country) {
+      return (visit.country as any).name;
     }
     return 'Unknown Location';
   };
 
   const getLocationDetails = (visit: Visit) => {
-    // Handle populated neighborhoodId (object)
-    if (visit.neighborhoodId && typeof visit.neighborhoodId === 'object') {
-      const neighborhood = visit.neighborhoodId as any;
+    // Handle populated neighborhood (object)
+    if (visit.neighborhood && typeof visit.neighborhood === 'object') {
+      const neighborhood = visit.neighborhood as any;
       const borough = neighborhood.boroughId?.name;
       const city = neighborhood.cityId?.name;
       return borough || city || 'Unknown Area';
     }
-    // Handle populated countryId (object)
-    if (visit.countryId && typeof visit.countryId === 'object') {
-      const country = visit.countryId as any;
+    // Handle populated country (object)
+    if (visit.country && typeof visit.country === 'object') {
+      const country = visit.country as any;
       return country.continent || 'Unknown Continent';
     }
     return 'Unknown';

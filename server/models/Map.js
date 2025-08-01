@@ -19,20 +19,6 @@ const mapSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  categoryType: {
-    type: String,
-    required: true,
-    enum: ['borough', 'city'],
-    trim: true
-  },
-  cityIds: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'City'
-  }],
-  boroughIds: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Borough'
-  }],
   coordinates: {
     longitude: {
       type: Number,
@@ -53,6 +39,13 @@ const mapSchema = new mongoose.Schema({
     default: 11,
     min: 1,
     max: 20
+  },
+  // Type of districts in this map - distinguishes between borough-like and city-like maps
+  type: {
+    type: String,
+    required: true,
+    enum: ['borough', 'city'],
+    trim: true
   }
 }, {
   timestamps: true
@@ -66,32 +59,24 @@ mapSchema.virtual('center').get(function() {
   return [this.coordinates.latitude, this.coordinates.longitude];
 });
 
-// Method to get all related cities
-mapSchema.methods.getCities = async function() {
-  if (this.cityIds.length === 0) return [];
-  
-  const City = mongoose.model('City');
-  return await City.find({ _id: { $in: this.cityIds } });
-};
-
-// Method to get all related boroughs
-mapSchema.methods.getBoroughs = async function() {
-  if (this.boroughIds.length === 0) return [];
-  
-  const Borough = mongoose.model('Borough');
-  return await Borough.find({ _id: { $in: this.boroughIds } });
+// Method to get all related districts
+mapSchema.methods.getDistricts = async function() {
+  const District = mongoose.model('District');
+  return await District.find({ map: this._id }).sort({ name: 1 });
 };
 
 // Method to get all neighborhoods for this map
 mapSchema.methods.getNeighborhoods = async function() {
   const Neighborhood = mongoose.model('Neighborhood');
+  const District = mongoose.model('District');
   
-  if (this.categoryType === 'borough' && this.boroughIds.length > 0) {
-    // For borough-based maps, get neighborhoods by borough IDs
-    return await Neighborhood.find({ boroughId: { $in: this.boroughIds } });
-  } else if (this.categoryType === 'city' && this.cityIds.length > 0) {
-    // For city-based maps, get neighborhoods by city IDs
-    return await Neighborhood.find({ cityId: { $in: this.cityIds } });
+  // Get districts for this map
+  const districts = await District.find({ map: this._id });
+  const districtIds = districts.map(d => d._id);
+  
+  if (districtIds.length > 0) {
+    // Get neighborhoods by district IDs
+    return await Neighborhood.find({ district: { $in: districtIds } });
   }
   
   return [];
@@ -115,14 +100,14 @@ mapSchema.methods.getMapStats = async function() {
   
   const Visit = mongoose.model('Visit');
   const visitStats = await Visit.aggregate([
-    { $match: { neighborhoodId: { $in: neighborhoodIds } } },
+    { $match: { neighborhood: { $in: neighborhoodIds } } },
     { 
       $group: {
         _id: null,
         totalVisits: { $sum: 1 },
-        uniqueVisitors: { $addToSet: '$userId' },
+        uniqueVisitors: { $addToSet: '$user' },
         avgRating: { $avg: '$rating' },
-        visitedNeighborhoods: { $addToSet: '$neighborhoodId' }
+        visitedNeighborhoods: { $addToSet: '$neighborhood' }
       }
     }
   ]);
@@ -138,9 +123,9 @@ mapSchema.methods.getMapStats = async function() {
   };
 };
 
-// Static method to find maps by category type
-mapSchema.statics.findByCategoryType = function(categoryType) {
-  return this.find({ categoryType});
+// Static method to find maps of a specific type
+mapSchema.statics.findByType = function(mapType) {
+  return this.find({ type: mapType });
 };
 
 // Static method to find map by slug
@@ -153,26 +138,16 @@ mapSchema.statics.findActive = function() {
   return this.find({});
 };
 
-// Static method to find maps containing a specific city
-mapSchema.statics.findByCity = function(cityId) {
-  return this.find({ cityIds: cityId });
+// Static method to find maps containing a specific district
+mapSchema.statics.findByDistrict = function(districtId) {
+  const District = mongoose.model('District');
+  return District.findById(districtId).then(district => {
+    return district ? this.findById(district.map) : null;
+  });
 };
 
-// Static method to find maps containing a specific borough
-mapSchema.statics.findByBorough = function(boroughId) {
-  return this.find({ boroughIds: boroughId });
-};
-
-// Pre-save validation to ensure appropriate IDs are provided based on category type
+// Pre-save validation
 mapSchema.pre('save', function(next) {
-  if (this.categoryType === 'borough' && this.boroughIds.length === 0) {
-    return next(new Error('Borough-based maps must have at least one borough ID'));
-  }
-  
-  if (this.categoryType === 'city' && this.cityIds.length === 0) {
-    return next(new Error('City-based maps must have at least one city ID'));
-  }
-  
   next();
 });
 

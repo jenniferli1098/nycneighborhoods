@@ -41,6 +41,7 @@
 
 ## Project Guidelines
 - Do not push to GitHub unless explicitly asked
+- Do not push to git unless explicitly asked
 
 ## Deployment
 - When asked to deploy, call the following two Render deployment URLs:

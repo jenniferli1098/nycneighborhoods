@@ -25,14 +25,13 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
 
   const preloadData = async () => {
     try {
-      console.log('🚀 CacheProvider: Starting data preload...');
+      console.log('🚀 CacheProvider: Skipping cache preload (using direct API calls)');
       setPreloadError(null);
       
-      // Preload data for common cities
-      await neighborhoodCache.preloadData(['NYC', 'Boston']);
+      // Skip cache preloading since we now load data directly from maps API
       
       setIsPreloaded(true);
-      console.log('✅ CacheProvider: Data preload complete');
+      console.log('✅ CacheProvider: Preload complete (no-op)');
     } catch (error) {
       console.error('❌ CacheProvider: Preload failed:', error);
       setPreloadError(error instanceof Error ? error.message : 'Unknown error');
@@ -42,23 +41,12 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
 
   const refreshCache = async (city?: string) => {
     try {
-      console.log(`🔄 CacheProvider: Refreshing cache for ${city || 'all cities'}...`);
+      console.log(`🔄 CacheProvider: Skipping cache refresh (using direct API calls)`);
       setPreloadError(null);
       
-      // Clear existing cache
-      neighborhoodCache.clearCache(city);
+      // Skip cache operations since we now load data directly from maps API
       
-      // Reload data
-      if (city) {
-        await Promise.all([
-          neighborhoodCache.getNeighborhoods(city, true),
-          neighborhoodCache.getBoroughs(city, true)
-        ]);
-      } else {
-        await neighborhoodCache.preloadData(['NYC', 'Boston']);
-      }
-      
-      console.log('✅ CacheProvider: Cache refresh complete');
+      console.log('✅ CacheProvider: Cache refresh complete (no-op)');
     } catch (error) {
       console.error('❌ CacheProvider: Cache refresh failed:', error);
       setPreloadError(error instanceof Error ? error.message : 'Unknown error');

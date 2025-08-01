@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const Map = require('../models/Map');
-const Borough = require('../models/Borough');
+const District = require('../models/District');
 
 async function fixBronxMapping() {
   try {
@@ -18,11 +18,11 @@ async function fixBronxMapping() {
     }
 
     console.log('📍 Found New York map:', newYorkMap._id);
-    console.log('🏘️ Current boroughIds:', newYorkMap.boroughIds);
+    console.log('🏘️ Current districts:', newYorkMap.districts);
 
-    // Find both Bronx boroughs
-    const originalBronx = await Borough.findOne({ name: 'Bronx' });
-    const newBronx = await Borough.findOne({ name: 'The Bronx' });
+    // Find both Bronx districts
+    const originalBronx = await District.findOne({ name: 'Bronx' });
+    const newBronx = await District.findOne({ name: 'The Bronx' });
 
     console.log('🔍 Original Bronx:', originalBronx ? originalBronx._id : 'NOT FOUND');
     console.log('🔍 New Bronx:', newBronx ? newBronx._id : 'NOT FOUND');
@@ -32,8 +32,8 @@ async function fixBronxMapping() {
       process.exit(1);
     }
 
-    // Update the New York map to use the correct Bronx borough
-    const correctBoroughIds = [
+    // Update the New York map to use the correct Bronx district
+    const correctDistricts = [
       '68806c3977abf8bf62a199d3', // Manhattan
       '68806c3877abf8bf62a199d1', // Brooklyn  
       '68806c3877abf8bf62a199cc', // Queens
@@ -41,21 +41,21 @@ async function fixBronxMapping() {
       '68806c3877abf8bf62a199cf'  // Staten Island
     ];
 
-    console.log('🔧 Updating New York map boroughIds...');
+    console.log('🔧 Updating New York map districts...');
     await Map.findByIdAndUpdate(newYorkMap._id, {
-      boroughIds: correctBoroughIds.map(id => new mongoose.Types.ObjectId(id))
+      districts: correctDistricts.map(id => new mongoose.Types.ObjectId(id))
     });
 
     console.log('✅ Successfully updated New York map');
 
     // Verify the update
     const updatedMap = await Map.findById(newYorkMap._id);
-    console.log('✅ Updated boroughIds:', updatedMap.boroughIds);
+    console.log('✅ Updated districts:', updatedMap.districts);
 
     // Check how many neighborhoods each Bronx has
     const Neighborhood = require('../models/Neighborhood');
-    const originalBronxNeighborhoods = await Neighborhood.countDocuments({ boroughId: originalBronx._id });
-    const newBronxNeighborhoods = newBronx ? await Neighborhood.countDocuments({ boroughId: newBronx._id }) : 0;
+    const originalBronxNeighborhoods = await Neighborhood.countDocuments({ district: originalBronx._id });
+    const newBronxNeighborhoods = newBronx ? await Neighborhood.countDocuments({ district: newBronx._id }) : 0;
 
     console.log(`📊 Original Bronx (${originalBronx.name}) has ${originalBronxNeighborhoods} neighborhoods`);
     console.log(`📊 New Bronx (${newBronx?.name || 'N/A'}) has ${newBronxNeighborhoods} neighborhoods`);

@@ -3,27 +3,22 @@ import api from '../config/api';
 export interface Neighborhood {
   _id: string;
   name: string;
-  boroughId?: string;
-  cityId?: string;
-  categoryType: 'borough' | 'city';
+  district: string;
+  createdAt: string;
+  updatedAt: string;
   // Populated fields when using populate()
-  borough?: {
+  districtData?: {
     _id: string;
     name: string;
-  };
-  city?: {
-    _id: string;
-    name: string;
-    state?: string;
+    type: 'borough' | 'city';
+    map?: string;
   };
 }
 
 export const neighborhoodsApi = {
   // Get all neighborhoods
   getAllNeighborhoods: async (params?: {
-    borough?: string;
-    city?: string;
-    categoryType?: 'borough' | 'city';
+    district?: string;
   }): Promise<Neighborhood[]> => {
     const response = await api.get('/api/neighborhoods', { params });
     return response.data;
@@ -35,16 +30,15 @@ export const neighborhoodsApi = {
     return response.data;
   },
 
-  // Get neighborhoods by city
-  getNeighborhoodsByCity: async (cityName: string): Promise<Neighborhood[]> => {
-    const response = await api.get(`/api/neighborhoods/city/${cityName}`);
+  // Get neighborhoods by district
+  getNeighborhoodsByDistrict: async (districtId: string): Promise<Neighborhood[]> => {
+    const response = await api.get(`/api/neighborhoods/district/${districtId}`);
     return response.data;
   },
 
   // Search neighborhoods
   searchNeighborhoods: async (query: string, params?: {
-    city?: string;
-    categoryType?: 'borough' | 'city';
+    district?: string;
   }): Promise<Neighborhood[]> => {
     const response = await api.get(`/api/neighborhoods/search/${query}`, { params });
     return response.data;

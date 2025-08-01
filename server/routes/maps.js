@@ -19,24 +19,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get maps by category type
-router.get('/category/:categoryType', async (req, res) => {
-  try {
-    const { categoryType } = req.params;
-    console.log('📡 GET /maps/category: Fetching maps for category:', categoryType);
-    
-    if (!['borough', 'city'].includes(categoryType)) {
-      return res.status(400).json({ error: 'Invalid category type. Must be "borough" or "city"' });
-    }
-    
-    const maps = await Map.findByCategoryType(categoryType);
-    console.log('📝 GET /maps/category: Found', maps.length, 'maps for category:', categoryType);
-    res.json(maps);
-  } catch (error) {
-    console.error('❌ GET /maps/category: Error fetching maps:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Get a specific map by slug
 router.get('/slug/:slug', async (req, res) => {
@@ -96,45 +78,26 @@ router.get('/:id/neighborhoods', async (req, res) => {
   }
 });
 
-// Get cities for a specific map
-router.get('/:id/cities', async (req, res) => {
+// Get districts for a specific map
+router.get('/:id/districts', async (req, res) => {
   try {
-    console.log('📡 GET /maps/:id/cities: Fetching cities for map ID:', req.params.id);
+    console.log('📡 GET /maps/:id/districts: Fetching districts for map ID:', req.params.id);
     const map = await Map.findById(req.params.id);
     
     if (!map) {
-      console.error('❌ GET /maps/:id/cities: Map not found for ID:', req.params.id);
+      console.error('❌ GET /maps/:id/districts: Map not found for ID:', req.params.id);
       return res.status(404).json({ error: 'Map not found' });
     }
     
-    const cities = await map.getCities();
-    console.log('📝 GET /maps/:id/cities: Found', cities.length, 'cities for map:', map.name);
-    res.json(cities);
+    const districts = await map.getDistricts();
+    console.log('📝 GET /maps/:id/districts: Found', districts.length, 'districts for map:', map.name);
+    res.json(districts);
   } catch (error) {
-    console.error('❌ GET /maps/:id/cities: Error fetching cities:', error);
+    console.error('❌ GET /maps/:id/districts: Error fetching districts:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get boroughs for a specific map
-router.get('/:id/boroughs', async (req, res) => {
-  try {
-    console.log('📡 GET /maps/:id/boroughs: Fetching boroughs for map ID:', req.params.id);
-    const map = await Map.findById(req.params.id);
-    
-    if (!map) {
-      console.error('❌ GET /maps/:id/boroughs: Map not found for ID:', req.params.id);
-      return res.status(404).json({ error: 'Map not found' });
-    }
-    
-    const boroughs = await map.getBoroughs();
-    console.log('📝 GET /maps/:id/boroughs: Found', boroughs.length, 'boroughs for map:', map.name);
-    res.json(boroughs);
-  } catch (error) {
-    console.error('❌ GET /maps/:id/boroughs: Error fetching boroughs:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Get statistics for a specific map
 router.get('/:id/stats', async (req, res) => {
@@ -156,41 +119,29 @@ router.get('/:id/stats', async (req, res) => {
   }
 });
 
-// Find maps containing a specific city
-router.get('/by-city/:cityId', async (req, res) => {
+// Find maps containing a specific district
+router.get('/by-district/:districtId', async (req, res) => {
   try {
-    const { cityId } = req.params;
-    console.log('📡 GET /maps/by-city: Finding maps containing city ID:', cityId);
+    const { districtId } = req.params;
+    console.log('📡 GET /maps/by-district: Finding maps containing district ID:', districtId);
     
-    const maps = await Map.findByCity(cityId);
-    console.log('📝 GET /maps/by-city: Found', maps.length, 'maps containing city');
+    const maps = await Map.findByDistrict(districtId);
+    console.log('📝 GET /maps/by-district: Found', maps.length, 'maps containing district');
     res.json(maps);
   } catch (error) {
-    console.error('❌ GET /maps/by-city: Error finding maps:', error);
+    console.error('❌ GET /maps/by-district: Error finding maps:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Find maps containing a specific borough
-router.get('/by-borough/:boroughId', async (req, res) => {
-  try {
-    const { boroughId } = req.params;
-    console.log('📡 GET /maps/by-borough: Finding maps containing borough ID:', boroughId);
-    
-    const maps = await Map.findByBorough(boroughId);
-    console.log('📝 GET /maps/by-borough: Found', maps.length, 'maps containing borough');
-    res.json(maps);
-  } catch (error) {
-    console.error('❌ GET /maps/by-borough: Error finding maps:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+
+
 
 // GeoJSON endpoints for map data
 router.get('/geojson/nyc', async (req, res) => {
   try {
     console.log('📡 GET /maps/geojson/nyc: Serving NYC neighborhoods GeoJSON');
-    const filePath = path.join(__dirname, '../data/nyc_neighborhoods_clean.geojson');
+    const filePath = path.join(__dirname, '../data/nyc_neighborhoods.geojson');
     
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'NYC GeoJSON file not found' });

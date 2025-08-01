@@ -55,19 +55,19 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
       const visits = await visitsApi.getAllVisits();
       console.log(`🔍 NeighborhoodDialog: Looking for existing visit with neighborhoodId: ${neighborhoodId}`);
       console.log(`📋 NeighborhoodDialog: Found ${visits.length} total visits`);
-      console.log(`📋 NeighborhoodDialog: Sample visit neighborhoodId types:`, visits.slice(0, 3).map(v => ({
-        id: typeof v.neighborhoodId === 'object' ? (v.neighborhoodId as any)?._id : v.neighborhoodId,
-        type: typeof v.neighborhoodId,
-        isObject: typeof v.neighborhoodId === 'object'
+      console.log(`📋 NeighborhoodDialog: Sample visit neighborhood types:`, visits.slice(0, 3).map(v => ({
+        id: typeof v.neighborhood === 'object' ? (v.neighborhood as any)?._id : v.neighborhood,
+        type: typeof v.neighborhood,
+        isObject: typeof v.neighborhood === 'object'
       })));
       
       const existingVisit = visits.find(
         (v: any) => {
-          // Handle both populated (object) and non-populated (string) neighborhoodId
-          if (typeof v.neighborhoodId === 'string') {
-            return v.neighborhoodId === neighborhoodId;
-          } else if (v.neighborhoodId && typeof v.neighborhoodId === 'object') {
-            return (v.neighborhoodId as any)._id === neighborhoodId;
+          // Handle both populated (object) and non-populated (string) neighborhood
+          if (typeof v.neighborhood === 'string') {
+            return v.neighborhood === neighborhoodId;
+          } else if (v.neighborhood && typeof v.neighborhood === 'object') {
+            return (v.neighborhood as any)._id === neighborhoodId;
           }
           return false;
         }
@@ -130,7 +130,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         // POST request - send lookup fields to find/create neighborhood
         const createData = {
           neighborhoodName: neighborhood,
-          boroughName: borough,
+          districtName: borough,
           visited: visit.visited,
           notes: visit.notes,
           visitDate: visit.visitDate || undefined,
@@ -210,7 +210,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
         visitType="neighborhood"
         locationData={{
           neighborhoodName: neighborhood,
-          boroughName: borough,
+          districtName: borough,
           visited: visit.visited,
           notes: visit.notes,
           visitDate: visit.visitDate?.toISOString()

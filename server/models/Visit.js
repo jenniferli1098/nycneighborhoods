@@ -1,17 +1,17 @@
 const mongoose = require('mongoose');
 
 const visitSchema = new mongoose.Schema({
-  userId: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  // Either neighborhoodId OR countryId is required, not both
-  neighborhoodId: {
+  // Either neighborhood OR country is required, not both
+  neighborhood: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Neighborhood'
   },
-  countryId: {
+  country: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Country'
   },
@@ -44,56 +44,56 @@ const visitSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Validation to ensure either neighborhoodId or countryId is provided
+// Validation to ensure either neighborhood or country is provided
 visitSchema.pre('validate', function() {
-  if (this.visitType === 'neighborhood' && !this.neighborhoodId) {
-    this.invalidate('neighborhoodId', 'neighborhoodId is required for neighborhood visits');
+  if (this.visitType === 'neighborhood' && !this.neighborhood) {
+    this.invalidate('neighborhood', 'neighborhood is required for neighborhood visits');
   }
-  if (this.visitType === 'country' && !this.countryId) {
-    this.invalidate('countryId', 'countryId is required for country visits');
+  if (this.visitType === 'country' && !this.country) {
+    this.invalidate('country', 'country is required for country visits');
   }
-  if (this.visitType === 'neighborhood' && this.countryId) {
-    this.invalidate('countryId', 'countryId should not be provided for neighborhood visits');
+  if (this.visitType === 'neighborhood' && this.country) {
+    this.invalidate('country', 'country should not be provided for neighborhood visits');
   }
-  if (this.visitType === 'country' && this.neighborhoodId) {
-    this.invalidate('neighborhoodId', 'neighborhoodId should not be provided for country visits');
+  if (this.visitType === 'country' && this.neighborhood) {
+    this.invalidate('neighborhood', 'neighborhood should not be provided for country visits');
   }
 });
 
 // Single unique index for neighborhood and country visits
-visitSchema.index({ userId: 1, neighborhoodId: 1, countryId: 1 }, { unique: true, sparse: true });
-visitSchema.index({ neighborhoodId: 1 });
-visitSchema.index({ countryId: 1 });
-visitSchema.index({ userId: 1 });
+visitSchema.index({ user: 1, neighborhood: 1, country: 1 }, { unique: true, sparse: true });
+visitSchema.index({ neighborhood: 1 });
+visitSchema.index({ country: 1 });
+visitSchema.index({ user: 1 });
 
 
 
 // Method to get full location details
 visitSchema.methods.getFullDetails = async function() {
   const User = mongoose.model('User');
-  const user = await User.findById(this.userId);
+  const user = await User.findById(this.user);
   
   let locationDetails = null;
   
-  if (this.visitType === 'neighborhood' && this.neighborhoodId) {
+  if (this.visitType === 'neighborhood' && this.neighborhood) {
     const Neighborhood = mongoose.model('Neighborhood');
     const Borough = mongoose.model('Borough');
     const City = mongoose.model('City');
-    const neighborhood = await Neighborhood.findById(this.neighborhoodId);
+    const neighborhood = await Neighborhood.findById(this.neighborhood);
     
     let parentLocation = null;
     if (neighborhood) {
-      if (neighborhood.categoryType === 'borough' && neighborhood.boroughId) {
-        const borough = await Borough.findById(neighborhood.boroughId);
+      if (neighborhood.categoryType === 'borough' && neighborhood.borough) {
+        const borough = await Borough.findById(neighborhood.borough);
         if (borough) {
-          const city = await City.findById(borough.cityId);
+          const city = await City.findById(borough.city);
           parentLocation = {
             borough: borough.name,
             city: city?.name
           };
         }
-      } else if (neighborhood.categoryType === 'city' && neighborhood.cityId) {
-        const city = await City.findById(neighborhood.cityId);
+      } else if (neighborhood.categoryType === 'city' && neighborhood.city) {
+        const city = await City.findById(neighborhood.city);
         parentLocation = {
           city: city?.name
         };
@@ -106,9 +106,9 @@ visitSchema.methods.getFullDetails = async function() {
       categoryType: neighborhood?.categoryType,
       ...parentLocation
     };
-  } else if (this.visitType === 'country' && this.countryId) {
+  } else if (this.visitType === 'country' && this.country) {
     const Country = mongoose.model('Country');
-    const country = await Country.findById(this.countryId);
+    const country = await Country.findById(this.country);
     locationDetails = {
       type: 'country',
       name: country?.name,
@@ -125,8 +125,8 @@ visitSchema.methods.getFullDetails = async function() {
 };
 
 // Static method to get user's visit statistics
-visitSchema.statics.getUserStats = async function(userId) {
-  const userVisits = await this.find({ userId: userId });
+visitSchema.statics.getUserStats = async function(user) {
+  const userVisits = await this.find({ user: user });
   const Neighborhood = mongoose.model('Neighborhood');
   const Borough = mongoose.model('Borough');
   const Country = mongoose.model('Country');
@@ -143,16 +143,16 @@ visitSchema.statics.getUserStats = async function(userId) {
       totalNeighborhoods++;
       if (visit.visited) {
         totalVisits++;
-        const neighborhood = await Neighborhood.findById(visit.neighborhoodId);
+        const neighborhood = await Neighborhood.findById(visit.neighborhood);
         if (neighborhood) {
-          boroughsVisitedSet.add(neighborhood.boroughId);
+          boroughsVisitedSet.add(neighborhood.borough);
         }
       }
     } else if (visit.visitType === 'country') {
       totalCountries++;
       if (visit.visited) {
         totalVisits++;
-        const country = await Country.findById(visit.countryId);
+        const country = await Country.findById(visit.country);
         if (country) {
           continentsVisitedSet.add(country.continent);
         }
@@ -182,10 +182,10 @@ visitSchema.statics.getNeighborhoodPopularity = async function(limit = 10) {
     { $match: { visited: true } },
     {
       $group: {
-        _id: '$neighborhoodId',
+        _id: '$neighborhood',
         visitCount: { $sum: 1 },
         avgRating: { $avg: '$rating' },
-        uniqueVisitors: { $addToSet: '$userId' }
+        uniqueVisitors: { $addToSet: '$user' }
       }
     },
     { $sort: { visitCount: -1, avgRating: -1 } },
@@ -198,7 +198,7 @@ visitSchema.statics.getNeighborhoodPopularity = async function(limit = 10) {
   const result = [];
   for (const item of visitedNeighborhoods) {
     const neighborhood = await Neighborhood.findById(item._id);
-    const borough = neighborhood ? await Borough.findById(neighborhood.boroughId) : null;
+    const borough = neighborhood ? await Borough.findById(neighborhood.borough) : null;
     
     result.push({
       neighborhood: item._id,
@@ -219,10 +219,10 @@ visitSchema.statics.getCountryPopularity = async function(limit = 10) {
     { $match: { visited: true, visitType: 'country' } },
     {
       $group: {
-        _id: '$countryId',
+        _id: '$country',
         visitCount: { $sum: 1 },
         avgRating: { $avg: '$rating' },
-        uniqueVisitors: { $addToSet: '$userId' }
+        uniqueVisitors: { $addToSet: '$user' }
       }
     },
     { $sort: { visitCount: -1, avgRating: -1 } },

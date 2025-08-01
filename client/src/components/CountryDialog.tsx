@@ -15,7 +15,7 @@ interface CountryDialogProps {
 interface CountryVisit extends BaseVisit {
   _id?: string;
   userId?: string;
-  countryId?: string;
+  country?: string;
   countryName?: string; // For form display only
   continent?: string; // For form display only
 }
@@ -29,7 +29,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
   const [visit, setVisit] = useState<CountryVisit>({
     countryName: country.name,
     continent: country.continent,
-    countryId: country._id,
+    country: country._id,
     visited: true,
     notes: '',
     visitDate: new Date(),
@@ -52,11 +52,11 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
       
       const existingVisit = visits.find(
         (v: Visit) => {
-          // Handle both populated (object) and non-populated (string) countryId
-          if (typeof v.countryId === 'string') {
-            return v.countryId === country._id;
-          } else if (v.countryId && typeof v.countryId === 'object') {
-            return (v.countryId as any)._id === country._id;
+          // Handle both populated (object) and non-populated (string) country
+          if (typeof v.country === 'string') {
+            return v.country === country._id;
+          } else if (v.country && typeof v.country === 'object') {
+            return (v.country as any)._id === country._id;
           }
           return false;
         }
@@ -74,7 +74,7 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
         const newVisit = {
           countryName: country.name,
           continent: country.continent,
-          countryId: country._id,
+          country: country._id,
           visited: true,
           notes: '',
           visitDate: new Date(),

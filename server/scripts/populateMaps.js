@@ -3,8 +3,9 @@ require('dotenv').config();
 
 // Import models
 const Map = require('../models/Map');
-const City = require('../models/City');
-const Borough = require('../models/Borough');
+const District = require('../models/District');
+const Neighborhood = require('../models/Neighborhood');
+const Visit = require('../models/Visit');
 
 async function populateMaps() {
   try {
@@ -16,31 +17,24 @@ async function populateMaps() {
     console.log('Clearing existing maps...');
     await Map.deleteMany({});
 
-    // Get NYC city and boroughs
-    const nycCity = await City.findOne({ name: 'New York City' });
-    const boroughs = await Borough.find({ cityId: nycCity?._id });
-
-    // Get Boston area cities
-    const bostonCity = await City.findOne({ name: 'Boston' });
-    const cambridgeCity = await City.findOne({ name: 'Cambridge' });
-    const somervilleCity = await City.findOne({ name: 'Somerville' });
+    // Get existing districts
+    const nycDistricts = await District.find({ type: 'borough' });
+    const bostonDistricts = await District.find({ type: 'city' });
 
     const maps = [];
 
     // NYC Neighborhoods Map (borough-based)
-    if (nycCity && boroughs.length > 0) {
+    if (nycDistricts.length > 0) {
       const nycMap = new Map({
-        name: 'NYC Neighborhoods',
+        name: 'New York',
+        slug: 'nyc',
         description: 'Interactive map of New York City neighborhoods organized by boroughs',
-        categoryType: 'borough',
-        cityIds: [],
-        boroughIds: boroughs.map(b => b._id),
+        districts: nycDistricts.map(d => d._id),
         coordinates: {
           longitude: -74.0060,
           latitude: 40.7128
         },
-        zoom: 11,
-        isActive: true
+        zoom: 11
       });
       await nycMap.save();
       maps.push(nycMap);
@@ -48,23 +42,17 @@ async function populateMaps() {
     }
 
     // Boston Neighborhoods Map (city-based)
-    const bostonCityIds = [bostonCity, cambridgeCity, somervilleCity]
-      .filter(city => city)
-      .map(city => city._id);
-
-    if (bostonCityIds.length > 0) {
+    if (bostonDistricts.length > 0) {
       const bostonMap = new Map({
-        name: 'Boston Neighborhoods',
+        name: 'Boston',
+        slug: 'boston',
         description: 'Interactive map of Greater Boston neighborhoods including Boston, Cambridge, and Somerville',
-        categoryType: 'city',
-        cityIds: bostonCityIds,
-        boroughIds: [],
+        districts: bostonDistricts.map(d => d._id),
         coordinates: {
           longitude: -71.0589,
           latitude: 42.3601
         },
-        zoom: 12,
-        isActive: true
+        zoom: 12
       });
       await bostonMap.save();
       maps.push(bostonMap);
@@ -80,10 +68,11 @@ async function populateMaps() {
 
     // Test the map methods
     for (const map of maps) {
+      const districts = await map.getDistricts();
       const neighborhoods = await map.getNeighborhoods();
       const stats = await map.getMapStats();
       console.log(`\n${map.name}:`);
-      console.log(`  - Category Type: ${map.categoryType}`);
+      console.log(`  - Districts: ${districts.length}`);
       console.log(`  - Neighborhoods: ${neighborhoods.length}`);
       console.log(`  - Stats:`, stats);
     }

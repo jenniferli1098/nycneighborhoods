@@ -36,8 +36,8 @@ export const countriesApi = {
   },
 
   // Get country by ID
-  getCountryById: async (countryId: string): Promise<Country> => {
-    const response = await api.get(`/api/countries/${countryId}`);
+  getCountryById: async (country: string): Promise<Country> => {
+    const response = await api.get(`/api/countries/${country}`);
     return response.data;
   },
 

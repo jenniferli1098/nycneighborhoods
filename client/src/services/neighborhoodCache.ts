@@ -1,25 +1,18 @@
 import { neighborhoodsApi, type Neighborhood } from './neighborhoodsApi';
-import { boroughsApi, type Borough } from './boroughsApi';
-import { citiesApi, type City } from './citiesApi';
+import { districtsApi, type District } from './districtsApi';
 import api from '../config/api';
 
 interface CachedNeighborhood {
   id: string;
   name: string;
-  boroughId?: string;
-  boroughName?: string;
-  cityId?: string;
-  cityName?: string;
-  categoryType: 'borough' | 'city';
-  city: string; // For backward compatibility
+  districtId: string;
+  districtName?: string;
 }
 
-interface CachedBorough {
+interface CachedDistrict {
   id: string;
   name: string;
-  cityId: string;
-  cityName?: string;
-  city: string; // For backward compatibility
+  type: 'borough' | 'city';
 }
 
 interface CachedCity {
@@ -67,8 +60,8 @@ class NeighborhoodCache {
     };
   }
 
-  async getNeighborhoods(city?: string, forceRefresh = false): Promise<CachedNeighborhood[]> {
-    const cacheKey = city || 'all';
+  async getNeighborhoods(city?: string, mapId?: string, forceRefresh = false): Promise<CachedNeighborhood[]> {
+    const cacheKey = `${city || 'all'}-${mapId || 'all'}`;
     
     // Check cache first
     if (!forceRefresh && this.neighborhoodCache.has(cacheKey)) {
@@ -89,21 +82,24 @@ class NeighborhoodCache {
 
       if (city) {
         // Fetch by city
-        const [neighborhoodsResponse, boroughsResponse, citiesResponse] = await Promise.all([
+        const [neighborhoodsResponse, districtsResponse] = await Promise.all([
           api.get(`/api/neighborhoods?city=${city}`),
-          api.get(`/api/boroughs?city=${city}`),
-          citiesApi.getAllCities()
+          districtsApi.getAllDistricts()
         ]);
         neighborhoods = neighborhoodsResponse.data;
-        boroughs = boroughsResponse.data;
-        cities = citiesResponse;
+        const districts = districtsResponse;
+        boroughs = districts.filter(d => d.type === 'borough');
+        cities = districts.filter(d => d.type === 'city');
       } else {
         // Fetch all
-        [neighborhoods, boroughs, cities] = await Promise.all([
+        const [neighborhoodsResponse, districtsResponse] = await Promise.all([
           neighborhoodsApi.getAllNeighborhoods(),
-          boroughsApi.getAllBoroughs(),
-          citiesApi.getAllCities()
+          mapId ? districtsApi.getDistrictsByMap(mapId) : districtsApi.getAllDistricts()
         ]);
+        neighborhoods = neighborhoodsResponse;
+        const districts = districtsResponse;
+        boroughs = districts.filter(d => d.type === 'borough');
+        cities = districts.filter(d => d.type === 'city');
       }
 
       // Create lookup maps
@@ -113,11 +109,11 @@ class NeighborhoodCache {
       boroughs.forEach(borough => {
         boroughMap.set(borough._id, borough);
         // Update borough ID map
-        const cityInfo = borough.city || (borough.cityId ? cityMap.get(borough.cityId) : null);
+        const cityInfo = borough.city || (borough.city ? cityMap.get(borough.city) : null);
         this.boroughIdMap.set(borough._id, {
           id: borough._id,
           name: borough.name,
-          cityId: borough.cityId,
+          cityId: borough.city,
           cityName: cityInfo?.name,
           city: cityInfo?.name || 'Unknown'
         });
@@ -137,25 +133,25 @@ class NeighborhoodCache {
 
       // Transform neighborhoods with borough/city info
       const cachedNeighborhoods: CachedNeighborhood[] = neighborhoods.map(neighborhood => {
-        if (neighborhood.categoryType === 'borough' && neighborhood.boroughId) {
+        if (neighborhood.categoryType === 'borough' && neighborhood.borough) {
           // Borough-based neighborhood (NYC)
-          const borough = boroughMap.get(neighborhood.boroughId);
-          const city = borough?.cityId ? cityMap.get(borough.cityId) : null;
+          const borough = boroughMap.get(neighborhood.borough);
+          const city = borough?.city ? cityMap.get(borough.city) : null;
           return {
             id: neighborhood._id,
             name: neighborhood.name,
-            boroughId: neighborhood.boroughId,
+            boroughId: neighborhood.borough,
             boroughName: borough?.name || 'Unknown',
             categoryType: 'borough',
             city: city?.name || 'Unknown'
           };
-        } else if (neighborhood.categoryType === 'city' && neighborhood.cityId) {
+        } else if (neighborhood.categoryType === 'city' && neighborhood.city) {
           // City-based neighborhood (Boston, etc.)
-          const city = cityMap.get(neighborhood.cityId);
+          const city = cityMap.get(neighborhood.city);
           return {
             id: neighborhood._id,
             name: neighborhood.name,
-            cityId: neighborhood.cityId,
+            cityId: neighborhood.city,
             cityName: city?.name || 'Unknown',
             categoryType: 'city',
             city: city?.name || 'Unknown'
@@ -215,10 +211,9 @@ class NeighborhoodCache {
         boroughs = boroughsResponse.data;
         cities = citiesResponse;
       } else {
-        [boroughs, cities] = await Promise.all([
-          boroughsApi.getAllBoroughs(),
-          citiesApi.getAllCities()
-        ]);
+        const districts = await districtsApi.getAllDistricts();
+        boroughs = districts.filter(d => d.type === 'borough');
+        cities = districts.filter(d => d.type === 'city');
       }
 
       // Create city lookup map
@@ -229,11 +224,11 @@ class NeighborhoodCache {
 
       // Transform boroughs
       const cachedBoroughs: CachedBorough[] = boroughs.map(borough => {
-        const city = borough.city || (borough.cityId ? cityMap.get(borough.cityId) : null);
+        const city = borough.city || (borough.city ? cityMap.get(borough.city) : null);
         const cached: CachedBorough = {
           id: borough._id,
           name: borough.name,
-          cityId: borough.cityId,
+          cityId: borough.city,
           cityName: city?.name,
           city: city?.name || 'Unknown'
         };

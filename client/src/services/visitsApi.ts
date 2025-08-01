@@ -2,10 +2,10 @@ import api from '../config/api';
 
 export interface Visit {
   _id: string;
-  userId: string;
+  user: string;
   visitType: 'neighborhood' | 'country';
-  neighborhoodId?: string;
-  countryId?: string;
+  neighborhood?: string;
+  country?: string;
   visited: boolean;
   notes: string;
   visitDate: string;
@@ -17,7 +17,7 @@ export interface Visit {
 
 export interface CreateNeighborhoodVisitData {
   neighborhoodName: string;
-  boroughName: string;
+  districtName: string;
   visited: boolean;
   notes?: string;
   visitDate?: Date;
