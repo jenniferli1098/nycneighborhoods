@@ -610,6 +610,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         <NeighborhoodDialog
           open={!!selectedNeighborhood}
           onClose={handleCloseDialog}
+          neighborhoodId={selectedNeighborhood.id}
           neighborhood={selectedNeighborhood.name}
           borough={selectedNeighborhood.borough}
           onSave={handleSaveVisit}
