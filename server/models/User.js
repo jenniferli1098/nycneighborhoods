@@ -69,6 +69,10 @@ userSchema.pre('save', async function(next) {
 });
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  // Return false if no password is set (Google OAuth users)
+  if (!this.password) {
+    return false;
+  }
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

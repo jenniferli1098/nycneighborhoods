@@ -105,7 +105,16 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    console.log('✅ User found:', { id: user._id, username: user.username, email: user.email });
+    console.log('✅ User found:', { id: user._id, username: user.username, email: user.email, hasGoogleId: !!user.googleId });
+    
+    // Check if this is a Google OAuth user trying to login with password
+    if (user.googleId && !user.password) {
+      console.log('❌ Login failed: Google OAuth user attempting password login');
+      return res.status(400).json({ 
+        error: 'This account was created with Google. Please use Google Sign-In instead.' 
+      });
+    }
+    
     console.log('🔑 Verifying password...');
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
