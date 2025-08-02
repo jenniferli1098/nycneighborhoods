@@ -68,9 +68,11 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         await Promise.all([
           loadNeighborhoods(currentMapId),
           loadDistricts(currentMapId),
-          loadGeoJsonNeighborhoods(),
-          fetchVisits()
+          loadGeoJsonNeighborhoods()
         ]);
+        
+        // Step 3: Load visits after mapId is set
+        await fetchVisits();
         
       } catch (error) {
         console.error(`❌ ${mapConfig.name}: Failed to initialize data:`, error);
@@ -197,12 +199,18 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   /**
    * Fetch user's neighborhood visits from server
-   * Uses optimized getVisitsByType to only fetch neighborhood visits
+   * Uses map-specific endpoint for better performance
    */
   const fetchVisits = async () => {
+    if (!mapId) {
+      console.warn(`⚠️ ${mapConfig.name}: MapId not available, skipping visits fetch`);
+      return;
+    }
+
     try {
-      console.log(`📡 ${mapConfig.name}: Fetching neighborhood visits from API`);
-      const visits = await visitsApi.getVisitsByType('neighborhood');
+      console.log(`📡 ${mapConfig.name}: Using map-specific visits endpoint for mapId:`, mapId);
+      const visits = await visitsApi.getVisitsByMap(mapId);
+      
       console.log(`📝 ${mapConfig.name}: Received neighborhood visits data:`, visits);
       console.log(`📊 ${mapConfig.name}: Number of neighborhood visits:`, visits.length);
       
@@ -614,6 +622,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           neighborhood={selectedNeighborhood.name}
           borough={selectedNeighborhood.borough}
           onSave={handleSaveVisit}
+          mapId={mapId}
         />
       )}
     </Box>

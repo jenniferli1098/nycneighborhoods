@@ -297,4 +297,59 @@ router.get('/popularity/countries', async (req, res) => {
   }
 });
 
+// Get all visits for a given map
+router.get('/map/:mapId', auth, async (req, res) => {
+  try {
+    const { mapId } = req.params;
+    
+    console.log('📡 GET /visits/map: Fetching visits for map:', mapId, 'user:', req.user._id.toString());
+    
+    if (!mongoose.Types.ObjectId.isValid(mapId)) {
+      return res.status(400).json({ error: 'Invalid map ID' });
+    }
+    
+    const Map = require('../models/Map');
+    const map = await Map.findById(mapId);
+    if (!map) {
+      return res.status(404).json({ error: 'Map not found' });
+    }
+    
+    const districts = await District.find({ map: mapId });
+    const districtIds = districts.map(d => d._id);
+    
+    if (districtIds.length === 0) {
+      console.log('📝 GET /visits/map: No districts found for map:', mapId);
+      return res.json([]);
+    }
+    
+    const neighborhoods = await Neighborhood.find({ district: { $in: districtIds } });
+    const neighborhoodIds = neighborhoods.map(n => n._id);
+    
+    if (neighborhoodIds.length === 0) {
+      console.log('📝 GET /visits/map: No neighborhoods found for map:', mapId);
+      return res.json([]);
+    }
+    
+    const visits = await Visit.find({ 
+      user: req.user._id.toString(),
+      neighborhood: { $in: neighborhoodIds },
+      visitType: 'neighborhood'
+    })
+      .populate({
+        path: 'neighborhood',
+        populate: {
+          path: 'district',
+          select: 'name type'
+        }
+      })
+      .sort({ updatedAt: -1 });
+    
+    console.log('📝 GET /visits/map: Found', visits.length, 'visits for map:', mapId);
+    res.json(visits);
+  } catch (error) {
+    console.error('❌ GET /visits/map: Error fetching visits for map:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

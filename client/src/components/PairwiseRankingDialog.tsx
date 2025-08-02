@@ -49,6 +49,7 @@ interface PairwiseRankingDialogProps {
     category: 'Good' | 'Mid' | 'Bad';
     visitId: string;
   };
+  mapId?: string; // Optional map ID to filter visits to specific map
 }
 
 const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
@@ -58,7 +59,8 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
   visitType,
   locationData,
   onRankingComplete,
-  existingRating
+  existingRating,
+  mapId
 }) => {
   const [step, setStep] = useState(0); // 0: category, 1: compare, 2: result
   const [selectedCategory, setSelectedCategory] = useState<'Good' | 'Mid' | 'Bad' | null>(null);
@@ -78,8 +80,20 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     setError(null);
 
     try {
-      // Fetch existing visits in this category
-      const allVisits = await visitsApi.getAllVisits();
+      // Fetch existing visits - use appropriate endpoint based on type and scope
+      let allVisits: Visit[];
+      if (visitType === 'neighborhood') {
+        if (mapId) {
+          console.log(`📡 PairwiseRankingDialog: Using map-specific visits for mapId:`, mapId);
+          allVisits = await visitsApi.getVisitsByMap(mapId);
+        } else {
+          console.log(`📡 PairwiseRankingDialog: Using neighborhood visits endpoint`);
+          allVisits = await visitsApi.getVisitsByType('neighborhood');
+        }
+      } else {
+        console.log(`📡 PairwiseRankingDialog: Using country visits endpoint`);
+        allVisits = await visitsApi.getVisitsByType('country');
+      }
       
       // Filter visits for this category and type
       const relevantVisits = allVisits.filter((visit) => 

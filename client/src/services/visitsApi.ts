@@ -74,5 +74,11 @@ export const visitsApi = {
   // Delete a visit
   deleteVisit: async (visitId: string): Promise<void> => {
     await api.delete(`/api/visits/${visitId}`);
+  },
+
+  // Get all visits for a given map
+  getVisitsByMap: async (mapId: string): Promise<Visit[]> => {
+    const response = await api.get(`/api/visits/map/${mapId}`);
+    return response.data;
   }
 };

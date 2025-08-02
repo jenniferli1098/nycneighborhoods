@@ -11,6 +11,7 @@ interface NeighborhoodDialogProps {
   neighborhood: string;
   borough: string;
   onSave: () => void;
+  mapId?: string;
 }
 
 interface Visit extends BaseVisit {
@@ -27,7 +28,8 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
   neighborhoodId,
   neighborhood,
   borough,
-  onSave
+  onSave,
+  mapId
 }) => {
   const [visit, setVisit] = useState<Visit>({
     neighborhood,
@@ -52,7 +54,10 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
 
   const fetchVisit = async () => {
     try {
-      const visits = await visitsApi.getAllVisits();
+      // Use map-specific visits when available for better performance
+      const visits = mapId 
+        ? await visitsApi.getVisitsByMap(mapId)
+        : await visitsApi.getVisitsByType('neighborhood');
       
       const existingVisit = visits.find(
         (v: any) => {
@@ -208,6 +213,7 @@ const NeighborhoodDialog: React.FC<NeighborhoodDialogProps> = ({
           category: visit.category,
           visitId: visit._id
         } : undefined}
+        mapId={mapId}
       />
     </>
   );
