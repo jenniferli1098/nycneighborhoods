@@ -41,7 +41,6 @@ interface SelectedNeighborhood {
  * Features optimistic updates for fast UI interactions
  */
 const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ mapConfig }) => {
-  console.log('🏗️ GenericNeighborhoodsPage: Component rendering with mapConfig:', mapConfig.name);
   
   // Authentication context
   const { user } = useAuth();
@@ -124,9 +123,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    */
   const loadMapData = async () => {
     try {
-      console.log(`📡 ${mapConfig.name}: Loading map data from API`);
       const map = await mapsApi.getMapBySlug(mapConfig.slug);
-      console.log(`📝 ${mapConfig.name}: Received map data:`, map);
       setMapId(map._id);
       setMapData(map);
       return map._id;
@@ -144,8 +141,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    */
   const loadNeighborhoods = async (currentMapId?: string) => {
     try {
-      console.log(`📡 ${mapConfig.name}: Loading neighborhoods from API`);
-      
       if (currentMapId) {
         // Load neighborhoods directly from API for this map
         const neighborhoodsData = await mapsApi.getMapNeighborhoods(currentMapId);
@@ -157,7 +152,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           districtId: n.district
         } as CachedNeighborhood));
         
-        console.log(`📝 ${mapConfig.name}: Received neighborhoods data:`, neighborhoods.length, 'neighborhoods');
         setNeighborhoods(neighborhoods);
       }
     } catch (err) {
@@ -172,10 +166,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    */
   const loadGeoJsonNeighborhoods = async () => {
     try {
-      console.log(`📡 ${mapConfig.name}: Loading GeoJSON neighborhoods for map`);
       const data = await neighborhoodsApi.getGeoJsonNeighborhoods(mapConfig.slug);
-      console.log(`📝 ${mapConfig.name}: Received GeoJSON data:`, data.features?.length || 0, 'features');
-      console.log(`📝 ${mapConfig.name}: Sample feature:`, data.features?.[0]?.properties);
       setGeoJsonNeighborhoods(data.features || []);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to load GeoJSON neighborhoods:`, err);
@@ -184,11 +175,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   const loadDistricts = async (currentMapId?: string) => {
     try {
-      console.log(`📡 ${mapConfig.name}: Loading districts from API`);
-      
       if (currentMapId) {
         const districtsData = await districtsApi.getDistrictsByMap(currentMapId);
-        console.log(`📝 ${mapConfig.name}: Received districts data:`, districtsData.length, 'districts');
         setDistricts(districtsData);
       }
     } catch (err) {
@@ -203,59 +191,35 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    */
   const fetchVisits = async () => {
     try {
-      console.log(`📡 ${mapConfig.name}: Fetching all neighborhood visits from API`);
       const visits = await visitsApi.getVisitsByType('neighborhood');
-      
-      console.log(`📝 ${mapConfig.name}: Received neighborhood visits data:`, visits);
-      console.log(`📊 ${mapConfig.name}: Number of neighborhood visits:`, visits.length);
-      
-      const visitedIds = visits.filter((v: Visit) => v.visited && v.neighborhood).map((v: Visit) => v.neighborhood);
-      console.log(`🎯 ${mapConfig.name}: Visited neighborhood IDs:`, visitedIds);
-      
       setVisits(visits);
-      console.log(`✅ ${mapConfig.name}: Visits state updated`);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to fetch neighborhood visits:`, err);
     }
   };
 
   const handleNeighborhoodClick = (neighborhood: string, category: string) => {
-    console.log(`🖱️ ${mapConfig.name}: handleNeighborhoodClick called with:`, { neighborhood, category, user: !!user });
-    console.log(`🖱️ ${mapConfig.name}: Available categoryIdToName mapping:`, Array.from(categoryIdToName.entries()));
-    console.log(`🖱️ ${mapConfig.name}: Available neighborhoods sample:`, neighborhoods.slice(0, 3).map(n => ({name: n.name, districtId: n.districtId})));
-    
     if (!user) {
-      console.log(`⚠️ ${mapConfig.name}: User not authenticated, skipping neighborhood click`);
       alert('Please log in to interact with neighborhoods');
       return;
     }
     
-      // For maps with database neighborhoods, find actual neighborhood ID
-      console.log(`🔍 ${mapConfig.name}: Available neighborhoods count:`, neighborhoods.length);
-      console.log(`🔍 ${mapConfig.name}: ${mapConfig.categoryType} mapping size:`, categoryIdToName.size);
-      
-      const neighborhoodData = neighborhoods.find(n => {
-        const categoryId = n.districtId;
-        const mappedCategory = categoryIdToName.get(categoryId || '');
-        console.log(`🔍 ${mapConfig.name}: Comparing "${n.name}" === "${neighborhood}" && "${mappedCategory}" === "${category}"`);
-        return n.name === neighborhood && mappedCategory === category;
+    // For maps with database neighborhoods, find actual neighborhood ID
+    const neighborhoodData = neighborhoods.find(n => {
+      const categoryId = n.districtId;
+      const mappedCategory = categoryIdToName.get(categoryId || '');
+      return n.name === neighborhood && mappedCategory === category;
+    });
+    
+    if (neighborhoodData) {
+      setSelectedNeighborhood({ 
+        id: neighborhoodData.id, 
+        name: neighborhood, 
+        borough: category 
       });
-      
-      if (neighborhoodData) {
-        console.log(`✅ ${mapConfig.name}: Found neighborhood:`, neighborhoodData);
-        setSelectedNeighborhood({ 
-          id: neighborhoodData.id, 
-          name: neighborhood, 
-          borough: category 
-        });
-      } else {
-        console.error(`❌ ${mapConfig.name}: Could not find neighborhood ID for:`, neighborhood, category);
-        console.log(`📋 ${mapConfig.name}: Available neighborhoods sample:`, neighborhoods.slice(0, 5).map(n => {
-          const categoryId = n.districtId;
-          return `${n.name} - ${categoryIdToName.get(categoryId || '')}`;
-        }));
-        console.log(`📋 ${mapConfig.name}: Available ${mapConfig.categoryType}s:`, Array.from(categoryIdToName.values()));
-      }
+    } else {
+      console.error(`❌ ${mapConfig.name}: Could not find neighborhood ID for:`, neighborhood, category);
+    }
   };
 
   // ============================================================================
@@ -276,13 +240,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       const category_obj = districts.find(d => d.name === category);
       if (!category_obj) {
         console.error(`❌ ${mapConfig.name}: district not found:`, category);
-        console.log(`📋 ${mapConfig.name}: Available districts:`, districts.map(d => d.name));
         return { neighborhoodObj: null, existingVisit: undefined };
       }
-
-      console.log(`🔍 ${mapConfig.name}: Looking for neighborhood "${neighborhood}" in district "${category}" (ID: ${category_obj._id})`);
-      console.log(`📋 ${mapConfig.name}: Available neighborhoods in this district:`, neighborhoods.filter(n => n.districtId === category_obj._id).map(n => n.name));
-      console.log(`📋 ${mapConfig.name}: Sample neighborhood structure:`, neighborhoods[0]);
 
       neighborhoodObj = neighborhoods.find(n => {
         return n.name === neighborhood && n.districtId === category_obj._id;
@@ -317,10 +276,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     _category: string
   ) => {
     if (shouldDelete && existingVisit) {
-      console.log(`⚡ ${mapConfig.name}: Optimistically removing visit for:`, neighborhood);
       setVisits(prevVisits => prevVisits.filter(v => v._id !== existingVisit._id));
     } else {
-      console.log(`⚡ ${mapConfig.name}: Optimistically adding visit for:`, neighborhood);
       const optimisticVisit: Visit = {
         _id: `temp-${Date.now()}`,
         user: user!.id,
@@ -350,7 +307,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   ) => {
     if (shouldDelete && existingVisit) {
       await visitsApi.deleteVisit(existingVisit._id);
-      console.log(`✅ ${mapConfig.name}: Visit deleted successfully on server`);
     } else {
       const visitData = {
         neighborhoodName: neighborhood,
@@ -363,7 +319,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       };
       
       const newVisit = await visitsApi.createNeighborhoodVisit(visitData);
-      console.log(`✅ ${mapConfig.name}: Visit created successfully on server:`, newVisit);
       
       // Replace optimistic visit with real server data
       setVisits(prevVisits => 
@@ -381,7 +336,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    * Rollback optimistic update on error
    */
   const rollbackOptimisticUpdate = async () => {
-    console.log(`🔄 ${mapConfig.name}: Rolling back optimistic update due to error`);
     await fetchVisits();
   };
   
@@ -391,11 +345,8 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    * Supports both create and delete operations
    */
   const handleQuickVisit = async (neighborhood: string, category: string) => {
-    console.log(`⚡ ${mapConfig.name}: handleQuickVisit called with:`, { neighborhood, category, user: !!user });
-    
     // Authentication check
     if (!user) {
-      console.log(`⚠️ ${mapConfig.name}: User not authenticated, skipping quick visit`);
       alert('Please log in to mark neighborhoods as visited');
       return;
     }
@@ -411,7 +362,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     const shouldSkip = existingVisit && !shouldDelete;
     
     if (shouldSkip) {
-      console.log(`⚡ ${mapConfig.name}: Visit already exists with user data, skipping to prevent data loss:`, existingVisit);
       return;
     }
     
@@ -432,7 +382,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    * Handle dialog close
    */
   const handleCloseDialog = () => {
-    console.log(`❌ ${mapConfig.name}: Dialog closed`);
     setSelectedNeighborhood(null);
   };
 
@@ -441,8 +390,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    * Uses optimistic update when visit data is provided
    */
   const handleSaveVisit = async (updatedVisit?: Visit) => {
-    console.log(`💾 ${mapConfig.name}: Visit saved, optimistically updating local state`);
-    
     if (updatedVisit) {
       setVisits(prevVisits => 
         prevVisits.map(v => 
@@ -450,7 +397,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         )
       );
     } else {
-      console.log(`🔄 ${mapConfig.name}: No visit data provided, refetching from server`);
       await fetchVisits();
     }
   };
@@ -468,14 +414,12 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       .filter(v => v.visited && v.neighborhood)
       .map(v => v.neighborhood!)
   );
-  console.log(`🏠 ${mapConfig.name}: Visited neighborhood IDs:`, visitedNeighborhoodIds.size, Array.from(visitedNeighborhoodIds));
 
   /**
    * Convert visited neighborhood IDs to names for map rendering
    * The map component works with neighborhood names, not database IDs
    */
   const visitedNeighborhoodNames = new Set<string>();
-  console.log(`🔄 ${mapConfig.name}: Creating visited neighborhood names mapping from loaded data...`);
   
   for (const neighborhoodId of visitedNeighborhoodIds) {
     const neighborhood = neighborhoods.find(n => n.id === neighborhoodId);
@@ -483,7 +427,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       visitedNeighborhoodNames.add(neighborhood.name);
     }
   }
-  console.log(`🏠 ${mapConfig.name}: Final visited neighborhood names for map:`, visitedNeighborhoodNames.size, Array.from(visitedNeighborhoodNames));
 
   /**
    * Create category ID to name mapping for neighborhood lookup
@@ -493,8 +436,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   for (const district of districts) {
     categoryIdToName.set(district._id, district.name);
   }
-  
-  console.log(`🏘️ ${mapConfig.name}: ${mapConfig.categoryType} mapping complete:`, categoryIdToName.size, `${mapConfig.categoryType}s loaded`);
 
   // ============================================================================
   // LOADING AND ERROR STATES

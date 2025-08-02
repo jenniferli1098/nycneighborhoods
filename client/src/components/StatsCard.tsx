@@ -42,22 +42,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
     
     // Check if neighborhood belongs to current area's districts
     const districtId = neighborhood.districtId;
-    const isRelevant = districtId && districtMap.has(districtId);
-    
-    // Debug logging for first few visits
-    if (visits.indexOf(visit) < 3) {
-      console.log(`🔍 StatsCard (${areaName}): Visit filter check:`, {
-        visitId: visit._id,
-        neighborhoodType: typeof visit.neighborhood,
-        neighborhood: neighborhood,
-        districtId: districtId,
-        hasDistrictInMap: districtMap.has(districtId || ''),
-        isRelevant: isRelevant,
-        availableDistricts: Array.from(districtMap.keys())
-      });
-    }
-    
-    return isRelevant;
+    return districtId && districtMap.has(districtId);
   });
 
   // Calculate total neighborhoods visited (only in current context)
@@ -70,14 +55,6 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
   const totalNeighborhoods = relevantNeighborhoods.length;
   const completionPercentage = totalNeighborhoods > 0 ? (totalVisited / totalNeighborhoods) * 100 : 0;
   
-  // Debug logging
-  console.log(`📊 StatsCard (${areaName}): Stats calculation:`, {
-    totalVisits: visits.length,
-    relevantVisits: relevantVisits.length,
-    totalVisited: totalVisited,
-    totalNeighborhoods: totalNeighborhoods,
-    completionPercentage: completionPercentage
-  });
 
   // Calculate favorite district (highest average rating)
   const districtStats = new Map<string, { totalRating: number; count: number; name: string }>();

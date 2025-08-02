@@ -41,13 +41,6 @@ const GenericMap: React.FC<GenericMapProps> = ({
   mapConfig,
   isAuthenticated = false
 }) => {
-  console.log('🗺️ GenericMap: Component rendered with props:', {
-    neighborhoodsCount: neighborhoods.length,
-    visitedCount: visitedNeighborhoods.size,
-    hasClickHandler: !!onNeighborhoodClick,
-    hasQuickVisitHandler: !!onNeighborhoodQuickVisit,
-    isAuthenticated
-  });
   
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
   const [geoJsonKey, setGeoJsonKey] = useState(0);

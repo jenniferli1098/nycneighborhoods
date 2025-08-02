@@ -58,9 +58,7 @@ const UserDashboard: React.FC = () => {
   const loadMapNeighborhoods = useCallback(async (map: Map): Promise<CachedNeighborhood[]> => {
     try {
       // First try the map-specific API endpoint - this should be the primary method
-      console.log(`📝 UserDashboard: Loading neighborhoods for ${map.name} via Maps API`);
       const neighborhoods = await mapsApi.getMapNeighborhoods(map._id);
-      console.log(`📝 UserDashboard: Maps API returned ${neighborhoods.length} neighborhoods for ${map.name}`);
       
       // Convert to CachedNeighborhood format
       return neighborhoods.map(n => ({
@@ -108,7 +106,6 @@ const UserDashboard: React.FC = () => {
   const loadUserStats = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('📊 UserDashboard: Loading user statistics');
       
       // Fetch all visits (optimized: get both neighborhood and country visits)
       const [neighborhoodVisits, countryVisits] = await Promise.all([
@@ -116,13 +113,10 @@ const UserDashboard: React.FC = () => {
         visitsApi.getVisitsByType('country')
       ]);
       const visits = [...neighborhoodVisits, ...countryVisits];
-      console.log('📝 UserDashboard: Received visits:', visits.length);
-      console.log('📝 UserDashboard: Sample visit:', visits[0]);
       setAllVisits(visits);
       
       // Fetch countries for lookup
       const countriesData = await countriesApi.getAllCountries();
-      console.log('📝 UserDashboard: Received countries:', countriesData.length);
       setCountries(countriesData);
       
       
@@ -132,13 +126,9 @@ const UserDashboard: React.FC = () => {
       try {
         // Get all active maps from the API
         const maps = await mapsApi.getAllMaps();
-        console.log(`📝 UserDashboard: Received ${maps.length} maps from API:`, maps.map(m => m.name));
         
         for (const map of maps) {
-
           try {
-            console.log(`📝 UserDashboard: Loading data for ${map.name} (type: ${map.type})`);
-            
             // Load neighborhoods and categories using Maps API with fallback to cache
             const neighborhoods = await loadMapNeighborhoods(map);
             const categories = await loadMapCategories(map);
@@ -149,10 +139,6 @@ const UserDashboard: React.FC = () => {
               categories,
               isLoaded: true
             };
-            
-            console.log(`📝 UserDashboard: ${map.name} - neighborhoods: ${neighborhoods.length}, categories: ${categories.length}`);
-            console.log(`📝 UserDashboard: ${map.name} - sample neighborhood:`, neighborhoods[0]);
-            console.log(`📝 UserDashboard: ${map.name} - sample category:`, categories[0]);
             
           } catch (error) {
             console.error(`❌ UserDashboard: ${map.name} data loading failed:`, error);
@@ -533,20 +519,9 @@ const UserDashboard: React.FC = () => {
         {/* Dynamic Neighborhood StatsCards for all configured maps */}
         {Object.entries(mapAreas)
           .filter(([mapName, areaData]) => {
-            const isValid = areaData.isLoaded && areaData.neighborhoods.length > 0 && areaData.categories.length > 0;
-            console.log(`📊 UserDashboard: ${mapName} StatsCard filter - isLoaded: ${areaData.isLoaded}, neighborhoods: ${areaData.neighborhoods.length}, categories: ${areaData.categories.length}, showing: ${isValid}`);
-            return isValid;
+            return areaData.isLoaded && areaData.neighborhoods.length > 0 && areaData.categories.length > 0;
           })
           .map(([mapName, areaData]) => {
-            console.log(`📊 UserDashboard: Rendering StatsCard for ${mapName}`, {
-              visits: allVisits.length,
-              neighborhoods: areaData.neighborhoods.length,
-              categories: areaData.categories.length,
-              categoryType: areaData.map.type
-            });
-            console.log(`📊 UserDashboard: Sample visit for ${mapName}:`, allVisits[0]);
-            console.log(`📊 UserDashboard: Sample neighborhood for ${mapName}:`, areaData.neighborhoods[0]);
-            console.log(`📊 UserDashboard: Sample category for ${mapName}:`, areaData.categories[0]);
             return (
               <Box key={mapName} sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
                 <StatsCard
