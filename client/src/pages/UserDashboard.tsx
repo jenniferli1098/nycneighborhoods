@@ -66,6 +66,7 @@ const UserDashboard: React.FC = () => {
       return neighborhoods.map(n => ({
         id: n._id,
         name: n.name,
+        districtId: n.district, // This is the required field
         boroughId: n.district,
         districtName: n.districtData?.name || 'Unknown',
         cityId: n.district,
@@ -87,26 +88,14 @@ const UserDashboard: React.FC = () => {
    */
   const loadMapCategories = useCallback(async (map: Map): Promise<(CachedBorough | CachedCity)[]> => {
     try {
-      if (map.categoryType === 'borough') {
-        // Load boroughs for this map
-        const boroughs = await mapsApi.getMapBoroughs(map._id);
-        return boroughs.map(b => ({
-          id: b._id,
-          name: b.name,
-          cityId: b.city,
-          cityName: b.city?.name || 'Unknown',
-          city: b.city?.name || 'Unknown'
-        } as CachedBorough));
-      } else {
-        // Load districts for this map
-        const districts = await districtsApi.getDistrictsByMap(map._id);
-        return districts.map(d => ({
-          id: d._id,
-          name: d.name,
-          cityId: d._id,
-          city: d.name
-        } as CachedBorough)); // Map to borough-compatible structure
-      }
+      // Load districts for this map (all maps use districts)
+      const districts = await mapsApi.getMapDistricts(map._id);
+      return districts.map(d => ({
+        id: d._id,
+        name: d.name,
+        cityId: d._id,
+        city: d.name
+      } as CachedBorough)); // Map to borough-compatible structure
     } catch (err) {
       console.error(`❌ UserDashboard: Map categories API failed for ${map.name}, this indicates a data loading issue:`, err);
       
@@ -148,7 +137,7 @@ const UserDashboard: React.FC = () => {
         for (const map of maps) {
 
           try {
-            console.log(`📝 UserDashboard: Loading data for ${map.name} (category: ${map.categoryType})`);
+            console.log(`📝 UserDashboard: Loading data for ${map.name} (type: ${map.type})`);
             
             // Load neighborhoods and categories using Maps API with fallback to cache
             const neighborhoods = await loadMapNeighborhoods(map);
@@ -553,15 +542,18 @@ const UserDashboard: React.FC = () => {
               visits: allVisits.length,
               neighborhoods: areaData.neighborhoods.length,
               categories: areaData.categories.length,
-              categoryType: areaData.map.categoryType
+              categoryType: areaData.map.type
             });
+            console.log(`📊 UserDashboard: Sample visit for ${mapName}:`, allVisits[0]);
+            console.log(`📊 UserDashboard: Sample neighborhood for ${mapName}:`, areaData.neighborhoods[0]);
+            console.log(`📊 UserDashboard: Sample category for ${mapName}:`, areaData.categories[0]);
             return (
               <Box key={mapName} sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
                 <StatsCard
                   visits={allVisits}
                   neighborhoods={areaData.neighborhoods}
-                  districts={areaData.categories}
-                  categoryType={areaData.map.categoryType}
+                  districts={areaData.categories.map(cat => ({ _id: cat.id, name: cat.name, type: areaData.map.type }))}
+                  categoryType={areaData.map.type}
                   areaName={areaData.map.name}
                 />
               </Box>
