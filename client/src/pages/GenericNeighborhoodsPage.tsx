@@ -19,6 +19,7 @@ import {neighborhoodsApi} from '../services/neighborhoodsApi';
 import { mapsApi } from '../services/mapsApi';
 import { districtsApi } from '../services/districtsApi';
 import { type CachedNeighborhood } from '../services/neighborhoodCache';
+import { referenceDataService } from '../services/referenceDataService';
 import type { MapConfig } from '../config/mapConfigs';
 import { getCategoryColor, DEFAULT_COLOR } from '../utils/colorPalette';
 
@@ -72,6 +73,9 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         
         // Step 3: Load visits (all neighborhood visits)
         await fetchVisits();
+        
+        // Step 4: Populate reference data service for fast lookups
+        populateReferenceData();
         
       } catch (error) {
         console.error(`❌ ${mapConfig.name}: Failed to initialize data:`, error);
@@ -198,6 +202,40 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     }
   };
 
+  /**
+   * Populate the reference data service with loaded data for fast lookups
+   */
+  const populateReferenceData = () => {
+    try {
+      // Convert CachedNeighborhood back to Neighborhood format for the service
+      const neighborhoodData = neighborhoods.map(n => ({
+        _id: n.id,
+        name: n.name,
+        district: n.districtId,
+        createdAt: '',
+        updatedAt: ''
+      }));
+
+      // Convert districts to proper format  
+      const districtData = districts.map(d => ({
+        _id: d._id,
+        name: d.name,
+        mapData: mapData ? { 
+          _id: mapData._id, 
+          name: mapData.name, 
+          slug: mapData.slug, 
+          type: mapData.type 
+        } : undefined,
+        createdAt: d.createdAt || '',
+        updatedAt: d.updatedAt || ''
+      }));
+
+      referenceDataService.populate(neighborhoodData, districtData);
+    } catch (err) {
+      console.error(`❌ ${mapConfig.name}: Failed to populate reference data:`, err);
+    }
+  };
+
   const handleNeighborhoodClick = (neighborhood: string, category: string) => {
     if (!user) {
       alert('Please log in to interact with neighborhoods');
@@ -271,7 +309,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const applyOptimisticUpdate = async (
     shouldDelete: boolean, 
     existingVisit: Visit | undefined, 
-    neighborhoodObj: CachedNeighborhood | null, 
+    _neighborhoodObj: CachedNeighborhood | null, 
     neighborhood: string, 
     _category: string
   ) => {
@@ -303,7 +341,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     existingVisit: Visit | undefined, 
     neighborhood: string, 
     _category: string, 
-    neighborhoodObj: CachedNeighborhood | null
+    _neighborhoodObj: CachedNeighborhood | null
   ) => {
     if (shouldDelete && existingVisit) {
       await visitsApi.deleteVisit(existingVisit._id);
@@ -558,7 +596,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           neighborhood={selectedNeighborhood.name}
           borough={selectedNeighborhood.borough}
           onSave={handleSaveVisit}
-          mapId={mapId}
+          mapId={mapId || undefined}
         />
       )}
     </Box>

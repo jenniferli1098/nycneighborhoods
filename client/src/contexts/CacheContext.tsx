@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { neighborhoodCache } from '../services/neighborhoodCache';
+import { referenceDataService } from '../services/referenceDataService';
 
 interface CacheContextType {
   isPreloaded: boolean;
   preloadError: string | null;
-  refreshCache: (city?: string) => Promise<void>;
+  refreshCache: () => Promise<void>;
   getCacheStats: () => any;
 }
 
@@ -25,36 +25,37 @@ export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
 
   const preloadData = async () => {
     try {
-      console.log('🚀 CacheProvider: Skipping cache preload (using direct API calls)');
+      console.log('🚀 CacheProvider: ReferenceDataService initialized (populated by individual pages)');
       setPreloadError(null);
       
-      // Skip cache preloading since we now load data directly from maps API
+      // No preloading needed - data is populated by pages when they load from APIs
       
       setIsPreloaded(true);
-      console.log('✅ CacheProvider: Preload complete (no-op)');
+      console.log('✅ CacheProvider: Ready (reference data populated on-demand)');
     } catch (error) {
-      console.error('❌ CacheProvider: Preload failed:', error);
+      console.error('❌ CacheProvider: Initialization failed:', error);
       setPreloadError(error instanceof Error ? error.message : 'Unknown error');
       setIsPreloaded(false);
     }
   };
 
-  const refreshCache = async (city?: string) => {
+  const refreshCache = async () => {
     try {
-      console.log(`🔄 CacheProvider: Skipping cache refresh (using direct API calls)`);
+      console.log('🔄 CacheProvider: Clearing reference data');
       setPreloadError(null);
       
-      // Skip cache operations since we now load data directly from maps API
+      // Clear the reference data - it will be repopulated when pages load fresh data
+      referenceDataService.clear();
       
-      console.log('✅ CacheProvider: Cache refresh complete (no-op)');
+      console.log('✅ CacheProvider: Reference data cleared');
     } catch (error) {
-      console.error('❌ CacheProvider: Cache refresh failed:', error);
+      console.error('❌ CacheProvider: Clear failed:', error);
       setPreloadError(error instanceof Error ? error.message : 'Unknown error');
     }
   };
 
   const getCacheStats = () => {
-    return neighborhoodCache.getCacheStats();
+    return referenceDataService.getStats();
   };
 
   const value: CacheContextType = {

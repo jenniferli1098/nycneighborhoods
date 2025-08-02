@@ -13,7 +13,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { visitsApi, type Visit } from '../services/visitsApi';
 import { countriesApi, type Country } from '../services/countriesApi';
 import { mapsApi, type Map } from '../services/mapsApi';
-import { districtsApi } from '../services/districtsApi';
 import StatsCard from '../components/StatsCard';
 import { type CachedNeighborhood, type CachedBorough, type CachedCity } from '../services/neighborhoodCache';
 
@@ -518,7 +517,7 @@ const UserDashboard: React.FC = () => {
 
         {/* Dynamic Neighborhood StatsCards for all configured maps */}
         {Object.entries(mapAreas)
-          .filter(([mapName, areaData]) => {
+          .filter(([_mapName, areaData]) => {
             return areaData.isLoaded && areaData.neighborhoods.length > 0 && areaData.categories.length > 0;
           })
           .map(([mapName, areaData]) => {
@@ -527,7 +526,7 @@ const UserDashboard: React.FC = () => {
                 <StatsCard
                   visits={allVisits}
                   neighborhoods={areaData.neighborhoods}
-                  districts={areaData.categories.map(cat => ({ _id: cat.id, name: cat.name, type: areaData.map.type }))}
+                  districts={areaData.categories.map(cat => ({ _id: cat.id, name: cat.name, createdAt: '', updatedAt: '' }))}
                   categoryType={areaData.map.type}
                   areaName={areaData.map.name}
                 />
