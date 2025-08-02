@@ -21,6 +21,7 @@ import {
 } from '@mui/icons-material';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
+import { handleFormError } from '../../utils/errorHandling';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -44,6 +45,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
     setLoading(true);
     setError('');
 
+    if (!username || !email || !password || !firstName || !lastName) {
+      setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -52,8 +59,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
 
     try {
       await register(username, email, password, firstName, lastName);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      handleFormError(err, setError);
     } finally {
       setLoading(false);
     }
@@ -66,8 +73,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
       if (credentialResponse.credential) {
         await loginWithGoogle(credentialResponse.credential);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      handleFormError(err, setError);
     } finally {
       setLoading(false);
     }

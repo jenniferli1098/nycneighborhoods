@@ -20,6 +20,7 @@ import {
 } from '@mui/icons-material';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
+import { handleFormError } from '../../utils/errorHandling';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -38,10 +39,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     setLoading(true);
     setError('');
 
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
     try {
       await login(email, password);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      handleFormError(err, setError);
     } finally {
       setLoading(false);
     }
@@ -54,8 +61,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       if (credentialResponse.credential) {
         await loginWithGoogle(credentialResponse.credential);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      handleFormError(err, setError);
     } finally {
       setLoading(false);
     }

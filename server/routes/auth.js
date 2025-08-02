@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { contentModerationMiddleware } = require('../middleware/contentModeration');
+const { formatUserResponse, createAuthResponse } = require('../utils/userHelpers');
 
 const router = express.Router();
 
@@ -17,59 +18,68 @@ router.post('/register',
   }), 
   async (req, res) => {
   try {
-    console.log('Registration request received:', req.body);
+    console.log('🆕 Registration request received for:', { 
+      username: req.body.username, 
+      email: req.body.email,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName 
+    });
     const { username, email, password, firstName, lastName } = req.body;
 
     // Validate required fields
     if (!username || !email || !password || !firstName || !lastName) {
+      console.log('❌ Registration failed: Missing required fields');
       return res.status(400).json({ error: 'Username, email, password, first name, and last name are required' });
     }
 
     // Check password length
     if (password.length < 6) {
+      console.log('❌ Registration failed: Password too short');
       return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    console.log('Checking for existing user...');
+    console.log('🔍 Checking for existing user with email/username...');
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      console.log('User already exists:', existingUser.email);
+      console.log('❌ Registration failed: User already exists:', { 
+        email: existingUser.email, 
+        username: existingUser.username 
+      });
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    console.log('Creating new user...');
+    console.log('💾 Creating new user...');
     const user = new User({ username, email, password, firstName, lastName });
     await user.save();
-    console.log('User created successfully:', user._id);
+    console.log('✅ User created successfully:', { 
+      id: user._id, 
+      username: user.username, 
+      email: user.email 
+    });
 
     const token = generateToken(user._id);
-    console.log('Token generated successfully');
+    console.log('🎟️ JWT token generated successfully for user:', user._id);
     
-    res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        description: user.description || '',
-        location: user.location || '',
-        mapPreferences: user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
-      }
-    });
+    res.status(201).json(createAuthResponse(user, token));
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration error:', { 
+      message: error.message, 
+      stack: error.stack,
+      email: req.body?.email,
+      username: req.body?.username 
+    });
     
     // Handle specific MongoDB validation errors
     if (error.name === 'ValidationError') {
       const validationErrors = Object.values(error.errors).map(err => err.message);
+      console.log('❌ Registration validation error:', validationErrors);
       return res.status(400).json({ error: `Validation error: ${validationErrors.join(', ')}` });
     }
     
     // Handle duplicate key errors
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
+      console.log('❌ Registration duplicate key error:', { field, value: error.keyValue[field] });
       return res.status(400).json({ error: `${field} already exists` });
     }
     
@@ -79,33 +89,42 @@ router.post('/register',
 
 router.post('/login', async (req, res) => {
   try {
+    console.log('🔐 Login request received for email:', req.body.email);
     const { email, password } = req.body;
 
+    // Validate required fields
+    if (!email || !password) {
+      console.log('❌ Login failed: Missing email or password');
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    console.log('🔍 Looking up user by email:', email);
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('❌ Login failed: User not found for email:', email);
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
+    console.log('✅ User found:', { id: user._id, username: user.username, email: user.email });
+    console.log('🔑 Verifying password...');
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log('❌ Login failed: Invalid password for user:', user.email);
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
+    console.log('✅ Password verified successfully');
     const token = generateToken(user._id);
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        description: user.description || '',
-        location: user.location || '',
-        mapPreferences: user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
-      }
-    });
+    console.log('🎟️ JWT token generated for user:', user._id);
+    
+    console.log('✅ Login successful for user:', { id: user._id, username: user.username });
+    res.json(createAuthResponse(user, token));
   } catch (error) {
+    console.error('❌ Login error:', { 
+      message: error.message, 
+      stack: error.stack,
+      email: req.body?.email 
+    });
     res.status(500).json({ error: error.message });
   }
 });
@@ -165,19 +184,7 @@ router.post('/google', async (req, res) => {
     }
 
     const jwtToken = generateToken(user._id);
-    res.json({
-      token: jwtToken,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        description: user.description || '',
-        location: user.location || '',
-        mapPreferences: user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
-      }
-    });
+    res.json(createAuthResponse(user, jwtToken));
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ error: 'Google authentication failed' });
@@ -186,19 +193,15 @@ router.post('/google', async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   try {
-    res.json({
-      user: {
-        id: req.user._id,
-        username: req.user.username,
-        email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        description: req.user.description || '',
-        location: req.user.location || '',
-        mapPreferences: req.user.mapPreferences || { visibleMaps: ['nyc', 'boston', 'countries'] }
-      }
-    });
+    console.log('👤 Get user profile request for user:', req.user._id);
+    
+    console.log('✅ User profile retrieved successfully:', { id: req.user._id, username: req.user.username });
+    res.json({ user: formatUserResponse(req.user) });
   } catch (error) {
+    console.error('❌ Get user profile error:', { 
+      message: error.message, 
+      userId: req.user?._id 
+    });
     res.status(500).json({ error: error.message });
   }
 });

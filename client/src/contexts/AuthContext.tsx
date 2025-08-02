@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../config/api';
+import { tokenManager } from '../utils/tokenManager';
 
 interface User {
   id: string;
@@ -41,9 +42,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = tokenManager.getToken();
     if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      tokenManager.initializeToken();
       fetchUser();
     } else {
       setLoading(false);
@@ -55,8 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.get('/api/auth/me');
       setUser(response.data.user);
     } catch (error) {
-      localStorage.removeItem('token');
-      delete api.defaults.headers.common['Authorization'];
+      tokenManager.removeToken();
     } finally {
       setLoading(false);
     }
@@ -65,10 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const response = await api.post('/api/auth/login', { email, password });
-      const { token, user } = response.data;
-      
-      localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const user = tokenManager.handleAuthResponse(response.data);
       setUser(user);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Login failed');
@@ -78,10 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async (token: string) => {
     try {
       const response = await api.post('/api/auth/google', { token });
-      const { token: jwtToken, user } = response.data;
-      
-      localStorage.setItem('token', jwtToken);
-      api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
+      const user = tokenManager.handleAuthResponse(response.data);
       setUser(user);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Google login failed');
@@ -91,10 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (username: string, email: string, password: string, firstName: string, lastName: string) => {
     try {
       const response = await api.post('/api/auth/register', { username, email, password, firstName, lastName });
-      const { token, user } = response.data;
-      
-      localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const user = tokenManager.handleAuthResponse(response.data);
       setUser(user);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Registration failed');
@@ -102,8 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    delete api.defaults.headers.common['Authorization'];
+    tokenManager.removeToken();
     setUser(null);
   };
 
