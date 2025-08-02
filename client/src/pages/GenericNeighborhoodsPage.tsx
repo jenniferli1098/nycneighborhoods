@@ -71,7 +71,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
           loadGeoJsonNeighborhoods()
         ]);
         
-        // Step 3: Load visits after mapId is set
+        // Step 3: Load visits (all neighborhood visits)
         await fetchVisits();
         
       } catch (error) {
@@ -199,17 +199,12 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   /**
    * Fetch user's neighborhood visits from server
-   * Uses map-specific endpoint for better performance
+   * Uses general neighborhood visits to show all visits across maps
    */
   const fetchVisits = async () => {
-    if (!mapId) {
-      console.warn(`⚠️ ${mapConfig.name}: MapId not available, skipping visits fetch`);
-      return;
-    }
-
     try {
-      console.log(`📡 ${mapConfig.name}: Using map-specific visits endpoint for mapId:`, mapId);
-      const visits = await visitsApi.getVisitsByMap(mapId);
+      console.log(`📡 ${mapConfig.name}: Fetching all neighborhood visits from API`);
+      const visits = await visitsApi.getVisitsByType('neighborhood');
       
       console.log(`📝 ${mapConfig.name}: Received neighborhood visits data:`, visits);
       console.log(`📊 ${mapConfig.name}: Number of neighborhood visits:`, visits.length);
