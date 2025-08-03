@@ -27,6 +27,16 @@ interface StatsCardProps {
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts, categoryType, areaName }) => {
+  // Debug logging
+  console.log('📊 StatsCard: Received data:', { 
+    visits: visits.length, 
+    neighborhoods: neighborhoods.length, 
+    districts: districts.length,
+    sampleVisit: visits[0],
+    sampleNeighborhood: neighborhoods[0],
+    sampleDistrict: districts[0]
+  });
+
   // Create district and neighborhood mappings
   const districtMap = new Map(districts.map(d => [d._id, d.name]));
   const neighborhoodMap = new Map(neighborhoods.map(n => [n.id, n]));
@@ -34,16 +44,38 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
   // Filter visits to only include those for neighborhoods in the current context
   const relevantVisits = visits.filter(visit => {
     if (!visit.neighborhood) return false;
+    
     // Handle both populated and non-populated neighborhood
-    const neighborhood = typeof visit.neighborhood === 'string' 
-      ? neighborhoodMap.get(visit.neighborhood)
-      : visit.neighborhood;
+    let neighborhood;
+    if (typeof visit.neighborhood === 'string') {
+      neighborhood = neighborhoodMap.get(visit.neighborhood);
+    } else {
+      neighborhood = visit.neighborhood;
+    }
+    
+    console.log('📊 StatsCard: Processing visit:', { 
+      visitId: visit._id,
+      neighborhoodType: typeof visit.neighborhood,
+      neighborhood: neighborhood,
+      rawNeighborhood: visit.neighborhood
+    });
+    
     if (!neighborhood) return false;
     
     // Check if neighborhood belongs to current area's districts
-    const districtId = neighborhood.districtId;
-    return districtId && districtMap.has(districtId);
+    const districtId = neighborhood.districtId || (neighborhood as any).district?._id;
+    const isRelevant = districtId && districtMap.has(districtId);
+    
+    console.log('📊 StatsCard: Visit relevance check:', { 
+      districtId, 
+      hasDistrict: districtMap.has(districtId), 
+      isRelevant 
+    });
+    
+    return isRelevant;
   });
+
+  console.log('📊 StatsCard: Relevant visits found:', relevantVisits.length);
 
   // Calculate total neighborhoods visited (only in current context)
   const totalVisited = relevantVisits.filter(v => v.visited).length;
