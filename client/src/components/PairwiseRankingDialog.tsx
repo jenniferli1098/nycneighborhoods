@@ -104,6 +104,7 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
         (!existingRating || visit._id !== existingRating.visitId)
       );
 
+
       // Initialize ranking system
       const newRanking = new SimplePairwiseRanking(relevantVisits, category);
       setRanking(newRanking);
@@ -220,9 +221,8 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     // Handle populated neighborhood (object)
     if (visit.neighborhood && typeof visit.neighborhood === 'object') {
       const neighborhood = visit.neighborhood as any;
-      const borough = neighborhood.boroughId?.name;
-      const city = neighborhood.cityId?.name;
-      return borough || city || 'Unknown Area';
+      const district = neighborhood.district?.name;
+      return district || 'Unknown District';
     }
     // Handle populated country (object)
     if (visit.country && typeof visit.country === 'object') {

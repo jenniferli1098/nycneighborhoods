@@ -65,17 +65,17 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         if (!currentMapId) return;
         
         // Step 2: Load all data in parallel using the mapId
-        await Promise.all([
+        const [neighborhoodsData, districtsData] = await Promise.all([
           loadNeighborhoods(currentMapId),
           loadDistricts(currentMapId),
           loadGeoJsonNeighborhoods()
         ]);
         
-        // Step 3: Load visits (all neighborhood visits)
+        // Step 3: Load visits (map-specific visits now that we have mapId)
         await fetchVisits();
         
-        // Step 4: Populate reference data service for fast lookups
-        populateReferenceData();
+        // Step 4: Populate reference data service with loaded data
+        populateReferenceDataWithData(neighborhoodsData, districtsData);
         
       } catch (error) {
         console.error(`❌ ${mapConfig.name}: Failed to initialize data:`, error);
@@ -113,10 +113,10 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   // Load user visits when authentication state changes
   useEffect(() => {
-    if (user) {
+    if (user && mapId) {
       fetchVisits();
     }
-  }, [user]);
+  }, [user, mapId]);
 
   // ============================================================================
   // DATA LOADING FUNCTIONS
@@ -157,10 +157,13 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         } as CachedNeighborhood));
         
         setNeighborhoods(neighborhoods);
+        return neighborhoods;
       }
+      return [];
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to load neighborhoods:`, err);
       setError('Failed to load neighborhood data');
+      return [];
     }
   };
 
@@ -182,20 +185,25 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       if (currentMapId) {
         const districtsData = await districtsApi.getDistrictsByMap(currentMapId);
         setDistricts(districtsData);
+        return districtsData;
       }
+      return [];
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to load districts:`, err);
+      return [];
     }
   };
 
 
   /**
    * Fetch user's neighborhood visits from server
-   * Uses general neighborhood visits to show all visits across maps
+   * Uses map-specific visits when mapId is available, otherwise all neighborhood visits
    */
   const fetchVisits = async () => {
     try {
-      const visits = await visitsApi.getVisitsByType('neighborhood');
+      const visits = mapId 
+        ? await visitsApi.getVisitsByMap(mapId)
+        : await visitsApi.getVisitsByType('neighborhood');
       setVisits(visits);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to fetch neighborhood visits:`, err);
@@ -204,11 +212,12 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
 
   /**
    * Populate the reference data service with loaded data for fast lookups
+   * Uses data passed directly instead of relying on state (which may not be updated yet)
    */
-  const populateReferenceData = () => {
+  const populateReferenceDataWithData = (neighborhoodsData: CachedNeighborhood[], districtsData: any[]) => {
     try {
       // Convert CachedNeighborhood back to Neighborhood format for the service
-      const neighborhoodData = neighborhoods.map(n => ({
+      const neighborhoodData = neighborhoodsData.map(n => ({
         _id: n.id,
         name: n.name,
         district: n.districtId,
@@ -217,7 +226,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       }));
 
       // Convert districts to proper format  
-      const districtData = districts.map(d => ({
+      const districtData = districtsData.map(d => ({
         _id: d._id,
         name: d.name,
         mapData: mapData ? { 
@@ -234,6 +243,14 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to populate reference data:`, err);
     }
+  };
+
+  /**
+   * Populate the reference data service with loaded data for fast lookups
+   * Uses current state data (fallback method)
+   */
+  const populateReferenceData = () => {
+    populateReferenceDataWithData(neighborhoods, districts);
   };
 
   const handleNeighborhoodClick = (neighborhood: string, category: string) => {
@@ -290,7 +307,14 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         return { neighborhoodObj: null, existingVisit: undefined };
       }
 
-      existingVisit = visits.find(v => v.neighborhood === neighborhoodObj!.id);
+      existingVisit = visits.find(v => {
+        // Handle populated neighborhood (object)
+        if (typeof v.neighborhood === 'object' && v.neighborhood && '_id' in v.neighborhood) {
+          return (v.neighborhood as any)._id === neighborhoodObj!.id;
+        }
+        // Handle neighborhood ID (string)
+        return v.neighborhood === neighborhoodObj!.id;
+      });
     
     
     return { neighborhoodObj, existingVisit };
@@ -309,7 +333,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   const applyOptimisticUpdate = async (
     shouldDelete: boolean, 
     existingVisit: Visit | undefined, 
-    _neighborhoodObj: CachedNeighborhood | null, 
+    neighborhoodObj: CachedNeighborhood | null, 
     neighborhood: string, 
     _category: string
   ) => {
@@ -320,7 +344,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
         _id: `temp-${Date.now()}`,
         user: user!.id,
         visitType: 'neighborhood',
-        neighborhood: neighborhood,
+        neighborhood: neighborhoodObj?.id || neighborhood, // Use neighborhood ID, fallback to name
         visited: true,
         notes: '',
         visitDate: new Date().toISOString(),
@@ -362,7 +386,7 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
       setVisits(prevVisits => 
         prevVisits.map(v => 
           v._id.startsWith('temp-') && 
-          (v.neighborhood === neighborhood)
+          (v.neighborhood === _neighborhoodObj?.id || v.neighborhood === neighborhood)
             ? newVisit 
             : v
         )
@@ -444,27 +468,26 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
   // ============================================================================
   
   /**
-   * Extract visited neighborhood IDs from visits
-   * Only includes visits that are marked as visited and have a neighborhood
-   */
-  const visitedNeighborhoodIds = new Set(
-    visits
-      .filter(v => v.visited && v.neighborhood)
-      .map(v => v.neighborhood!)
-  );
-
-  /**
-   * Convert visited neighborhood IDs to names for map rendering
-   * The map component works with neighborhood names, not database IDs
+   * Convert visited neighborhoods to names for map rendering
+   * Handles both populated neighborhood objects and ID strings
    */
   const visitedNeighborhoodNames = new Set<string>();
   
-  for (const neighborhoodId of visitedNeighborhoodIds) {
-    const neighborhood = neighborhoods.find(n => n.id === neighborhoodId);
-    if (neighborhood) {
-      visitedNeighborhoodNames.add(neighborhood.name);
-    }
-  }
+  visits
+    .filter(v => v.visited && v.neighborhood)
+    .forEach(v => {
+      // Handle populated neighborhood (object)
+      if (typeof v.neighborhood === 'object' && v.neighborhood && 'name' in v.neighborhood) {
+        visitedNeighborhoodNames.add((v.neighborhood as any).name);
+      }
+      // Handle neighborhood ID (string) - fallback for non-populated visits
+      else if (typeof v.neighborhood === 'string') {
+        const neighborhood = neighborhoods.find(n => n.id === v.neighborhood);
+        if (neighborhood) {
+          visitedNeighborhoodNames.add(neighborhood.name);
+        }
+      }
+    });
 
   /**
    * Create category ID to name mapping for neighborhood lookup

@@ -137,7 +137,16 @@ router.get('/type/:visitType', auth, async (req, res) => {
     const visits = await Visit.find({ 
       user: req.user._id.toString(),
       visitType: visitType
-    }).sort({ updatedAt: -1 });
+    })
+      .populate({
+        path: 'neighborhood',
+        populate: {
+          path: 'district',
+          select: 'name type'
+        }
+      })
+      .populate('country', 'name continent')
+      .sort({ updatedAt: -1 });
     
     logger.success(`Found ${visits.length} ${visitType} visits`);
     res.json(visits);
