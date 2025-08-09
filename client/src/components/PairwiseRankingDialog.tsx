@@ -69,7 +69,14 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     compareVisit: Visit; 
     progress: { current: number; total: number } 
   } | null>(null);
-  const [finalResult, setFinalResult] = useState<{ rating: number; category: string; insertionPosition: number; totalVisits: number } | null>(null);
+  const [finalResult, setFinalResult] = useState<{ 
+    rating: number; 
+    category: string; 
+    insertionPosition: number; 
+    totalVisits: number;
+    needsRedistribution?: boolean;
+    redistributedRatings?: Array<{ visit: Visit; newRating: number }>;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,6 +158,19 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     setError(null);
 
     try {
+      // Handle redistribution if needed
+      if (finalResult.needsRedistribution && finalResult.redistributedRatings) {
+        console.log('🔄 PairwiseRankingDialog: Redistribution needed, updating existing visits');
+        
+        // Update all existing visits with redistributed ratings
+        const updatePromises = finalResult.redistributedRatings.map(({ visit, newRating }) => 
+          visitsApi.updateVisit(visit._id, { rating: newRating })
+        );
+        
+        await Promise.all(updatePromises);
+        console.log(`✅ PairwiseRankingDialog: Updated ${finalResult.redistributedRatings.length} existing visits`);
+      }
+
       const visitData = {
         visitType,
         ...locationData,
@@ -472,6 +492,12 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
               {finalResult.totalVisits > 0 && (
                 <Typography variant="body2" sx={{ mt: 2, color: '#6b7280' }}>
                   Ranked against {finalResult.totalVisits} other places in {finalResult.category} category
+                </Typography>
+              )}
+              
+              {finalResult.needsRedistribution && (
+                <Typography variant="body2" sx={{ mt: 1, color: '#8b5cf6', fontWeight: 500 }}>
+                  ⭐ Ratings redistributed for optimal spacing
                 </Typography>
               )}
             </Box>

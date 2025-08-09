@@ -73,17 +73,18 @@ const findExistingVisit = async (userId, visitType, locationId) => {
   return await Visit.findOne(query);
 };
 
-const updateVisitData = (visit, { visited, notes, visitDate, rating, category }) => {
+const updateVisitData = (visit, updateData) => {
   // Ensure visitType is set for existing visits (backward compatibility)
   if (!visit.visitType) {
     visit.visitType = visit.neighborhood ? 'neighborhood' : 'country';
   }
   
-  visit.visited = visited;
-  visit.notes = notes;
-  visit.visitDate = visitDate;
-  visit.rating = rating;
-  visit.category = category;
+  // Only update fields that are explicitly provided
+  if (updateData.visited !== undefined) visit.visited = updateData.visited;
+  if (updateData.notes !== undefined) visit.notes = updateData.notes;
+  if (updateData.visitDate !== undefined) visit.visitDate = updateData.visitDate;
+  if (updateData.rating !== undefined) visit.rating = updateData.rating;
+  if (updateData.category !== undefined) visit.category = updateData.category;
 };
 
 const createVisitData = (userId, locationData, { visited, notes, visitDate, rating, category }) => {

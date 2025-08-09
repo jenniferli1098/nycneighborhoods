@@ -91,7 +91,7 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: 'Visit not found' });
     }
 
-    updateVisitData(visit, { visited, notes, visitDate, rating, category });
+    updateVisitData(visit, req.body);
     await visit.save();
     logger.success('Updated visit successfully');
     
