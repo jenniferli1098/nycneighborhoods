@@ -241,9 +241,25 @@ const UserDashboard: React.FC = () => {
       // For now, just return a placeholder
       return `Neighborhood ${visit.neighborhood || 'Unknown'}`;
     } else {
-      // Lookup country by ID
-      const country = countries.find(c => c._id === visit.country);
-      return country ? `${country.name}, ${country.continent}` : 'Unknown Country';
+      // Handle both populated and string ID cases for country
+      let countryId: string | undefined;
+      let countryData: any = null;
+      
+      if (typeof visit.country === 'string') {
+        countryId = visit.country;
+        countryData = countries.find(c => c._id === countryId);
+      } else if (visit.country && typeof visit.country === 'object') {
+        // For populated objects, try to get the country data directly or by ID
+        countryData = visit.country;
+        countryId = (visit.country as any)?._id;
+        
+        // If we have an ID but no direct data, look it up in countries array
+        if (!countryData.name && countryId) {
+          countryData = countries.find(c => c._id === countryId);
+        }
+      }
+      
+      return countryData?.name ? `${countryData.name}, ${countryData.continent || 'Unknown'}` : 'Unknown Country';
     }
   };
 
