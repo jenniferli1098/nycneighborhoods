@@ -5,7 +5,8 @@ import {
   Typography,
   Box,
   Chip,
-  LinearProgress
+  LinearProgress,
+  useTheme
 } from '@mui/material';
 import { TrendingUp, LocationOn, Star } from '@mui/icons-material';
 import type { Visit } from '../services/visitsApi';
@@ -52,7 +53,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
       
       return isRelevant ? { ...visit, enrichedNeighborhood: neighborhood } : null;
     })
-    .filter(Boolean);
+    .filter((visit): visit is PopulatedVisit & { enrichedNeighborhood: any } => visit !== null);
 
 
   // Calculate total neighborhoods visited (only in current context)
@@ -118,8 +119,10 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
     Good: relevantVisits.filter(v => v.category === 'Good').length
   };
 
+  const theme = useTheme();
+
   return (
-    <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #400B8B 0%, #B07FF6 100%)', color: 'white' }}>
+    <Card sx={{ mb: 2, background: theme.gradients.neighborhoodsCard, color: 'white' }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <TrendingUp sx={{ mr: 1 }} />

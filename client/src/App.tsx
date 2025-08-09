@@ -25,6 +25,7 @@ import UserDashboard from './pages/UserDashboard';
 import SettingsPage from './pages/SettingsPage';
 import MobileDrawer from './components/Navigation/MobileDrawer';
 import DesktopTabs from './components/Navigation/DesktopTabs';
+import { useNavigation } from './hooks/useNavigation';
 import { theme } from './config/theme';
 
 
@@ -32,20 +33,25 @@ import { theme } from './config/theme';
 const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [mobileNeighborhoodsOpen, setMobileNeighborhoodsOpen] = useState(false);
+  const { 
+    isMobile, 
+    mobileDrawerOpen, 
+    mobileNeighborhoodsOpen, 
+    openMobileDrawer, 
+    closeMobileDrawer, 
+    toggleNeighborhoods 
+  } = useNavigation();
 
   return (
     <>
-      <AppBar position="sticky" sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)', top: 0, zIndex: 1100 }}>
+      <AppBar position="sticky" sx={{ background: theme.gradients.primary, top: 0, zIndex: 1100 }}>
         <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
           {isMobile && user && (
             <IconButton
               edge="start"
               color="inherit"
               aria-label="menu"
-              onClick={() => setMobileDrawerOpen(true)}
+              onClick={openMobileDrawer}
               sx={{ mr: 2 }}
             >
               <MenuIcon />
@@ -57,12 +63,11 @@ const Navigation: React.FC = () => {
           {user && !isMobile && (
             <>
               <DesktopTabs />
-
               <Box className="flex items-center gap-4">
                 <Typography variant="body1" sx={{ display: { xs: 'none', sm: 'block' } }}>
                   Welcome, {user.username}!
                 </Typography>
-                <Button color="inherit" onClick={logout} size={isMobile ? 'small' : 'medium'}>
+                <Button color="inherit" onClick={logout}>
                   Logout
                 </Button>
               </Box>
@@ -78,9 +83,9 @@ const Navigation: React.FC = () => {
       {isMobile && (
         <MobileDrawer 
           open={mobileDrawerOpen}
-          onClose={() => setMobileDrawerOpen(false)}
+          onClose={closeMobileDrawer}
           neighborhoodsOpen={mobileNeighborhoodsOpen}
-          onToggleNeighborhoods={() => setMobileNeighborhoodsOpen(!mobileNeighborhoodsOpen)}
+          onToggleNeighborhoods={toggleNeighborhoods}
         />
       )}
     </>
