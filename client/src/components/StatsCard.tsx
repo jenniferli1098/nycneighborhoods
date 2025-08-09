@@ -27,55 +27,33 @@ interface StatsCardProps {
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts, categoryType, areaName }) => {
-  // Debug logging
-  console.log('📊 StatsCard: Received data:', { 
-    visits: visits.length, 
-    neighborhoods: neighborhoods.length, 
-    districts: districts.length,
-    sampleVisit: visits[0],
-    sampleNeighborhood: neighborhoods[0],
-    sampleDistrict: districts[0]
-  });
-
   // Create district and neighborhood mappings
   const districtMap = new Map(districts.map(d => [d._id, d.name]));
   const neighborhoodMap = new Map(neighborhoods.map(n => [n.id, n]));
   
-  // Filter visits to only include those for neighborhoods in the current context
-  const relevantVisits = visits.filter(visit => {
-    if (!visit.neighborhood) return false;
-    
-    // Handle both populated and non-populated neighborhood
-    let neighborhood;
-    if (typeof visit.neighborhood === 'string') {
-      neighborhood = neighborhoodMap.get(visit.neighborhood);
-    } else {
-      neighborhood = visit.neighborhood;
-    }
-    
-    console.log('📊 StatsCard: Processing visit:', { 
-      visitId: visit._id,
-      neighborhoodType: typeof visit.neighborhood,
-      neighborhood: neighborhood,
-      rawNeighborhood: visit.neighborhood
-    });
-    
-    if (!neighborhood) return false;
-    
-    // Check if neighborhood belongs to current area's districts
-    const districtId = neighborhood.districtId || (neighborhood as any).district?._id;
-    const isRelevant = districtId && districtMap.has(districtId);
-    
-    console.log('📊 StatsCard: Visit relevance check:', { 
-      districtId, 
-      hasDistrict: districtMap.has(districtId), 
-      isRelevant 
-    });
-    
-    return isRelevant;
-  });
+  // Helper function to get district ID from neighborhood
+  const getDistrictId = (neighborhood: any) => neighborhood?.district?._id;
+  
+  // Get relevant visits with neighborhood data
+  const relevantVisits = visits
+    .map(visit => {
+      if (!visit.neighborhood) return null;
+      
+      // Get neighborhood data (handle both string ID and populated object)
+      const neighborhood = typeof visit.neighborhood === 'string' 
+        ? neighborhoodMap.get(visit.neighborhood)
+        : visit.neighborhood;
+      
+      if (!neighborhood) return null;
+      
+      // Check if neighborhood belongs to current area
+      const districtId = getDistrictId(neighborhood);
+      const isRelevant = districtId && districtMap.has(districtId);
+      
+      return isRelevant ? { ...visit, enrichedNeighborhood: neighborhood } : null;
+    })
+    .filter(Boolean);
 
-  console.log('📊 StatsCard: Relevant visits found:', relevantVisits.length);
 
   // Calculate total neighborhoods visited (only in current context)
   const totalVisited = relevantVisits.filter(v => v.visited).length;
@@ -92,22 +70,17 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
   const districtStats = new Map<string, { totalRating: number; count: number; name: string }>();
   
   relevantVisits
-    .filter(v => v.visited && v.rating != null && v.neighborhood)
+    .filter(v => v.visited && v.rating != null && v.enrichedNeighborhood)
     .forEach(visit => {
-      // Handle both populated and non-populated neighborhood
-      const neighborhood = typeof visit.neighborhood === 'string' 
-        ? neighborhoodMap.get(visit.neighborhood)
-        : visit.neighborhood;
-      if (neighborhood) {
-        // Use district ID
-        const districtId = neighborhood.districtId;
-        const districtName = districtId ? districtMap.get(districtId) : undefined;
-        if (districtName && visit.rating !== null) {
-          const current = districtStats.get(districtName) || { totalRating: 0, count: 0, name: districtName };
-          current.totalRating += visit.rating;
-          current.count += 1;
-          districtStats.set(districtName, current);
-        }
+      const neighborhood = visit.enrichedNeighborhood;
+      const districtId = getDistrictId(neighborhood);
+      const districtName = districtId ? districtMap.get(districtId) : undefined;
+      
+      if (districtName && visit.rating !== null) {
+        const current = districtStats.get(districtName) || { totalRating: 0, count: 0, name: districtName };
+        current.totalRating += visit.rating;
+        current.count += 1;
+        districtStats.set(districtName, current);
       }
     });
 
@@ -124,17 +97,14 @@ const StatsCard: React.FC<StatsCardProps> = ({ visits, neighborhoods, districts,
   });
 
   // Calculate top 3 neighborhoods
-  const ratedVisits = relevantVisits.filter(v => v.visited && v.rating != null && v.neighborhood);
+  const ratedVisits = relevantVisits.filter(v => v.visited && v.rating != null && v.enrichedNeighborhood);
   const topNeighborhoods = ratedVisits
     .map(visit => {
-      // Handle both populated and non-populated neighborhood
-      const neighborhood = typeof visit.neighborhood === 'string' 
-        ? neighborhoodMap.get(visit.neighborhood)
-        : visit.neighborhood;
-      const districtId = neighborhood?.districtId;
+      const neighborhood = visit.enrichedNeighborhood;
+      const districtId = getDistrictId(neighborhood);
       const districtName = districtId ? districtMap.get(districtId) : undefined;
       return {
-        name: neighborhood?.name || 'Unknown',
+        name: neighborhood.name || 'Unknown',
         district: districtName || 'Unknown',
         rating: visit.rating!
       };

@@ -55,6 +55,13 @@ class ReferenceDataService {
    * Call this after loading data from APIs
    */
   populate(neighborhoods: Neighborhood[], districts: District[]): void {
+    console.log('🔧 ReferenceDataService.populate: Input data:', {
+      neighborhoods: neighborhoods.length,
+      districts: districts.length,
+      sampleNeighborhood: neighborhoods[0],
+      sampleDistrict: districts[0]
+    });
+    
     // Clear existing data
     this.neighborhoods.clear();
     this.districts.clear();
@@ -73,8 +80,18 @@ class ReferenceDataService {
     });
     
     // Transform and store neighborhoods
-    neighborhoods.forEach(neighborhood => {
+    neighborhoods.forEach((neighborhood, index) => {
       const district = districtMap.get(neighborhood.district);
+      
+      if (index < 3) { // Log first 3 neighborhoods for debugging
+        console.log(`🔧 ReferenceDataService: Processing neighborhood ${index + 1}:`, {
+          neighborhoodId: neighborhood._id,
+          neighborhoodName: neighborhood.name,
+          neighborhoodDistrict: neighborhood.district,
+          foundDistrict: district?.name || 'NOT FOUND',
+          districtMapSize: districtMap.size
+        });
+      }
       
       const cachedNeighborhood: CachedNeighborhood = {
         id: neighborhood._id,
