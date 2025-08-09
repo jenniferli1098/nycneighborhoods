@@ -126,7 +126,14 @@ const CountriesPage: React.FC = () => {
    * Countries use IDs directly (unlike neighborhoods which convert to names)
    */
   const getVisitedCountryIds = () => {
-    return new Set(visits.filter(v => v.visited && v.country).map(v => v.country!));
+    const visitedIds = visits
+      .filter(v => v.visited && v.country)
+      .map(v => {
+        // Handle both populated country objects and string IDs
+        const country = v.country!;
+        return typeof country === 'string' ? country : (country as any)._id;
+      });
+    return new Set(visitedIds);
   };
 
   /**
@@ -137,12 +144,19 @@ const CountriesPage: React.FC = () => {
     const visitedIds = getVisitedCountryIds();
     const visitedByContinent: Record<string, number> = {};
     
-    visitedIds.forEach(countryId => {
-      const country = countries.find(c => c._id === countryId);
-      if (country) {
-        visitedByContinent[country.continent] = (visitedByContinent[country.continent] || 0) + 1;
-      }
-    });
+    // Get continent info directly from populated country data in visits
+    visits
+      .filter(v => v.visited && v.country)
+      .forEach(visit => {
+        const country = visit.country!;
+        const continent = typeof country === 'string' 
+          ? countries.find(c => c._id === country)?.continent
+          : (country as any).continent;
+        
+        if (continent) {
+          visitedByContinent[continent] = (visitedByContinent[continent] || 0) + 1;
+        }
+      });
 
     return {
       totalVisited: visitedIds.size,
@@ -218,11 +232,13 @@ const CountriesPage: React.FC = () => {
       
       // Replace optimistic visit with real server data
       setVisits(prevVisits => 
-        prevVisits.map(v => 
-          v._id.startsWith('temp-') && v.country === country._id
+        prevVisits.map(v => {
+          const visitCountry = v.country;
+          const countryId = typeof visitCountry === 'string' ? visitCountry : (visitCountry as any)?._id;
+          return v._id.startsWith('temp-') && countryId === country._id
             ? newVisit 
-            : v
-        )
+            : v;
+        })
       );
     }
   };
@@ -236,7 +252,11 @@ const CountriesPage: React.FC = () => {
     console.log('⚡ CountriesPage: Quick visit (left-click) for:', country.name);
     
     // Find existing visit
-    const existingVisit = visits.find(v => v.country === country._id);
+    const existingVisit = visits.find(v => {
+      const visitCountry = v.country;
+      const countryId = typeof visitCountry === 'string' ? visitCountry : (visitCountry as any)?._id;
+      return countryId === country._id;
+    });
     
     // Determine what action to take
     const shouldDelete = existingVisit && !hasUserData(existingVisit);
