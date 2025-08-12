@@ -14,7 +14,14 @@ connectDB();
 // Pre-initialize content moderation filter
 preInitializeFilter();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://nycneighborhoods.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/auth'));
