@@ -17,10 +17,14 @@ preInitializeFilter();
 app.use(cors({
   origin: [
     'https://nycneighborhoods.onrender.com',
+    'https://neighborhoods.onrender.com',
     'http://localhost:3000',
     'http://localhost:5173'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
