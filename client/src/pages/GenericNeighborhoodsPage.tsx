@@ -245,13 +245,6 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
     }
   };
 
-  /**
-   * Populate the reference data service with loaded data for fast lookups
-   * Uses current state data (fallback method)
-   */
-  const populateReferenceData = () => {
-    populateReferenceDataWithData(neighborhoods, districts);
-  };
 
   const handleNeighborhoodClick = (neighborhood: string, category: string) => {
     if (!user) {
