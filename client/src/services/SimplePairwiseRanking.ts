@@ -18,6 +18,7 @@ export class SimplePairwiseRanking {
     const validVisits = visits.filter((v): v is Visit & { rating: number; category: 'Good' | 'Mid' | 'Bad' } => 
       v.rating !== null && v.category !== null
     );
+    // Sort by rating (highest first)
     const sortedVisits = validVisits.sort((a, b) => b.rating - a.rating);
     
     this.category = category;
@@ -167,8 +168,8 @@ export class SimplePairwiseRanking {
     const spacing = range / (totalItems + 1); // +1 to leave space at boundaries
     
     // Calculate the new rating for the inserted item
-    // Items are distributed as: bounds.min + spacing, bounds.min + 2*spacing, ..., bounds.min + totalItems*spacing
-    const newRating = bounds.min + (insertionPosition + 1) * spacing;
+    // Higher positions (lower insertionPosition) should get higher ratings
+    const newRating = bounds.max - (insertionPosition + 1) * spacing;
     
     // Note: We return the new rating here. The actual redistribution of existing visits
     // would need to be handled at a higher level (in the component that calls this)
@@ -200,7 +201,8 @@ export class SimplePairwiseRanking {
     visits.forEach((visit, index) => {
       // Adjust index based on insertion position
       const adjustedIndex = index >= insertionPosition ? index + 1 : index;
-      const newRating = bounds.min + (adjustedIndex + 1) * spacing;
+      // Fix: Higher positions (lower adjustedIndex) should get higher ratings
+      const newRating = bounds.max - (adjustedIndex + 1) * spacing;
       redistributedRatings.push({ visit, newRating });
     });
     
@@ -272,4 +274,5 @@ export class SimplePairwiseRanking {
         : 100
     };
   }
+
 }

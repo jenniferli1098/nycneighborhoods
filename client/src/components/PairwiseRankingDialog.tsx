@@ -160,15 +160,12 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     try {
       // Handle redistribution if needed
       if (finalResult.needsRedistribution && finalResult.redistributedRatings) {
-        console.log('🔄 PairwiseRankingDialog: Redistribution needed, updating existing visits');
-        
         // Update all existing visits with redistributed ratings
         const updatePromises = finalResult.redistributedRatings.map(({ visit, newRating }) => 
           visitsApi.updateVisit(visit._id, { rating: newRating })
         );
         
         await Promise.all(updatePromises);
-        console.log(`✅ PairwiseRankingDialog: Updated ${finalResult.redistributedRatings.length} existing visits`);
       }
 
       const visitData = {

@@ -45,12 +45,13 @@ describe('SimplePairwiseRanking - Redistribution Tests', () => {
       // Good category bounds: 7.0 - 10.0 (range = 3.0)
       // 4 total items (3 existing + 1 new)
       // spacing = 3.0 / (4 + 1) = 0.6
-      // Expected ratings: 7.6, 8.2, 8.8, 9.4
+      // Formula: bounds.max - (adjustedIndex + 1) * spacing
+      // Expected ratings: 9.4, 8.2, 8.8 (Place A stays highest, then new item, then B, then C)
       
       expect(redistributed).toHaveLength(3);
       
-      // Check that ratings are evenly distributed
-      const expectedRatings = [7.6, 8.8, 9.4]; // Place A stays at pos 0, B moves to pos 2, C to pos 3
+      // Check that ratings are evenly distributed - Place A should get highest (9.4), B gets 8.2, C gets 7.6
+      const expectedRatings = [9.4, 8.2, 7.6]; // Place A at pos 0, B at pos 2, C at pos 3
       redistributed.forEach((item, index) => {
         expect(item.newRating).toBeCloseTo(expectedRatings[index], 2);
       });
@@ -183,6 +184,7 @@ describe('SimplePairwiseRanking - Redistribution Tests', () => {
       const uniqueRatings = new Set(ratings);
       expect(uniqueRatings.size).toBe(3); // All ratings should be unique
     });
+
   });
 
   describe('getFinalResult with redistribution', () => {
