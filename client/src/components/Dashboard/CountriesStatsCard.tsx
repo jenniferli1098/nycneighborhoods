@@ -101,7 +101,18 @@ const CountriesStatsCard: React.FC<CountriesStatsCardProps> = ({
                     </Typography>
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
-                        {formatVisitName(visit, countries)}
+                        {(() => {
+                          const fullName = formatVisitName(visit, countries);
+                          const parts = fullName.split(', ');
+                          return parts[0]; // Show just the country name
+                        })()}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.8, fontSize: '0.7em' }}>
+                        {(() => {
+                          const fullName = formatVisitName(visit, countries);
+                          const parts = fullName.split(', ');
+                          return parts[1] || ''; // Show the continent as subtitle
+                        })()}
                       </Typography>
                     </Box>
                   </Box>
