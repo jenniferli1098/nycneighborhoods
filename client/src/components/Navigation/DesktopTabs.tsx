@@ -56,7 +56,7 @@ const DesktopTabs: React.FC = () => {
           '& .MuiTabs-indicator': { backgroundColor: 'white' }
         }}
       >
-        <Tab label="Dashboard" value="/" />
+        <Tab label="Dashboard" value="/dashboard" />
         
         {/* Neighborhoods Dropdown */}
         {neighborhoodMaps.length > 0 && (

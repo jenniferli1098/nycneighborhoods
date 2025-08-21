@@ -80,12 +80,12 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({
           {/* Dashboard */}
           <ListItem sx={{ p: 0 }}>
             <ListItemButton
-              onClick={() => handleNavSelect('/')}
-              sx={getNavItemStyles(location.pathname === '/')}
+              onClick={() => handleNavSelect('/dashboard')}
+              sx={getNavItemStyles(location.pathname === '/dashboard')}
             >
               <ListItemText 
                 primary="Dashboard" 
-                primaryTypographyProps={getTextStyles(location.pathname === '/')}
+                primaryTypographyProps={getTextStyles(location.pathname === '/dashboard')}
               />
             </ListItemButton>
           </ListItem>

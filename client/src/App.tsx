@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { 
@@ -23,6 +23,7 @@ import NeighborhoodsPage from './pages/NeighborhoodsPage';
 import CountriesPage from './pages/CountriesPage';
 import UserDashboard from './pages/UserDashboard';
 import SettingsPage from './pages/SettingsPage';
+import LandingPage from './pages/LandingPage';
 import MobileDrawer from './components/Navigation/MobileDrawer';
 import DesktopTabs from './components/Navigation/DesktopTabs';
 import { useNavigation } from './hooks/useNavigation';
@@ -117,7 +118,7 @@ const MainApp: React.FC = () => {
           }
         }}>
           <Routes>
-            <Route path="/" element={<UserDashboard />} />
+            <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/neighborhoods/:mapName" element={<NeighborhoodsPage />} />
             <Route path="/countries" element={<CountriesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
@@ -168,7 +169,22 @@ const AppContent: React.FC = () => {
     );
   }
 
-  return user ? <MainApp /> : <AuthScreen />;
+  return (
+    <Routes>
+      <Route 
+        path="/" 
+        element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+      />
+      <Route 
+        path="/auth" 
+        element={user ? <Navigate to="/dashboard" replace /> : <AuthScreen />} 
+      />
+      <Route 
+        path="/*" 
+        element={user ? <MainApp /> : <Navigate to="/" replace />} 
+      />
+    </Routes>
+  );
 };
 
 export default App;
