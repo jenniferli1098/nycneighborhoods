@@ -13,12 +13,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: { xs: '80vh', sm: '90vh', md: '100vh' },
         background: 'linear-gradient(135deg, #1e293b 0%, #334155 25%, #475569 50%, #64748b 100%)',
         display: 'flex',
         alignItems: 'center',
         position: 'relative',
         overflow: 'hidden',
+        py: { xs: 4, sm: 6, md: 0 },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -62,8 +63,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
         }}
       />
 
-      <Container maxWidth="lg" sx={{ zIndex: 2, position: 'relative', px: { xs: 3, md: 4 }, py: { xs: 6, md: 8 } }}>
-        <Grid container alignItems="center" spacing={6}>
+      <Container maxWidth="lg" sx={{ zIndex: 2, position: 'relative', px: { xs: 2, sm: 3, md: 4 }, py: { xs: 2, sm: 4, md: 8 } }}>
+        <Grid container alignItems="center" spacing={{ xs: 3, sm: 4, md: 6 }}>
           <Grid item xs={12} md={6}>
             <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
               {/* Logo/Icon */}
@@ -93,9 +94,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
                 sx={{
                   fontWeight: 800,
                   color: '#fff',
-                  mb: 3,
+                  mb: { xs: 2, sm: 3 },
                   lineHeight: 1.1,
-                  fontSize: { xs: '2.5rem', md: '3.5rem' },
+                  fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3.5rem' },
                   letterSpacing: '-0.02em',
                 }}
               >
@@ -120,12 +121,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
                 variant="h6"
                 sx={{
                   color: 'rgba(255, 255, 255, 0.8)',
-                  mb: 6,
+                  mb: { xs: 4, sm: 5, md: 6 },
                   fontWeight: 400,
                   lineHeight: 1.6,
-                  fontSize: { xs: '1.1rem', md: '1.25rem' },
-                  maxWidth: 500,
+                  fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' },
+                  maxWidth: { xs: '100%', sm: 450, md: 500 },
                   mx: { xs: 'auto', md: 0 },
+                  px: { xs: 1, sm: 0 },
                 }}
               >
                 Turn the Big Apple into your personal adventure map. Track where you've been, 
@@ -136,53 +138,54 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
               <Box sx={{ 
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 3, 
-                mb: 8,
-                maxWidth: 400,
+                gap: { xs: 2, sm: 3 }, 
+                mb: { xs: 6, sm: 7, md: 8 },
+                maxWidth: { xs: '100%', sm: 400 },
                 mx: { xs: 'auto', md: 0 },
+                px: { xs: 1, sm: 0 },
               }}>
                 <Box sx={{ 
                   textAlign: 'center',
-                  p: 2,
+                  p: { xs: 1.5, sm: 2 },
                   borderRadius: 2,
                   background: 'rgba(255, 255, 255, 0.05)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#3b82f6', mb: 0.5 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#3b82f6', mb: 0.5, fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
                     200+
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500 }}>
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Neighborhoods
                   </Typography>
                 </Box>
                 <Box sx={{ 
                   textAlign: 'center',
-                  p: 2,
+                  p: { xs: 1.5, sm: 2 },
                   borderRadius: 2,
                   background: 'rgba(255, 255, 255, 0.05)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b5cf6', mb: 0.5 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b5cf6', mb: 0.5, fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
                     5
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500 }}>
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Boroughs
                   </Typography>
                 </Box>
                 <Box sx={{ 
                   textAlign: 'center',
-                  p: 2,
+                  p: { xs: 1.5, sm: 2 },
                   borderRadius: 2,
                   background: 'rgba(255, 255, 255, 0.05)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#ec4899', mb: 0.5 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#ec4899', mb: 0.5, fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
                     ∞
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500 }}>
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Adventures
                   </Typography>
                 </Box>
@@ -191,9 +194,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
               {/* CTA Buttons */}
               <Box sx={{ 
                 display: 'flex', 
-                gap: 3, 
+                gap: { xs: 2, sm: 3 }, 
                 justifyContent: { xs: 'center', md: 'flex-start' },
-                flexDirection: { xs: 'column', sm: 'row' }
+                flexDirection: { xs: 'column', sm: 'row' },
+                px: { xs: 1, sm: 0 },
               }}>
                 <Button
                   variant="contained"
@@ -201,16 +205,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
                   onClick={onGetStarted}
                   endIcon={<ArrowForward />}
                   sx={{
-                    py: 2,
-                    px: 6,
+                    py: { xs: 1.5, sm: 2 },
+                    px: { xs: 4, sm: 6 },
                     borderRadius: 4,
                     background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                     color: '#fff',
-                    fontSize: '1.125rem',
+                    fontSize: { xs: '1rem', sm: '1.125rem' },
                     fontWeight: 600,
                     textTransform: 'none',
                     boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
+                    width: { xs: '100%', sm: 'auto' },
                     '&:hover': {
                       background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
                       boxShadow: '0 15px 40px rgba(59, 130, 246, 0.4)',
@@ -226,16 +231,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
                   variant="outlined"
                   size="large"
                   sx={{
-                    py: 2,
-                    px: 6,
+                    py: { xs: 1.5, sm: 2 },
+                    px: { xs: 4, sm: 6 },
                     borderRadius: 4,
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     backgroundColor: 'rgba(255, 255, 255, 0.05)',
                     backdropFilter: 'blur(10px)',
                     color: '#fff',
-                    fontSize: '1.125rem',
+                    fontSize: { xs: '1rem', sm: '1.125rem' },
                     fontWeight: 600,
                     textTransform: 'none',
+                    width: { xs: '100%', sm: 'auto' },
                     '&:hover': {
                       borderColor: 'rgba(255, 255, 255, 0.4)',
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',

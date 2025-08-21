@@ -19,15 +19,14 @@ const LandingPage: React.FC = () => {
 
         <Box sx={{ 
        background: 'linear-gradient(135deg, #f8fafc 0%,  #f1f5f9 50%, #e2e8f0 100%)', 
-           py: { xs: 8, md: 12 } 
+           py: { xs: 6, sm: 8, md: 12 } 
       }}>
          <Container maxWidth="lg">
           <DemoMapPreview />
          </Container>
       </Box>
 
-
-      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 6, sm: 8, md: 12 } }}>
         <StatsPreview />
       </Container>
 

@@ -49,10 +49,11 @@ const StatsPreview: React.FC = () => {
       <Box sx={{ 
         background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         borderRadius: 3,
-        p: 6,
+        p: { xs: 3, sm: 4, md: 6 },
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center'
+        alignItems: 'center',
+        mx: { xs: 2, sm: 0 }
       }}>
         <Typography 
           variant="h4" 
@@ -60,7 +61,8 @@ const StatsPreview: React.FC = () => {
             fontWeight: 'bold', 
             textAlign: 'center',
             mb: 2,
-            color: '#1e293b'
+            color: '#1e293b',
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
           }}
         >
           Community Exploration Progress
@@ -70,24 +72,27 @@ const StatsPreview: React.FC = () => {
           color="text.secondary" 
           sx={{ 
             textAlign: 'center', 
-            mb: 6,
-            maxWidth: 500,
+            mb: { xs: 4, sm: 5, md: 6 },
+            maxWidth: { xs: '100%', sm: 450, md: 500 },
+            fontSize: { xs: '0.9rem', sm: '1rem' },
+            px: { xs: 2, sm: 0 }
           }}
         >
           See how much of each borough our community has explored together
         </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-          <Grid container spacing={4} sx={{ maxWidth: 1000 }}>
+          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ maxWidth: 1000 }}>
             {boroughProgress.map((borough, index) => (
-              <Grid item xs={12} md={6} lg={2.4} key={index}>
-                <Card sx={{ p: 3, textAlign: 'center' }}>
+              <Grid item xs={6} sm={4} md={6} lg={2.4} key={index}>
+                <Card sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
                   <Typography 
                     variant="h6" 
                     sx={{ 
                       fontWeight: 'bold', 
                       mb: 1,
-                      color: borough.color
+                      color: borough.color,
+                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
                     }}
                   >
                     {borough.name}
@@ -98,7 +103,8 @@ const StatsPreview: React.FC = () => {
                     sx={{ 
                       fontWeight: 'bold', 
                       mb: 2,
-                      color: '#1e293b'
+                      color: '#1e293b',
+                      fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
                     }}
                   >
                     {borough.progress}%
@@ -118,7 +124,9 @@ const StatsPreview: React.FC = () => {
                     }}
                   />
 
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }}>
                     {borough.neighborhoods} neighborhoods
                   </Typography>
                 </Card>
@@ -127,18 +135,21 @@ const StatsPreview: React.FC = () => {
           </Grid>
         </Box>
 
-        <Box sx={{ textAlign: 'center', mt: 6 }}>
+        <Box sx={{ textAlign: 'center', mt: { xs: 4, sm: 5, md: 6 }, px: { xs: 2, sm: 0 } }}>
           <Typography 
             variant="h6" 
             sx={{ 
               fontWeight: 'bold',
               color: '#400B8B',
-              mb: 1
+              mb: 1,
+              fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' }
             }}
           >
             🎯 Community Goal: Explore Every NYC Neighborhood
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{
+            fontSize: { xs: '0.9rem', sm: '1rem' }
+          }}>
             Help us reach 100% coverage across all five boroughs!
           </Typography>
         </Box>

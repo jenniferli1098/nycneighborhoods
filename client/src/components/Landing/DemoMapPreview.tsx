@@ -43,57 +43,42 @@ const DemoMapPreview: React.FC = () => {
       {/* Section Header */}
 
       {/* Section Header */}
-      <Box sx={{ textAlign: 'center', mb: 12 }}>
+      <Box sx={{ textAlign: 'center', mb: { xs: 6, sm: 8, md: 12 }, px: { xs: 2, sm: 3, md: 0 } }}>
         <Typography 
-          variant="h2" 
+          variant="h3" 
           sx={{ 
-            fontWeight: 800, 
-            mb: 3,
-            fontSize: { xs: '2rem', md: '2.75rem' },
-            color: '#1e293b',
-            letterSpacing: '-0.02em',
-            lineHeight: 1.2,
+            fontWeight: 'bold', 
+            mb: { xs: 2, sm: 3 },
+            fontSize: { xs: '1.75rem', sm: '2rem', md: '2.75rem' },
+            color: '#1e293b'
           }}
         >
-          Everything You Need to{' '}
-          <Box
-            component="span"
-            sx={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Explore NYC
-          </Box>
+          See It In Action
         </Typography>
         <Typography 
           variant="h6" 
+          color="text.secondary" 
           sx={{ 
-            color: '#64748b', 
-            maxWidth: 650, 
-            mx: 'auto', 
-            lineHeight: 1.6,
-            fontWeight: 400,
-            fontSize: { xs: '1.1rem', md: '1.25rem' },
+            maxWidth: { xs: '100%', sm: 500, md: 600 }, 
+            mx: 'auto',
+            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+            px: { xs: 1, sm: 0 },
           }}
         >
-          From the bustling streets of Manhattan to the artistic enclaves of Brooklyn, 
-          track your journey through America's greatest city
+          Here's what your neighborhood tracking experience looks like
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Grid container spacing={4} alignItems="center" sx={{ maxWidth: 1200 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', px: { xs: 2, sm: 3, md: 0 } }}>
+        <Grid container spacing={{ xs: 3, sm: 4 }} alignItems="center" sx={{ maxWidth: 1200 }}>
           {/* Mock Map */}
           <Grid item xs={12} md={8}>
             <Card 
               sx={{ 
-                p: 4,
+                p: { xs: 2, sm: 3, md: 4 },
                 background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
                 border: '2px dashed rgba(100, 116, 139, 0.3)',
-                minHeight: 400,
+                minHeight: { xs: 300, sm: 350, md: 400 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -102,12 +87,19 @@ const DemoMapPreview: React.FC = () => {
               }}
             >
             {/* NYC Map Placeholder */}
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <LocationOn sx={{ fontSize: 60, color: '#400B8B', mb: 2 }} />
-              <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#400B8B', mb: 1 }}>
+            <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 4 } }}>
+              <LocationOn sx={{ fontSize: { xs: 48, sm: 60 }, color: '#400B8B', mb: 2 }} />
+              <Typography variant="h5" sx={{ 
+                fontWeight: 'bold', 
+                color: '#400B8B', 
+                mb: 1,
+                fontSize: { xs: '1.25rem', sm: '1.5rem' }
+              }}>
                 Interactive NYC Map
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" color="text.secondary" sx={{
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }}>
                 Click neighborhoods to mark as visited
               </Typography>
             </Box>
@@ -116,8 +108,8 @@ const DemoMapPreview: React.FC = () => {
             <Box sx={{ 
               position: 'relative', 
               width: '100%', 
-              maxWidth: 400, 
-              height: 200,
+              maxWidth: { xs: 280, sm: 350, md: 400 }, 
+              height: { xs: 150, sm: 180, md: 200 },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -139,7 +131,11 @@ const DemoMapPreview: React.FC = () => {
                   border: '2px solid white',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                 }} />
-                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                <Typography variant="caption" sx={{ 
+                  fontWeight: 'bold',
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  display: { xs: 'none', sm: 'block' }
+                }}>
                   Greenwich Village ✓
                 </Typography>
               </Box>
@@ -161,7 +157,11 @@ const DemoMapPreview: React.FC = () => {
                   border: '2px solid white',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                 }} />
-                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                <Typography variant="caption" sx={{ 
+                  fontWeight: 'bold',
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  display: { xs: 'none', sm: 'block' }
+                }}>
                   Williamsburg ✓
                 </Typography>
               </Box>
@@ -183,7 +183,10 @@ const DemoMapPreview: React.FC = () => {
                   border: '2px solid white',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                 }} />
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  display: { xs: 'none', sm: 'block' }
+                }}>
                   Astoria
                 </Typography>
               </Box>
@@ -191,13 +194,18 @@ const DemoMapPreview: React.FC = () => {
 
             {/* Progress indicator */}
             <Box sx={{ 
-              mt: 4, 
-              p: 2, 
+              mt: { xs: 3, sm: 4 }, 
+              p: { xs: 1.5, sm: 2 }, 
               borderRadius: 2, 
               background: 'rgba(64, 11, 139, 0.1)',
               border: '1px solid rgba(64, 11, 139, 0.2)'
             }}>
-              <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#400B8B' }}>
+              <Typography variant="body2" sx={{ 
+                fontWeight: 'bold', 
+                color: '#400B8B',
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                textAlign: 'center'
+              }}>
                 🎉 You've explored 3 of 200+ NYC neighborhoods (1.5%)
               </Typography>
             </Box>
@@ -206,12 +214,12 @@ const DemoMapPreview: React.FC = () => {
 
         {/* Neighborhood Cards */}
         <Grid item xs={12} md={4}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.5, sm: 2 } }}>
             {sampleNeighborhoods.map((neighborhood, index) => (
               <Card 
                 key={index}
                 sx={{ 
-                  p: 3,
+                  p: { xs: 2, sm: 3 },
                   transition: 'transform 0.2s ease',
                   '&:hover': {
                     transform: 'translateY(-2px)',
@@ -221,7 +229,11 @@ const DemoMapPreview: React.FC = () => {
               >
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 'bold', 
+                      mb: 1,
+                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                    }}>
                       {neighborhood.name}
                     </Typography>
                     <Chip 

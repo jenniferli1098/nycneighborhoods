@@ -11,7 +11,7 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
     <Box
       sx={{
         background: 'linear-gradient(135deg, #1e293b 0%, #334155 25%, #475569 50%, #64748b 100%)',
-        py: { xs: 8, md: 12 },
+        py: { xs: 6, sm: 8, md: 12 },
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
@@ -57,8 +57,8 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
         }}
       />
 
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
-        <Grid container alignItems="center" spacing={8}>
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, px: { xs: 2, sm: 3, md: 4 } }}>
+        <Grid container alignItems="center" spacing={{ xs: 4, sm: 6, md: 8 }}>
           <Grid item xs={12} md={8}>
             <Box sx={{ color: 'white' }}>
               {/* Icon */}
@@ -86,10 +86,11 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                 variant="h2"
                 sx={{
                   fontWeight: 800,
-                  mb: 4,
+                  mb: { xs: 3, sm: 4 },
                   lineHeight: 1.1,
-                  fontSize: { xs: '2.5rem', md: '3rem' },
+                  fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' },
                   letterSpacing: '-0.02em',
+                  textAlign: { xs: 'center', md: 'left' }
                 }}
               >
                 Ready to Start Your{' '}
@@ -112,11 +113,13 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                 variant="h6"
                 sx={{
                   color: 'rgba(255, 255, 255, 0.8)',
-                  mb: 6,
+                  mb: { xs: 4, sm: 5, md: 6 },
                   lineHeight: 1.6,
-                  maxWidth: 550,
-                  fontSize: { xs: '1.1rem', md: '1.25rem' },
+                  maxWidth: { xs: '100%', md: 550 },
+                  fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
                   fontWeight: 400,
+                  textAlign: { xs: 'center', md: 'left' },
+                  px: { xs: 1, md: 0 }
                 }}
               >
                 Join thousands of explorers who are discovering NYC one neighborhood at a time. 
@@ -124,7 +127,7 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
               </Typography>
 
               {/* Benefits List */}
-              <Box sx={{ mb: 6 }}>
+              <Box sx={{ mb: { xs: 4, sm: 5, md: 6 }, textAlign: { xs: 'left', md: 'left' } }}>
                 {[
                   '✨ Track all 200+ NYC neighborhoods',
                   '📱 Works perfectly on mobile while exploring',
@@ -140,6 +143,8 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                       mb: 1,
                       display: 'flex',
                       alignItems: 'center',
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                      justifyContent: { xs: 'center', md: 'flex-start' }
                     }}
                   >
                     {benefit}
@@ -157,15 +162,16 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                 onClick={onGetStarted}
                 endIcon={<ArrowForward />}
                 sx={{
-                  py: 2,
-                  px: 6,
+                  py: { xs: 1.5, sm: 2 },
+                  px: { xs: 4, sm: 6 },
                   borderRadius: 4,
                   background: 'linear-gradient(135deg, #FEF504 0%, #FBBF24 100%)',
                   color: '#1E40AF',
-                  fontSize: '1.3rem',
+                  fontSize: { xs: '1.1rem', sm: '1.3rem' },
                   fontWeight: 'bold',
                   textTransform: 'none',
                   boxShadow: '0 12px 40px rgba(254, 245, 4, 0.3)',
+                  width: { xs: '100%', sm: 'auto' },
                   '&:hover': {
                     background: 'linear-gradient(135deg, #FDE047 0%, #F59E0B 100%)',
                     boxShadow: '0 16px 50px rgba(254, 245, 4, 0.4)',
@@ -182,7 +188,8 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                 variant="body2"
                 sx={{
                   color: 'rgba(255, 255, 255, 0.7)',
-                  mb: 4,
+                  mb: { xs: 3, sm: 4 },
+                  fontSize: { xs: '0.875rem', sm: '0.875rem' }
                 }}
               >
                 Free to join • No credit card required
@@ -194,8 +201,9 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                   background: 'rgba(255, 255, 255, 0.1)',
                   backdropFilter: 'blur(10px)',
                   borderRadius: 3,
-                  p: 3,
+                  p: { xs: 2, sm: 3 },
                   border: '1px solid rgba(255, 255, 255, 0.2)',
+                  display: { xs: 'none', md: 'block' }
                 }}
               >
                 <Typography
