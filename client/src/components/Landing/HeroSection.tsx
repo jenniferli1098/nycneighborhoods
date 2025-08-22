@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Button, Container, Grid, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, Button, Container, useTheme, useMediaQuery } from '@mui/material';
 import { TravelExplore, LocationOn, ArrowForward } from '@mui/icons-material';
 
 interface HeroSectionProps {
@@ -64,8 +64,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
       />
 
       <Container maxWidth="lg" sx={{ zIndex: 2, position: 'relative', px: { xs: 2, sm: 3, md: 4 }, py: { xs: 2, sm: 4, md: 8 } }}>
-        <Grid container alignItems="center" spacing={{ xs: 3, sm: 4, md: 6 }}>
-          <Grid item xs={12} md={6}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 3, sm: 4, md: 6 } }}>
+          <Box sx={{ flex: 1 }}>
             <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
               {/* Logo/Icon */}
               <Box sx={{ 
@@ -254,9 +254,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
                 </Button>
               </Box>
             </Box>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} md={6}>
+          <Box sx={{ flex: 1 }}>
             {/* Hero Image/Illustration */}
             <Box
               sx={{
@@ -268,8 +268,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
               }}
             >
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Button, Container, Grid } from '@mui/material';
+import { Box, Typography, Button, Container } from '@mui/material';
 import { ArrowForward, TravelExplore, LocationOn } from '@mui/icons-material';
 
 interface CTASectionProps {
@@ -58,8 +58,8 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
       />
 
       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2, px: { xs: 2, sm: 3, md: 4 } }}>
-        <Grid container alignItems="center" spacing={{ xs: 4, sm: 6, md: 8 }}>
-          <Grid item xs={12} md={8}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 4, sm: 6, md: 8 } }}>
+          <Box sx={{ flex: { xs: '1', md: '2' } }}>
             <Box sx={{ color: 'white' }}>
               {/* Icon */}
               <Box sx={{ 
@@ -152,9 +152,9 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                 ))}
               </Box>
             </Box>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} md={4}>
+          <Box sx={{ flex: { xs: '1', md: '1' } }}>
             <Box sx={{ textAlign: { xs: 'center', md: 'right' } }}>
               <Button
                 variant="contained"
@@ -228,8 +228,8 @@ const CTASection: React.FC<CTASectionProps> = ({ onGetStarted }) => {
                 </Typography>
               </Box>
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

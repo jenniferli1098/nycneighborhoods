@@ -1,38 +1,8 @@
 import React from 'react';
-import { Box, Typography, Grid, Card, LinearProgress } from '@mui/material';
-import { TrendingUp, People, LocationCity, Timeline } from '@mui/icons-material';
+import { Box, Typography, Card, LinearProgress } from '@mui/material';
 
 const StatsPreview: React.FC = () => {
-  const communityStats = [
-    {
-      icon: <People sx={{ fontSize: 40 }} />,
-      number: '2,500+',
-      label: 'Active Explorers',
-      description: 'NYC residents and visitors tracking their adventures',
-      color: '#3B82F6'
-    },
-    {
-      icon: <LocationCity sx={{ fontSize: 40 }} />,
-      number: '15,000+',
-      label: 'Neighborhoods Visited',
-      description: 'Total visits logged across all boroughs',
-      color: '#10B981'
-    },
-    {
-      icon: <Timeline sx={{ fontSize: 40 }} />,
-      number: '200+',
-      label: 'Neighborhoods Mapped',
-      description: 'Complete coverage of NYC\'s diverse areas',
-      color: '#F59E0B'
-    },
-    {
-      icon: <TrendingUp sx={{ fontSize: 40 }} />,
-      number: '85%',
-      label: 'User Satisfaction',
-      description: 'Users who recommend us to friends',
-      color: '#8B5CF6'
-    }
-  ];
+  // Community stats data removed as it's unused
 
   const boroughProgress = [
     { name: 'Manhattan', progress: 78, neighborhoods: 28, color: '#EF4444' },
@@ -82,9 +52,9 @@ const StatsPreview: React.FC = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ maxWidth: 1000 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' }, gap: { xs: 2, sm: 3, md: 4 }, maxWidth: 1000 }}>
             {boroughProgress.map((borough, index) => (
-              <Grid item xs={6} sm={4} md={6} lg={2.4} key={index}>
+              <Box key={index}>
                 <Card sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
                   <Typography 
                     variant="h6" 
@@ -130,9 +100,9 @@ const StatsPreview: React.FC = () => {
                     {borough.neighborhoods} neighborhoods
                   </Typography>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Box>
 
         <Box sx={{ textAlign: 'center', mt: { xs: 4, sm: 5, md: 6 }, px: { xs: 2, sm: 0 } }}>

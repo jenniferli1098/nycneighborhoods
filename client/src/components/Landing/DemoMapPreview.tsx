@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Card, Grid, Chip, Rating } from '@mui/material';
+import { Box, Typography, Card, Chip, Rating } from '@mui/material';
 import { LocationOn, CheckCircle } from '@mui/icons-material';
 
 const DemoMapPreview: React.FC = () => {
@@ -70,9 +70,9 @@ const DemoMapPreview: React.FC = () => {
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'center', px: { xs: 2, sm: 3, md: 0 } }}>
-        <Grid container spacing={{ xs: 3, sm: 4 }} alignItems="center" sx={{ maxWidth: 1200 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, sm: 4 }, alignItems: 'center', maxWidth: 1200 }}>
           {/* Mock Map */}
-          <Grid item xs={12} md={8}>
+          <Box sx={{ flex: { xs: '1', md: '2' } }}>
             <Card 
               sx={{ 
                 p: { xs: 2, sm: 3, md: 4 },
@@ -210,10 +210,10 @@ const DemoMapPreview: React.FC = () => {
               </Typography>
             </Box>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Neighborhood Cards */}
-        <Grid item xs={12} md={4}>
+        <Box sx={{ flex: { xs: '1', md: '1' } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.5, sm: 2 } }}>
             {sampleNeighborhoods.map((neighborhood, index) => (
               <Card 
@@ -273,8 +273,8 @@ const DemoMapPreview: React.FC = () => {
               </Card>
             ))}
           </Box>
-        </Grid>
-        </Grid>
+        </Box>
+        </Box>
       </Box>
     </Box>
   );
