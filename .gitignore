@@ -1,6 +1,7 @@
 package-lock.json
 .claude
 .env
+CLAUDE.md
 # Logs
 logs
 *.log
