@@ -97,7 +97,7 @@ export class SimplePairwiseRanking {
     };
 
     const bounds = categoryBounds[this.category];
-    const COLLISION_THRESHOLD = 0.001; // If ratings are closer than this, it's a collision
+    const COLLISION_THRESHOLD = 0.01; // If ratings are closer than this, it's a collision
 
     if (visits.length === 0) {
       // First item in category - place in middle
@@ -215,12 +215,49 @@ export class SimplePairwiseRanking {
   getFinalResult() {
     const insertionPosition = this.state.low;
     const newRating = this.calculateFinalRating();
-    
+
     // Check if redistribution was needed
-    const COLLISION_THRESHOLD = 0.005;
+    const COLLISION_THRESHOLD = 0.01;
     const simpleRating = this.calculateSimpleRating(insertionPosition);
-    const needsRedistribution = this.detectCollision(simpleRating, insertionPosition, COLLISION_THRESHOLD);
-    
+    const hasCollision = this.detectCollision(simpleRating, insertionPosition, COLLISION_THRESHOLD);
+
+    // Also check if category is getting crowded - if average spacing is too small, redistribute
+    const categoryBounds = {
+      'Good': { min: 7.0, max: 10.0 },
+      'Mid': { min: 4.0, max: 6.9 },
+      'Bad': { min: 0.0, max: 3.9 }
+    };
+    const bounds = categoryBounds[this.category];
+    const range = bounds.max - bounds.min;
+    const totalItems = this.state.visits.length + 1;
+    const averageSpacing = range / totalItems;
+    const MIN_SPACING = 0.15; // Minimum desired spacing between items
+    const isToocrowded = averageSpacing < MIN_SPACING;
+
+    // Check if insertion is near category boundaries (within 0.01 of min/max)
+    const BOUNDARY_THRESHOLD = 0.01;
+    const nearUpperBoundary = (insertionPosition === 0 && newRating > bounds.max - BOUNDARY_THRESHOLD);
+    const nearLowerBoundary = (insertionPosition >= this.state.visits.length && newRating < bounds.min + BOUNDARY_THRESHOLD);
+    const nearBoundary = nearUpperBoundary || nearLowerBoundary;
+
+    const needsRedistribution = hasCollision || isToocrowded || nearBoundary;
+
+    console.log(`📊 SimplePairwiseRanking: getFinalResult for ${this.category} category`);
+    console.log(`  - Insertion position: ${insertionPosition} out of ${this.state.visits.length} existing visits`);
+    console.log(`  - New rating: ${newRating.toFixed(2)}`);
+    console.log(`  - Collision threshold: ${COLLISION_THRESHOLD}`);
+    console.log(`  - Simple rating (for collision check): ${simpleRating.toFixed(2)}`);
+    console.log(`  - Has immediate collision: ${hasCollision}`);
+    console.log(`  - Average spacing: ${averageSpacing.toFixed(3)}, Min desired: ${MIN_SPACING}`);
+    console.log(`  - Category too crowded: ${isToocrowded}`);
+    console.log(`  - Near upper boundary: ${nearUpperBoundary}, Near lower boundary: ${nearLowerBoundary}`);
+    console.log(`  - Boundary threshold: ${BOUNDARY_THRESHOLD}`);
+    console.log(`  - Needs redistribution: ${needsRedistribution}`);
+
+    if (needsRedistribution) {
+      console.log(`  - Will redistribute ${this.state.visits.length} existing visits`);
+    }
+
     return {
       rating: newRating,
       category: this.category,

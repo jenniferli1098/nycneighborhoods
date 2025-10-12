@@ -59,14 +59,14 @@ const Navigation: React.FC = () => {
             </IconButton>
           )}
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-            Travel Bucket List
+            Neighborhoods
           </Typography>
           {user && !isMobile && (
             <>
               <DesktopTabs />
               <Box className="flex items-center gap-4">
                 <Typography variant="body1" sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  Welcome, {user.username}!
+                  Welcome, {user.firstName || user.username}!
                 </Typography>
                 <Button color="inherit" onClick={logout}>
                   Logout

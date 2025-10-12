@@ -405,7 +405,7 @@ const SettingsPage: React.FC = () => {
                   onChange={handleInputChange('description')}
                   variant="outlined"
                   multiline
-                  rows={3}
+                  rows={6}
                   placeholder="Tell us about yourself and your travel interests..."
                   inputProps={{ maxLength: 500 }}
                   helperText={`${localSettings.description.length}/500 characters`}
