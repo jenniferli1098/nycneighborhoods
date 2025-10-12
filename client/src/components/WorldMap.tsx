@@ -58,7 +58,7 @@ const WorldMap: React.FC<WorldMapProps> = ({
       const geoCode3 = geoFeature.properties?.['ISO3166-1-Alpha-3'];
 
       // Try to match by name first, then by country code
-      return availableCountries.find(country => {
+      const matched = availableCountries.find(country => {
         return (
           country.name === geoName ||
           country.code === geoCode2 ||
@@ -66,9 +66,21 @@ const WorldMap: React.FC<WorldMapProps> = ({
           // Handle common name variations
           (geoName === 'United States of America' && country.name === 'United States') ||
           (geoName === 'United Kingdom' && country.name === 'United Kingdom') ||
-          (geoName === 'Russia' && country.name === 'Russia')
+          (geoName === 'Russia' && country.name === 'Russia') ||
+          (geoName === 'Kosovo' && country.name === 'Kosovo')
         );
-      }) || null;
+      });
+
+      // Log when we can't match a country
+      if (!matched && geoName) {
+        console.log('⚠️ WorldMap: Could not match GeoJSON country to API:', {
+          name: geoName,
+          code2: geoCode2,
+          code3: geoCode3
+        });
+      }
+
+      return matched || null;
     };
 
     // Helper function to determine if a country is visited

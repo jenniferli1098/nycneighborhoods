@@ -129,6 +129,7 @@ const countriesData = [
   { name: 'Ireland', code: 'IE', continent: 'Europe', description: 'A country in Europe.' },
   { name: 'Italy', code: 'IT', continent: 'Europe', description: 'A country in Europe.' },
   { name: 'Kazakhstan', code: 'KZ', continent: 'Europe', description: 'A country in Europe.' },
+  { name: 'Kosovo', code: 'XK', continent: 'Europe', description: 'A country in Europe.' },
   { name: 'Latvia', code: 'LV', continent: 'Europe', description: 'A country in Europe.' },
   { name: 'Liechtenstein', code: 'LI', continent: 'Europe', description: 'A country in Europe.' },
   { name: 'Lithuania', code: 'LT', continent: 'Europe', description: 'A country in Europe.' },

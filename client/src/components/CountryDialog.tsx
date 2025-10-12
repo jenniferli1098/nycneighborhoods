@@ -115,11 +115,28 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
         };
         await visitsApi.createCountryVisit(createData);
       }
-      
+
       onSave();
       onClose();
     } catch (err: any) {
       setError('Failed to save visit data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!visit._id) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await visitsApi.deleteVisit(visit._id);
+      onSave();
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to delete visit');
     } finally {
       setLoading(false);
     }
@@ -148,8 +165,10 @@ const CountryDialog: React.FC<CountryDialogProps> = ({
         loading={loading}
         error={error}
         onSave={handleSave}
+        onDelete={visit._id ? handleDelete : undefined}
         saveButtonText="Save"
-        showDeleteButton={false}
+        deleteButtonText="Unvisit"
+        showDeleteButton={!!visit._id}
       >
         <VisitFormFields
           visit={visit}

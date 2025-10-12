@@ -201,9 +201,10 @@ const GenericNeighborhoodsPage: React.FC<GenericNeighborhoodsPageProps> = ({ map
    */
   const fetchVisits = async () => {
     try {
-      const visits = mapId 
+      const visits = mapId
         ? await visitsApi.getVisitsByMap(mapId)
         : await visitsApi.getVisitsByType('neighborhood');
+
       setVisits(visits);
     } catch (err) {
       console.error(`❌ ${mapConfig.name}: Failed to fetch neighborhood visits:`, err);

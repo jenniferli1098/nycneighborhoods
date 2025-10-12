@@ -109,6 +109,7 @@ const CountriesPage: React.FC = () => {
       console.log('📡 CountriesPage: Fetching country visits from API');
       const countryVisits = await visitsApi.getVisitsByType('country');
       console.log('📝 CountriesPage: Received country visits data:', countryVisits.length, 'visits');
+
       setVisits(countryVisits);
     } catch (err) {
       console.error('❌ CountriesPage: Failed to fetch country visits:', err);
