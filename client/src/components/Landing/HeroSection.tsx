@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, Button, Container, useTheme, useMediaQuery } from '@mui/material';
 import { TravelExplore, LocationOn, ArrowForward } from '@mui/icons-material';
+import DemoSlideshow from './DemoSlideshow';
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -9,6 +10,7 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
     <Box
@@ -230,6 +232,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
                 <Button
                   variant="outlined"
                   size="large"
+                  onClick={() => setDemoOpen(true)}
                   sx={{
                     py: { xs: 1.5, sm: 2 },
                     px: { xs: 4, sm: 6 },
@@ -271,6 +274,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
           </Box>
         </Box>
       </Container>
+
+      {/* Demo Slideshow Dialog */}
+      <DemoSlideshow open={demoOpen} onClose={() => setDemoOpen(false)} />
     </Box>
   );
 };
