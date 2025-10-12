@@ -88,26 +88,15 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
 
     try {
       // Fetch existing visits - use appropriate endpoint based on type and scope
-      let allVisits: Visit[];
-      if (visitType === 'neighborhood') {
-        if (mapId) {
-          console.log(`📡 PairwiseRankingDialog: Using map-specific visits for mapId:`, mapId);
-          allVisits = await visitsApi.getVisitsByMap(mapId);
-        } else {
-          console.log(`📡 PairwiseRankingDialog: Using neighborhood visits endpoint`);
-          allVisits = await visitsApi.getVisitsByType('neighborhood');
-        }
-      } else {
-        console.log(`📡 PairwiseRankingDialog: Using country visits endpoint`);
-        allVisits = await visitsApi.getVisitsByType('country');
-      }
-      
+      const allVisits = await (visitType === 'neighborhood' && mapId
+        ? visitsApi.getVisitsByMap(mapId)
+        : visitsApi.getVisitsByType(visitType));
+
       // Filter visits for this category and type
-      const relevantVisits = allVisits.filter((visit) => 
+      const relevantVisits = allVisits.filter((visit) =>
         visit.visitType === visitType &&
         visit.category === category &&
         visit.rating != null &&
-        // Exclude existing visit if re-ranking
         (!existingRating || visit._id !== existingRating.visitId)
       );
 
@@ -160,25 +149,10 @@ const PairwiseRankingDialog: React.FC<PairwiseRankingDialogProps> = ({
     try {
       // Handle redistribution if needed
       if (finalResult.needsRedistribution && finalResult.redistributedRatings) {
-        console.log(`🔄 PairwiseRankingDialog: Redistribution triggered! Updating ${finalResult.redistributedRatings.length} existing visits`);
-
-        // Log the redistributed ratings
-        finalResult.redistributedRatings.forEach(({ visit, newRating }) => {
-          const locationName = typeof visit.neighborhood === 'object' && visit.neighborhood && 'name' in visit.neighborhood
-            ? (visit.neighborhood as any).name
-            : typeof visit.country === 'object' && visit.country && 'name' in visit.country
-            ? (visit.country as any).name
-            : 'Unknown';
-          console.log(`  - ${locationName}: ${visit.rating} → ${newRating.toFixed(2)}`);
-        });
-
-        // Update all existing visits with redistributed ratings
         const updatePromises = finalResult.redistributedRatings.map(({ visit, newRating }) =>
           visitsApi.updateVisit(visit._id, { rating: newRating })
         );
-
         await Promise.all(updatePromises);
-        console.log(`✅ PairwiseRankingDialog: Successfully updated all ${finalResult.redistributedRatings.length} visits with redistributed ratings`);
       }
 
       const visitData = {

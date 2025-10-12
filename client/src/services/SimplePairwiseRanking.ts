@@ -9,25 +9,36 @@ interface ComparisonState {
   currentComparison: number;
 }
 
+type CategoryBounds = { min: number; max: number };
+
+const CATEGORY_BOUNDS = {
+  'Good': { min: 7.0, max: 10.0 },
+  'Mid': { min: 4.0, max: 6.9 },
+  'Bad': { min: 0.0, max: 3.9 }
+} as const;
+
+const COLLISION_THRESHOLD = 0.01;
+const BOUNDARY_THRESHOLD = 0.01;
+const MIN_SPACING = 0.15;
+
 export class SimplePairwiseRanking {
   private state: ComparisonState;
   private category: 'Good' | 'Mid' | 'Bad';
+  private bounds: CategoryBounds;
 
   constructor(visits: Visit[], category: 'Good' | 'Mid' | 'Bad') {
-    // Filter out visits with null ratings and sort by rating (highest first)
-    const validVisits = visits.filter((v): v is Visit & { rating: number; category: 'Good' | 'Mid' | 'Bad' } => 
+    const validVisits = visits.filter((v): v is Visit & { rating: number; category: 'Good' | 'Mid' | 'Bad' } =>
       v.rating !== null && v.category !== null
-    );
-    // Sort by rating (highest first)
-    const sortedVisits = validVisits.sort((a, b) => b.rating - a.rating);
-    
+    ).sort((a, b) => b.rating - a.rating);
+
     this.category = category;
+    this.bounds = CATEGORY_BOUNDS[category];
     this.state = {
-      visits: sortedVisits,
-      currentIndex: Math.floor(sortedVisits.length / 2),
+      visits: validVisits,
+      currentIndex: Math.floor(validVisits.length / 2),
       low: 0,
-      high: sortedVisits.length,
-      totalComparisons: sortedVisits.length > 0 ? Math.ceil(Math.log2(sortedVisits.length + 1)) : 0,
+      high: validVisits.length,
+      totalComparisons: validVisits.length > 0 ? Math.ceil(Math.log2(validVisits.length + 1)) : 0,
       currentComparison: 0
     };
   }
@@ -89,45 +100,15 @@ export class SimplePairwiseRanking {
     const insertionPosition = this.state.low;
     const visits = this.state.visits;
 
-    // Category bounds
-    const categoryBounds = {
-      'Good': { min: 7.0, max: 10.0 },
-      'Mid': { min: 4.0, max: 6.9 },
-      'Bad': { min: 0.0, max: 3.9 }
-    };
-
-    const bounds = categoryBounds[this.category];
-    const COLLISION_THRESHOLD = 0.01; // If ratings are closer than this, it's a collision
-
     if (visits.length === 0) {
-      // First item in category - place in middle
-      return (bounds.min + bounds.max) / 2;
+      return (this.bounds.min + this.bounds.max) / 2;
     }
 
-    // Calculate initial rating using the simple method
-    let newRating: number;
-
-    if (insertionPosition === 0) {
-      // Better than all existing items
-      const bestRating = visits[0].rating!;
-      newRating = (bestRating +  bounds.max) / 2;
-    } else if (insertionPosition >= visits.length) {
-      // Worse than all existing items
-      const worstRating = visits[visits.length - 1].rating!;
-      newRating = (worstRating +  bounds.min) / 2;
-    } else {
-      // Between two items
-      const upperRating = visits[insertionPosition - 1].rating!;
-      const lowerRating = visits[insertionPosition].rating!;
-      newRating = (upperRating + lowerRating) / 2;
-    }
-
-    // Check for collisions with neighbors
+    const newRating = this.calculateSimpleRating(insertionPosition);
     const hasCollision = this.detectCollision(newRating, insertionPosition, COLLISION_THRESHOLD);
 
     if (hasCollision) {
-      // Redistribute all ratings to avoid collisions
-      return this.redistributeRatings(insertionPosition, bounds);
+      return this.redistributeRatings(insertionPosition, this.bounds);
     }
 
     return newRating;
@@ -179,93 +160,57 @@ export class SimplePairwiseRanking {
   }
 
   /**
-   * Get redistributed ratings for all items in the category (including the new one)
+   * Get redistributed ratings for all items in the category
    * This method can be called by the component to update all existing visits
    */
   getRedistributedRatings(insertionPosition: number): Array<{ visit: Visit; newRating: number }> {
     const visits = this.state.visits;
-    const categoryBounds = {
-      'Good': { min: 7.0, max: 10.0 },
-      'Mid': { min: 4.0, max: 6.9 },
-      'Bad': { min: 0.0, max: 3.9 }
-    };
-    
-    const bounds = categoryBounds[this.category];
     const totalItems = visits.length + 1;
-    const range = bounds.max - bounds.min;
+    const range = this.bounds.max - this.bounds.min;
     const spacing = range / (totalItems + 1);
-    
-    const redistributedRatings: Array<{ visit: Visit; newRating: number }> = [];
-    
-    // Redistribute existing visits
-    visits.forEach((visit, index) => {
-      // Adjust index based on insertion position
+
+    return visits.map((visit, index) => {
       const adjustedIndex = index >= insertionPosition ? index + 1 : index;
-      // Fix: Higher positions (lower adjustedIndex) should get higher ratings
-      const newRating = bounds.max - (adjustedIndex + 1) * spacing;
-      redistributedRatings.push({ visit, newRating });
+      const newRating = this.bounds.max - (adjustedIndex + 1) * spacing;
+      return { visit, newRating };
     });
-    
-    return redistributedRatings;
   }
 
   /**
-   * Get final result
+   * Get final result with rating and redistribution information
    */
   getFinalResult() {
     const insertionPosition = this.state.low;
     const newRating = this.calculateFinalRating();
-
-    // Check if redistribution was needed
-    const COLLISION_THRESHOLD = 0.01;
-    const simpleRating = this.calculateSimpleRating(insertionPosition);
-    const hasCollision = this.detectCollision(simpleRating, insertionPosition, COLLISION_THRESHOLD);
-
-    // Also check if category is getting crowded - if average spacing is too small, redistribute
-    const categoryBounds = {
-      'Good': { min: 7.0, max: 10.0 },
-      'Mid': { min: 4.0, max: 6.9 },
-      'Bad': { min: 0.0, max: 3.9 }
-    };
-    const bounds = categoryBounds[this.category];
-    const range = bounds.max - bounds.min;
-    const totalItems = this.state.visits.length + 1;
-    const averageSpacing = range / totalItems;
-    const MIN_SPACING = 0.15; // Minimum desired spacing between items
-    const isToocrowded = averageSpacing < MIN_SPACING;
-
-    // Check if insertion is near category boundaries (within 0.01 of min/max)
-    const BOUNDARY_THRESHOLD = 0.01;
-    const nearUpperBoundary = (insertionPosition === 0 && newRating > bounds.max - BOUNDARY_THRESHOLD);
-    const nearLowerBoundary = (insertionPosition >= this.state.visits.length && newRating < bounds.min + BOUNDARY_THRESHOLD);
-    const nearBoundary = nearUpperBoundary || nearLowerBoundary;
-
-    const needsRedistribution = hasCollision || isToocrowded || nearBoundary;
-
-    console.log(`📊 SimplePairwiseRanking: getFinalResult for ${this.category} category`);
-    console.log(`  - Insertion position: ${insertionPosition} out of ${this.state.visits.length} existing visits`);
-    console.log(`  - New rating: ${newRating.toFixed(2)}`);
-    console.log(`  - Collision threshold: ${COLLISION_THRESHOLD}`);
-    console.log(`  - Simple rating (for collision check): ${simpleRating.toFixed(2)}`);
-    console.log(`  - Has immediate collision: ${hasCollision}`);
-    console.log(`  - Average spacing: ${averageSpacing.toFixed(3)}, Min desired: ${MIN_SPACING}`);
-    console.log(`  - Category too crowded: ${isToocrowded}`);
-    console.log(`  - Near upper boundary: ${nearUpperBoundary}, Near lower boundary: ${nearLowerBoundary}`);
-    console.log(`  - Boundary threshold: ${BOUNDARY_THRESHOLD}`);
-    console.log(`  - Needs redistribution: ${needsRedistribution}`);
-
-    if (needsRedistribution) {
-      console.log(`  - Will redistribute ${this.state.visits.length} existing visits`);
-    }
+    const needsRedistribution = this.shouldRedistribute(insertionPosition, newRating);
 
     return {
       rating: newRating,
       category: this.category,
-      insertionPosition: insertionPosition,
+      insertionPosition,
       totalVisits: this.state.visits.length,
-      needsRedistribution: needsRedistribution,
+      needsRedistribution,
       redistributedRatings: needsRedistribution ? this.getRedistributedRatings(insertionPosition) : undefined
     };
+  }
+
+  /**
+   * Determine if redistribution is needed based on collision, crowding, or boundary proximity
+   */
+  private shouldRedistribute(insertionPosition: number, newRating: number): boolean {
+    const simpleRating = this.calculateSimpleRating(insertionPosition);
+    const hasCollision = this.detectCollision(simpleRating, insertionPosition, COLLISION_THRESHOLD);
+
+    const range = this.bounds.max - this.bounds.min;
+    const totalItems = this.state.visits.length + 1;
+    const averageSpacing = range / totalItems;
+    const isCrowded = averageSpacing < MIN_SPACING;
+
+    const nearUpperBoundary = insertionPosition === 0 && newRating > this.bounds.max - BOUNDARY_THRESHOLD;
+    const nearLowerBoundary = insertionPosition >= this.state.visits.length && newRating < this.bounds.min + BOUNDARY_THRESHOLD;
+    const nearBoundary = nearUpperBoundary || nearLowerBoundary;
+
+    return hasCollision || isCrowded || nearBoundary;
   }
 
   /**
@@ -273,25 +218,17 @@ export class SimplePairwiseRanking {
    */
   private calculateSimpleRating(insertionPosition: number): number {
     const visits = this.state.visits;
-    const categoryBounds = {
-      'Good': { min: 7.0, max: 10.0 },
-      'Mid': { min: 4.0, max: 6.9 },
-      'Bad': { min: 0.0, max: 3.9 }
-    };
-    const bounds = categoryBounds[this.category];
 
     if (visits.length === 0) {
-      return (bounds.min + bounds.max) / 2;
+      return (this.bounds.min + this.bounds.max) / 2;
     }
 
     if (insertionPosition === 0) {
-      const bestRating = visits[0].rating!;
-      return Math.min(bestRating + 0.5, bounds.max);
+      return (visits[0].rating! + this.bounds.max) / 2;
     }
 
     if (insertionPosition >= visits.length) {
-      const worstRating = visits[visits.length - 1].rating!;
-      return Math.max(worstRating - 0.5, bounds.min);
+      return (visits[visits.length - 1].rating! + this.bounds.min) / 2;
     }
 
     const upperRating = visits[insertionPosition - 1].rating!;
